@@ -75,8 +75,8 @@ async function callGemini({model, apiKey, systemPrompt, messages, fetchImpl}) {
       generationConfig: {temperature: 0.25, maxOutputTokens: 512}
     })
   });
-  const result = await response.json();
-  if (!response.ok) throw new Error(`Gemini request failed (${response.status})`);
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) providerError('Gemini', response.status, result, apiKey);
   return result.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim() || '';
 }
 
@@ -92,8 +92,8 @@ async function callOpenAI({model, apiKey, systemPrompt, messages, fetchImpl}) {
       max_completion_tokens: 512
     })
   });
-  const result = await response.json();
-  if (!response.ok) throw new Error(`OpenAI request failed (${response.status})`);
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) providerError('OpenAI', response.status, result, apiKey);
   return result.choices?.[0]?.message?.content?.trim() || '';
 }
 
@@ -114,8 +114,8 @@ async function callAnthropic({model, apiKey, systemPrompt, messages, fetchImpl})
       max_tokens: 512
     })
   });
-  const result = await response.json();
-  if (!response.ok) throw new Error(`Anthropic request failed (${response.status})`);
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) providerError('Anthropic', response.status, result, apiKey);
   return result.content?.filter(block => block.type === 'text').map(block => block.text).join('').trim() || '';
 }
 
@@ -132,6 +132,7 @@ export async function handleChatRequest({method = 'POST', body, ip = 'unknown', 
 
   const message = cleanText(body?.message, 501);
   if (!message || message.length > 500) return jsonResult(400, CHAT_FALLBACK);
+  if (isGreeting(message)) return jsonResult(200, 'Namaste! Main Priya, My JEE Mentor ki AI assistant hoon. JEE, NEET ya Foundation ke baare mein kya jaanna chahenge? 😊');
 
   const apiKey = process.env.AI_API_KEY?.trim();
   if (!apiKey) return jsonResult(200, CHAT_FALLBACK);
@@ -146,7 +147,7 @@ export async function handleChatRequest({method = 'POST', body, ip = 'unknown', 
         })
       : [];
     const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-    const model = process.env.AI_MODEL?.trim() || (provider === 'gemini' ? 'gemini-3.8-flash' : '');
+    const model = process.env.AI_MODEL?.trim() || (provider === 'gemini' ? DEFAULT_GEMINI_MODEL : '');
     const reply = await askProvider({
       provider,
       model,
@@ -157,9 +158,62 @@ export async function handleChatRequest({method = 'POST', body, ip = 'unknown', 
     });
     return jsonResult(200, reply ? cleanText(reply, 2_000) : CHAT_FALLBACK);
   } catch (error) {
-    console.error('Priya chat request failed:', error?.name || 'Error');
+    console.error('Priya chat request failed:', JSON.stringify({
+      name: safeErrorText(error?.name || 'Error', apiKey),
+      message: safeErrorText(error?.message || 'Unknown error', apiKey),
+      ...(Number.isInteger(error?.statusCode) ? {httpStatus: error.statusCode} : {}),
+      ...(error?.responseErrorMessage ? {responseErrorMessage: safeErrorText(error.responseErrorMessage, apiKey)} : {})
+    }));
     return jsonResult(200, CHAT_FALLBACK);
   }
+}
+
+export async function getChatDebugInfo({fetchImpl = globalThis.fetch} = {}) {
+  const apiKey = process.env.AI_API_KEY?.trim() || '';
+  const configuredProvider = process.env.AI_PROVIDER?.trim();
+  const provider = (configuredProvider || 'gemini').toLowerCase();
+  const model = process.env.AI_MODEL?.trim() || (provider === 'gemini' ? DEFAULT_GEMINI_MODEL : '');
+  let knowledgeLoaded = false;
+  let knowledgeSize = 0;
+  let knowledgeError;
+  try {
+    const knowledge = await getKnowledge();
+    knowledgeLoaded = true;
+    knowledgeSize = Buffer.byteLength(knowledge, 'utf8');
+  } catch (error) {
+    knowledgeError = safeErrorText(error?.message || 'Unable to load knowledge file', apiKey);
+  }
+
+  const result = {
+    hasApiKey: Boolean(apiKey),
+    hasProvider: Boolean(configuredProvider),
+    hasModel: Boolean(process.env.AI_MODEL?.trim()),
+    model,
+    knowledgeLoaded,
+    knowledgeSize
+  };
+  if (knowledgeError) result.knowledgeError = knowledgeError;
+  if (!apiKey) {
+    result.geminiTest = {statusCode: null, errorMessage: 'AI_API_KEY is not configured'};
+    return result;
+  }
+  try {
+    const response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: 'POST',
+      headers: {'content-type': 'application/json', 'x-goog-api-key': apiKey},
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      body: JSON.stringify({contents: [{role: 'user', parts: [{text: 'hi'}]}], generationConfig: {maxOutputTokens: 8}})
+    });
+    let payload = {};
+    try { payload = await response.json(); } catch {}
+    result.geminiTest = {
+      statusCode: response.status,
+      ...(response.ok ? {} : {errorMessage: safeErrorText(payload?.error?.message || `HTTP ${response.status}`, apiKey)})
+    };
+  } catch (error) {
+    result.geminiTest = {statusCode: null, errorMessage: safeErrorText(error?.message || 'Gemini test failed', apiKey)};
+  }
+  return result;
 }
 
 export function resetChatRateLimitsForTests() {

@@ -1,7 +1,12 @@
-import {CHAT_FALLBACK, handleChatRequest} from './_chat-handler.js';
+import {CHAT_FALLBACK, getChatDebugInfo, handleChatRequest} from './_chat-handler.js';
 
 export default {
   async fetch(request) {
+    const url = new URL(request.url);
+    if (request.method === 'GET' && url.searchParams.get('debug') === '1') {
+      const diagnostics = await getChatDebugInfo();
+      return Response.json(diagnostics, {status: 200, headers: {'cache-control': 'no-store'}});
+    }
     if (request.method !== 'POST') {
       return Response.json({reply: CHAT_FALLBACK}, {status: 405, headers: {'cache-control': 'no-store'}});
     }

@@ -12,7 +12,7 @@ Responsive multi-page website for JEE, NEET and Foundation coaching. Pages use s
 
 ### Priya — JEE Mentor AI chat
 
-1. Copy `.env.example` to `.env.local` and set `AI_PROVIDER=gemini`, `AI_API_KEY` to a Google AI Studio key, and `AI_MODEL=gemini-3.8-flash`. The API key is server-only; `.env.local` is ignored by Git.
+1. Copy `.env.example` to `.env.local` and set `AI_PROVIDER=gemini`, `AI_API_KEY` to a Google AI Studio key, and `AI_MODEL=gemini-2.5-flash`. The API key is server-only; `.env.local` is ignored by Git.
 2. Run `npm run dev` and open any page. Use the floating Priya button to ask about fees, faculty, or a demo. Run `npm test` for the mocked API checks, including unrelated questions and provider failure.
 3. In Vercel Project Settings → Environment Variables, add `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL` for Production (and Preview if desired), then redeploy. The `/api/chat` function reads `knowledge/mentor-data.md`; `vercel.json` includes that file in the function bundle.
 
