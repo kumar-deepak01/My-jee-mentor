@@ -69,6 +69,7 @@ const updateThemeToggle=()=>{
   themeToggle.setAttribute('aria-pressed',String(enabled));
   themeToggle.setAttribute('aria-label',enabled?'Turn on light mode':'Turn on dark mode');
   if(icon)icon.textContent=enabled?'☀️':'🌙';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',enabled?'#111722':'#f47721');
 };
 updateThemeToggle();
 themeToggle?.addEventListener('click',()=>{
