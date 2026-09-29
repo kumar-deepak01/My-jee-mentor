@@ -18,6 +18,10 @@ Home, JEE, NEET, Foundation, courses, JEE Booster detail, results, faculty, why 
 
 ## Deployment
 
+### Local auto-sync to GitHub and Vercel
+
+Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\auto-sync.ps1` from the project folder to watch local edits. After 15 seconds without another change, the watcher stages non-ignored files, creates a timestamped commit and pushes it to `origin/main`. Vercel can then deploy the pushed commit when the GitHub integration is enabled for this repository. Check `%TEMP%\my-jee-mentor-auto-sync.log` for sync status. Stop the watcher by ending the PowerShell process running `scripts\auto-sync.ps1`; it stops when Windows shuts down.
+
 ### VPS with Nginx
 
 Run `npm ci && npm run build:css`, then run `npm start` under a process manager such as systemd or PM2. Keep Node bound behind Nginx, terminate TLS with a valid certificate, and proxy to `127.0.0.1:3000` with `X-Forwarded-Proto` and `X-Forwarded-For`. Persist `data/` across deployments and restrict it to the application user. Set `.env` values through the host secret manager. Configure DNS and point Search Console to the verified domain.
