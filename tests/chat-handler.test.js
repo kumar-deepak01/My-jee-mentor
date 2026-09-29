@@ -1,6 +1,6 @@
 import test, {afterEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {CHAT_FALLBACK, handleChatRequest, resetChatRateLimitsForTests} from '../api/_chat-handler.js';
+import {CHAT_FALLBACK, getChatDebugInfo, handleChatRequest, resetChatRateLimitsForTests} from '../api/_chat-handler.js';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = {
@@ -77,6 +77,32 @@ test('returns the exact fallback for an unrelated question', async () => {
   const result = await handleChatRequest({method: 'POST', body: {message: 'Is cricket score?'}, ip: 'unrelated-test'});
   assert.equal(result.body.reply, CHAT_FALLBACK);
   assert.match(getBody().system_instruction.parts[0].text, /anything unrelated to My JEE Mentor/);
+});
+
+test('answers greetings without calling the AI provider', async () => {
+  configureGemini();
+  globalThis.fetch = async () => { throw new Error('fetch should not run for greetings'); };
+  const result = await handleChatRequest({method: 'POST', body: {message: 'Good morning!'}, ip: 'greeting-test'});
+  assert.equal(result.status, 200);
+  assert.match(result.body.reply, /Namaste! Main Priya/);
+});
+
+test('debug diagnostics report config and test Gemini without exposing the API key', async () => {
+  configureGemini();
+  let requestHeaders;
+  const diagnostics = await getChatDebugInfo({fetchImpl: async (_url, options) => {
+    requestHeaders = options.headers;
+    return new Response(JSON.stringify({error: {message: 'invalid key'}}), {status: 401});
+  }});
+  assert.equal(diagnostics.hasApiKey, true);
+  assert.equal(diagnostics.hasProvider, true);
+  assert.equal(diagnostics.hasModel, true);
+  assert.equal(diagnostics.model, 'gemini-test-model');
+  assert.equal(diagnostics.knowledgeLoaded, true);
+  assert.ok(diagnostics.knowledgeSize > 0);
+  assert.deepEqual(diagnostics.geminiTest, {statusCode: 401, errorMessage: 'invalid key'});
+  assert.equal(requestHeaders['x-goog-api-key'], 'test-key-not-real');
+  assert.equal(JSON.stringify(diagnostics).includes('test-key-not-real'), false);
 });
 
 test('returns the fallback when the AI provider fails', async () => {

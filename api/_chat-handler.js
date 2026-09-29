@@ -27,7 +27,7 @@ function providerError(provider, status, payload, apiKey) {
 }
 
 function isGreeting(message) {
-  return /^(hi|hello|hey|good morning|good afternoon|good evening|namaste|नमस्ते)[!.\\s,]*$/i.test(message.trim());
+  return /^(hi|hello|hey|good morning|good afternoon|good evening|namaste|नमस्ते)[!.\s,]*$/i.test(message.trim());
 }
 
 function allowRequest(ip, now = Date.now()) {
