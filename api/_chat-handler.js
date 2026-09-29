@@ -6,10 +6,29 @@ const KNOWLEDGE_PATH = path.join(process.cwd(), 'knowledge', 'mentor-data.md');
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT = 12;
 const REQUEST_TIMEOUT_MS = 15_000;
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const rateBuckets = new Map();
 let knowledgePromise;
 
 const jsonResult = (status, reply) => ({status, body: {reply}});
+
+function safeErrorText(value, apiKey = '') {
+  const text = String(value || '');
+  return apiKey ? text.split(apiKey).join('[REDACTED]') : text;
+}
+
+function providerError(provider, status, payload, apiKey) {
+  const message = payload?.error?.message || payload?.message || `HTTP ${status}`;
+  const error = new Error(safeErrorText(`${provider} request failed (${status}): ${message}`, apiKey));
+  error.name = `${provider[0].toUpperCase()}${provider.slice(1)}Error`;
+  error.statusCode = status;
+  error.responseErrorMessage = safeErrorText(message, apiKey);
+  throw error;
+}
+
+function isGreeting(message) {
+  return /^(hi|hello|hey|good morning|good afternoon|good evening|namaste|नमस्ते)[!.\\s,]*$/i.test(message.trim());
+}
 
 function allowRequest(ip, now = Date.now()) {
   const key = String(ip || 'unknown').slice(0, 100);
