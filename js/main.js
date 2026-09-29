@@ -1,3 +1,7 @@
+const themeStorageKey='myjeementor-theme';
+let darkMode=false;
+try{darkMode=localStorage.getItem(themeStorageKey)==='dark'}catch{}
+document.documentElement.classList.toggle('dark-theme',darkMode);
 const path=location.pathname.replace(/\/$/,'')||'/';
 const nav=[['Home','/'],['JEE','/jee.html'],['NEET','/neet.html'],['Foundation','/foundation.html'],['Courses','/courses.html']];
 const more=[['Results','/results.html'],['Our Faculty','/faculty.html'],['Why My JEE Mentor','/why-my-jee-mentor.html'],['Student Reviews','/reviews.html'],['Free Resources','/resources.html'],['Contact Us','/contact.html']];
@@ -17,7 +21,7 @@ const pages={
 '/terms.html':{title:'Terms & Conditions',tag:'LEGAL',heading:'Terms & Conditions',intro:'Program schedules, fees and features are confirmed during counselling and may vary by course and batch.'},
 '/refund-policy.html':{title:'Refund Policy',tag:'LEGAL',heading:'Refund Policy',intro:'Please contact our counsellor for the applicable refund terms before enrolling. Final terms will be provided in writing.'},
 '/404.html':{title:'Page Not Found',tag:'404',heading:'We couldn’t find that page.',intro:'Try a course page or return to the home page.'}};
-const header=`<header class="site-header"><div class="container header-row"><a class="brand brand-logo" href="/" aria-label="My JEE Mentor home"><img src="${path==='/neet.html'?'/neetlogo.png':'/assets/my-jee-mentor-logo.svg'}" alt="${path==='/neet.html'?'My JEE Mentor presents My NEET Mentor':'My JEE Mentor'}" width="540" height="160" fetchpriority="high"></a><button class="hamburger" aria-label="Open navigation" aria-expanded="false">☰</button><nav class="nav">${nav.map(([n,u])=>`<a href="${u}">${n}</a>`).join('')}<details class="nav-more"><summary>More</summary><div class="more-menu">${more.map(([n,u])=>`<a href="${u}">${n}</a>`).join('')}</div></details></nav><div class="header-actions"><a class="btn btn-primary" href="/contact.html#lead-form">Book Free Demo</a><a class="btn btn-outline talk" href="tel:+917304256203">Talk to Counsellor</a></div></div></header>`;
+const header=`<header class="site-header"><div class="container header-row"><a class="brand brand-logo" href="/" aria-label="My JEE Mentor home"><img src="${path==='/neet.html'?'/neetlogo.png':'/assets/my-jee-mentor-logo.svg'}" alt="${path==='/neet.html'?'My JEE Mentor presents My NEET Mentor':'My JEE Mentor'}" width="540" height="160" fetchpriority="high"></a><button class="hamburger" aria-label="Open navigation" aria-expanded="false">☰</button><nav class="nav">${nav.map(([n,u])=>`<a href="${u}">${n}</a>`).join('')}<details class="nav-more"><summary>More</summary><div class="more-menu">${more.map(([n,u])=>`<a href="${u}">${n}</a>`).join('')}</div></details></nav><button class="theme-toggle" type="button" aria-label="Turn on dark mode" aria-pressed="false"><span class="theme-toggle-visual" aria-hidden="true">🌙</span></button><div class="header-actions"><a class="btn btn-outline talk" href="tel:+917304256203">Talk to Counsellor</a></div></div></header>`;
 const footer=`<footer class="site-footer"><div class="container"><div class="footer-grid"><div><a class="brand" href="/">My <span class="brand-accent">JEE</span> Mentor</a><p>Concept First. Rank Next.<br>Personalised learning for JEE, NEET and Foundation.</p><a href="https://www.instagram.com/" aria-label="Instagram">Instagram</a> · <a href="https://www.youtube.com/" aria-label="YouTube">YouTube</a></div><div><h3>Programs</h3><a href="/jee.html">JEE</a><br><a href="/neet.html">NEET</a><br><a href="/foundation.html">Foundation</a><br><a href="/courses.html">All Courses</a></div><div><h3>Explore</h3><a href="/results.html">Results</a><br><a href="/faculty.html">Our Faculty</a><br><a href="/reviews.html">Student Reviews</a><br><a href="/resources.html">Free Resources</a></div><div><h3>Get in touch</h3><a href="/contact.html">Contact Us</a><br><a href="tel:+917304256203">Call counsellor</a><br><a href="https://wa.me/917304256203">WhatsApp</a><br><h3>Legal</h3><a href="/terms.html">Terms</a> · <a href="/privacy-policy.html">Privacy</a> · <a href="/refund-policy.html">Refund</a></div></div><div class="footer-bottom">© ${new Date().getFullYear()} My JEE Mentor. Fees, faculty, results and testimonials are subject to verification.</div></div></footer><div class="mobile-bar"><a href="/contact.html#lead-form">Demo</a><a href="tel:+917304256203">Call</a><a href="https://wa.me/917304256203?text=Hi%2C%20I%27d%20like%20to%20know%20about%20My%20JEE%20Mentor.">WhatsApp</a></div>`;
 const neetDiagrams=['biology-cell.svg','biology-lungs.svg','biology-neuron.svg','biology-kidney.svg','biology-dna.svg','biology-microscope.svg'];
 const programs=[
@@ -57,6 +61,22 @@ if(isNeet){
 if(isJee)document.querySelector('.page-hero')?.insertAdjacentHTML('afterbegin','<div class="jee-math-floaters" aria-hidden="true"><span class="math-chip math-pi">πr²</span><span class="math-chip math-sigma">Σ n²</span><span class="math-chip math-integral">∫ f(x)dx</span><span class="math-chip math-quadratic">ax² + bx + c</span><img class="math-diagram math-parabola" src="/assets/math-parabola.svg" alt=""><img class="math-diagram math-triangle" src="/assets/math-triangle.svg" alt=""></div>');
 const menu=document.querySelector('.hamburger'),navEl=document.querySelector('.nav');menu?.addEventListener('click',()=>{const opened=navEl.classList.toggle('open');menu.setAttribute('aria-expanded',opened);menu.textContent=opened?'×':'☰'});
 const moreNav=document.querySelector('.nav-more');
+const themeToggle=document.querySelector('.theme-toggle');
+const updateThemeToggle=()=>{
+  if(!themeToggle)return;
+  const icon=themeToggle.querySelector('.theme-toggle-visual');
+  const enabled=document.documentElement.classList.contains('dark-theme');
+  themeToggle.setAttribute('aria-pressed',String(enabled));
+  themeToggle.setAttribute('aria-label',enabled?'Turn on light mode':'Turn on dark mode');
+  if(icon)icon.textContent=enabled?'☀️':'🌙';
+};
+updateThemeToggle();
+themeToggle?.addEventListener('click',()=>{
+  darkMode=!document.documentElement.classList.contains('dark-theme');
+  document.documentElement.classList.toggle('dark-theme',darkMode);
+  try{localStorage.setItem(themeStorageKey,darkMode?'dark':'light')}catch{}
+  updateThemeToggle();
+});
 const route=location.pathname.replace(/\/index\.html$/,'/').replace(/\/$/,'')||'/';
 document.querySelectorAll('.nav>a,.more-menu a').forEach(link=>{const target=new URL(link.href,location.origin).pathname.replace(/\/index\.html$/,'/').replace(/\/$/,'')||'/';if(target===route)link.setAttribute('aria-current','page')});
 document.addEventListener('click',event=>{if(moreNav?.open&&!moreNav.contains(event.target))moreNav.open=false});
