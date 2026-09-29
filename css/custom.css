@@ -118,3 +118,25 @@
 .neet-page .program-one-to-one .program-art{background-image:radial-gradient(circle at 80% 32%,#85bda252 0 3px,transparent 4px),radial-gradient(circle at 86% 42%,#85bda245 0 2px,transparent 3px),radial-gradient(ellipse at 84% 42%,#d0eadd75,transparent 31%),linear-gradient(128deg,#edf8f4,#f9fcfa 58%,#e2f1e9)}
 .neet-page .program-ranker .program-art{background-image:radial-gradient(circle at 80% 32%,#8fbe6652 0 3px,transparent 4px),radial-gradient(circle at 86% 42%,#8fbe6645 0 2px,transparent 3px),radial-gradient(ellipse at 84% 42%,#d4e8bc75,transparent 31%),linear-gradient(128deg,#f0f7e9,#fbfcf8 58%,#e7f0d7)}
 @media(max-width:640px){.neet-page .resource-grid{grid-template-columns:1fr;gap:18px}}
+
+/* Mirror the Home mentorship cards on the JEE page. */
+.jee-page .filter-row{display:none}
+.jee-page .resource-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.jee-page .resource-card{display:flex;min-width:0}
+.jee-page .resource-card>.program-card{width:100%;height:100%}
+
+/* Distinct NEET destination button beneath the Home program cards. */
+.home-neet-promo-wrap{display:flex;justify-content:center;margin:34px auto 0}
+.home-neet-promo{position:relative;isolation:isolate;display:grid;width:min(100%,680px);min-height:112px;grid-template-columns:1fr auto;align-content:center;align-items:center;gap:4px 22px;overflow:hidden;padding:19px 25px;border:1px solid #e6ad56;border-radius:20px;background:linear-gradient(112deg,#173a2a 0%,#10271e 52%,#292013 100%);box-shadow:0 14px 30px #14372335,0 4px 0 #b9631c55,inset 0 1px 0 #fff5d24d;color:#fff;text-decoration:none;transition:box-shadow .2s,border-color .2s}
+.home-neet-promo:before{position:absolute;z-index:-1;inset:0;content:"";background:linear-gradient(108deg,transparent 27%,#ffffff08 42%,#ffe39a72 50%,#ffffff10 57%,transparent 73%);background-size:240% 100%;animation:neet-promo-light 4.2s linear infinite;pointer-events:none}
+.home-neet-promo:after{position:absolute;z-index:-1;right:68px;top:-72px;width:210px;height:210px;border:1px solid #b6dfbd38;border-radius:50%;box-shadow:0 0 0 18px #b6dfbd0a,0 0 0 36px #b6dfbd08;content:"";pointer-events:none}
+.home-neet-promo-kicker{grid-column:1;color:#d6e8d7;font-size:.74rem;font-weight:850;letter-spacing:.16em;text-transform:uppercase}
+.home-neet-promo strong{grid-column:1;color:#fff;font-size:clamp(1.45rem,4vw,2rem);font-weight:950;line-height:1.15;letter-spacing:.015em;text-shadow:0 2px 15px #0008}
+.home-neet-promo strong em{color:#ffd37a;font-style:normal}
+.home-neet-promo-copy{grid-column:1;color:#c6d7ca;font-size:.82rem;line-height:1.4}
+.home-neet-promo-arrow{grid-column:2;grid-row:1/4;display:grid;width:48px;height:48px;place-items:center;border:1px solid #f0bd66;border-radius:50%;background:linear-gradient(145deg,#f5c568,#df7f28);box-shadow:0 5px 16px #0005,inset 0 1px 0 #fff9c8;color:#24351f;font-size:1.5rem;font-weight:900;transition:transform .2s}
+.home-neet-promo:hover{border-color:#ffe2a0;box-shadow:0 20px 38px #14372350,0 5px 0 #b9631c66,inset 0 1px 0 #fff5d270}
+.home-neet-promo:hover .home-neet-promo-arrow{transform:translateX(3px)}
+@keyframes neet-promo-light{0%{background-position:150% 0}100%{background-position:-120% 0}}
+@media(max-width:640px){.jee-page .resource-grid{grid-template-columns:1fr;gap:18px}.home-neet-promo-wrap{margin-top:24px}.home-neet-promo{min-height:100px;gap:4px 12px;padding:16px;border-radius:16px}.home-neet-promo-arrow{width:40px;height:40px}}
+@media(prefers-reduced-motion:reduce){.home-neet-promo:before{animation:none}.home-neet-promo,.home-neet-promo-arrow{transition:none}}
