@@ -289,7 +289,7 @@
     updateSendButton();
     setTyping(true);
     try {
-      const history = messages.slice(0, -1).slice(-9).map(({role, text: content}) => ({role, content}));
+      const history = messages.slice(0, -1).slice(-9).map(({role, text: content}) => ({role, content: content.slice(0, 500)}));
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {'content-type': 'application/json'},

@@ -10,6 +10,14 @@ Responsive multi-page website for JEE, NEET and Foundation coaching. Pages use s
 4. Compile Tailwind: `npm run build:css`.
 5. Start locally: `npm run dev`; visit `http://localhost:3000`.
 
+### Priya — JEE Mentor AI chat
+
+1. Copy `.env.example` to `.env.local` and set `AI_PROVIDER=gemini`, `AI_API_KEY` to a Google AI Studio key, and `AI_MODEL=gemini-3.8-flash`. The API key is server-only; `.env.local` is ignored by Git.
+2. Run `npm run dev` and open any page. Use the floating Priya button to ask about fees, faculty, or a demo. Run `npm test` for the mocked API checks, including unrelated questions and provider failure.
+3. In Vercel Project Settings → Environment Variables, add `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL` for Production (and Preview if desired), then redeploy. The `/api/chat` function reads `knowledge/mentor-data.md`; `vercel.json` includes that file in the function bundle.
+
+The widget is dynamically loaded after the shared page script, and its styles are namespaced in `js/chat-widget.css`. Gemini is the default provider; OpenAI and Anthropic can be selected with `AI_PROVIDER` and a matching `AI_MODEL`.
+
 SQLite creates `data/leads.sqlite` on the first API request. Production must set `NODE_ENV=production`, a strong Cloudflare Turnstile site key and secret, an HTTPS origin, and the public WhatsApp number. The site intentionally does not ship a sample database or credentials.
 
 ## Pages
@@ -32,7 +40,7 @@ Create a Node web service with build command `npm ci && npm run build:css` and s
 
 ### Vercel
 
-The Express server and SQLite file are not a suitable serverless persistence configuration. Deploy the static pages to Vercel and move `/api/leads` to a Vercel function backed by managed PostgreSQL (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
+The new `/api/chat` route is a Vercel Node.js function. The Express server and SQLite file are not a suitable serverless persistence configuration for `/api/leads`; move that route to a Vercel function backed by managed PostgreSQL (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
 
 ## Database schema
 
