@@ -39,6 +39,7 @@ const isNeet=path==='/neet.html';
 const isJee=path==='/jee.html';
 document.body.classList.toggle('neet-page',isNeet);
 document.body.classList.toggle('jee-page',isJee);
+document.body.classList.toggle('courses-page',path==='/courses.html');
 if(isNeet){
   document.querySelector('.page-hero')?.insertAdjacentHTML('afterbegin','<div class="biology-floaters" aria-hidden="true"><img src="/assets/biology-dna.svg" class="bio-float bio-dna-one" alt=""><img src="/assets/biology-lungs.svg" class="bio-float bio-lungs" alt=""><img src="/assets/biology-cell.svg" class="bio-float bio-cell" alt=""><img src="/assets/biology-neuron.svg" class="bio-float bio-neuron" alt=""><img src="/assets/biology-kidney.svg" class="bio-float bio-kidney" alt=""><img src="/assets/biology-microscope.svg" class="bio-float bio-microscope" alt=""></div>');
   document.querySelectorAll('.neet-page .section').forEach((section,index)=>{

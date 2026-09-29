@@ -60,3 +60,35 @@
 .neet-page .neet-section-art{position:absolute;right:clamp(18px,5vw,72px);bottom:20px;width:clamp(58px,7vw,96px);height:auto;opacity:.22;filter:saturate(.82) drop-shadow(0 8px 10px #14593d22);pointer-events:none}
 @media(max-width:900px){.bio-lungs{right:4%;width:60px}.bio-kidney{left:7%;width:58px}.bio-microscope{width:68px}.neet-page .neet-section-art{right:18px;width:68px;opacity:.16}}
 @media(max-width:640px){.bio-lungs{right:2%;top:26%;width:48px}.bio-kidney{left:1%;bottom:2%;width:48px}.bio-microscope{right:1%;bottom:19%;width:52px}.neet-page .neet-section-art{right:12px;bottom:12px;width:48px;opacity:.13}}
+
+/* Shared premium mentoring program cards on Home and Courses pages. */
+.program-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;max-width:1160px;margin-inline:auto}
+.program-card{display:flex;min-width:0;flex-direction:column;overflow:hidden;border:1px solid #ead6c3;border-radius:22px;background:#fff;box-shadow:0 12px 34px #39200e12;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.program-card:hover{transform:translateY(-4px);border-color:#d98a4e;box-shadow:0 20px 42px #39200e1c}
+.program-art{position:relative;isolation:isolate;display:flex;min-height:190px;flex-direction:column;justify-content:flex-end;overflow:hidden;padding:20px 25px;background:radial-gradient(ellipse at 78% 38%,#e9a43f5c,transparent 27%),radial-gradient(ellipse at 91% 94%,#c16a162e,transparent 34%),linear-gradient(120deg,#141413,#211c15 62%,#090a0b);color:#fff4d2}
+.program-art:before{position:absolute;z-index:-1;inset:10px;content:"";border:1px solid #ddaa4e72;border-radius:12px}
+.program-art-brand{font-size:.73rem;font-weight:850;letter-spacing:.16em;color:#ffe2a1;text-transform:uppercase}
+.program-art-brand i{display:block;margin-top:4px;font-size:.52rem;font-style:normal;font-weight:650;letter-spacing:.16em;color:#d2ae6b}
+.program-art-title{max-width:76%;margin-top:21px;color:#f6c14e;font-size:clamp(1.8rem,4vw,3rem);font-weight:950;line-height:.92;letter-spacing:.005em;text-shadow:0 3px 18px #e19b3140}
+.program-art-caption{max-width:76%;margin-top:10px;color:#fff8e9;font-size:.7rem;font-weight:750;letter-spacing:.13em;text-transform:uppercase}
+.program-art-mark{position:absolute;right:8%;top:42%;display:grid;min-width:88px;min-height:88px;place-items:center;border:1px solid #f0bb56ad;border-radius:50%;background:radial-gradient(circle at 35% 30%,#72552a,#241d12 67%);box-shadow:0 0 32px #e6a73835,inset 0 0 20px #e9b54c26;color:#ffcf64;font-size:1.4rem;font-weight:900;transform:translateY(-20%)}
+.program-art-orbit{position:absolute;right:5%;top:15%;width:128px;height:128px;border:1px solid #f2c65c35;border-radius:50%;transform:rotate(-24deg) scaleY(.58)}
+.program-foundation .program-art{background:radial-gradient(ellipse at 82% 44%,#6a8b9a61,transparent 29%),radial-gradient(ellipse at 92% 97%,#c4782938,transparent 34%),linear-gradient(120deg,#111514,#19231d 65%,#0b0d0c)}
+.program-one-to-one .program-art{background:radial-gradient(ellipse at 82% 44%,#d5793152,transparent 30%),radial-gradient(ellipse at 95% 98%,#b18d3b36,transparent 36%),linear-gradient(120deg,#111312,#241d17 65%,#0b0c0c)}
+.program-ranker .program-art{background:radial-gradient(ellipse at 82% 44%,#f1bd4c61,transparent 29%),radial-gradient(ellipse at 94% 95%,#dd831d4a,transparent 38%),linear-gradient(120deg,#11100e,#292013 66%,#080909)}
+.program-content{display:flex;flex:1;flex-direction:column;padding:22px 24px 24px}
+.program-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.program-tags span{display:inline-flex;align-items:center;min-height:26px;padding:5px 10px;border:1px solid #e8bd93;border-radius:999px;background:#fff7ed;color:#873b0b;font-size:.66rem;font-weight:850;letter-spacing:.1em}
+.program-content h3{margin:0 0 9px;color:#20242d;font-size:clamp(1.15rem,2.1vw,1.43rem);line-height:1.2}
+.program-content>p{min-height:52px;margin:0;color:#626976;font-size:.94rem;line-height:1.6}
+.program-content ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;list-style:none;margin:18px 0 22px;padding:0}
+.program-content li{position:relative;padding-left:21px;color:#454b55;font-size:.83rem;line-height:1.4}
+.program-content li:before{position:absolute;left:0;top:.02em;display:grid;width:15px;height:15px;place-items:center;border-radius:50%;background:linear-gradient(145deg,#f1a23f,#b94d09);color:#fff;content:"✓";font-size:.62rem;font-weight:900}
+.program-cta{display:flex;min-height:50px;align-items:center;justify-content:space-between;gap:16px;margin-top:auto;padding:12px 16px;border:1px solid #a24308;border-radius:12px;background:linear-gradient(110deg,#f4bc4e 0%,#eb8c28 48%,#bd4f0a 100%);box-shadow:0 7px 16px #a3461228,inset 0 1px 0 #fff8c5;color:#24170b;font-size:.95rem;font-weight:900;text-decoration:none;transition:filter .18s,transform .18s,box-shadow .18s}
+.program-cta:hover{filter:saturate(1.12) brightness(1.04);transform:translateY(-2px);box-shadow:0 10px 22px #a346123d,inset 0 1px 0 #fff8c5}
+.program-cta span{display:grid;width:27px;height:27px;place-items:center;border-radius:50%;background:#311b0a;color:#ffe7ab;font-size:1.05rem}
+.courses-page .filter-row{display:none}
+.courses-page .resource-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.courses-page .resource-card{display:flex;min-width:0}
+.courses-page .resource-card>.program-card{width:100%;height:100%}
+@media(max-width:640px){.program-grid,.courses-page .resource-grid{grid-template-columns:1fr;gap:18px}.program-art{min-height:164px;padding:18px}.program-art-title{font-size:2rem}.program-art-mark{right:9%;min-width:72px;min-height:72px;font-size:1.12rem}.program-content{padding:19px}.program-content>p{min-height:0}.program-content ul{gap:9px 10px}.program-content li{font-size:.78rem}}
