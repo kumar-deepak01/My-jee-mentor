@@ -168,3 +168,57 @@
 .mentorship-footer>span{color:#646b76;font-size:.92rem;font-weight:700}
 @media(max-width:900px){.mentorship-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mentorship-card,.mentorship-card:nth-child(4),.mentorship-card:nth-child(5){grid-column:span 1}.mentorship-card{min-height:232px}}
 @media(max-width:640px){.mentorship-grid{grid-template-columns:1fr;gap:14px}.mentorship-card,.mentorship-card:nth-child(4),.mentorship-card:nth-child(5){min-height:0;padding:20px}.mentorship-footer{align-items:stretch;flex-direction:column;padding:18px}.mentorship-footer .btn{text-align:center}}
+
+/* Compact, animated theme switch in the shared navbar. */
+.theme-toggle{position:relative;isolation:isolate;display:grid;width:42px;height:42px;flex:none;place-items:center;overflow:hidden;padding:0;border:1px solid #d7b796;border-radius:14px;background:linear-gradient(145deg,#fff,#fff0df);box-shadow:0 4px 10px #61320f1c,inset 0 1px 0 #fff;cursor:pointer;perspective:300px;transition:transform .2s,border-color .2s,box-shadow .2s}
+.theme-toggle:before{position:absolute;inset:-50%;z-index:-1;content:"";background:conic-gradient(from 0deg,transparent 0 65%,#ffc178a8 76%,transparent 88%);animation:theme-orbit 4.5s linear infinite}
+.theme-toggle:after{position:absolute;inset:2px;z-index:-1;border-radius:11px;background:linear-gradient(145deg,#fffaf4,#ffe5ca);content:""}
+.theme-toggle:hover{transform:translateY(-2px) rotateX(8deg);border-color:#d67b37;box-shadow:0 8px 16px #8f42002a,inset 0 1px 0 #fff}
+.theme-toggle-visual{display:grid;place-items:center;font-size:1.2rem;filter:drop-shadow(0 3px 3px #5a351f45);transform:translateZ(12px);animation:theme-emoji-float 2.8s ease-in-out infinite}
+.theme-toggle:focus-visible{outline:3px solid #d85a0b66;outline-offset:3px}
+@keyframes theme-orbit{to{transform:rotate(360deg)}}
+@keyframes theme-emoji-float{0%,100%{transform:translateY(1px) rotateY(-12deg) rotateZ(-5deg)}50%{transform:translateY(-2px) rotateY(12deg) rotateZ(5deg)}}
+@media(max-width:900px){.hamburger{margin-left:0}.theme-toggle{margin-left:auto}.nav.open{background:#fff;border-color:#eee8e3}}
+
+/* Dark palette for all shared page sections and their light surfaces. */
+html.dark-theme{color-scheme:dark;--ink:#edf1f7;--muted:#aab4c3;--paper:#171c25;--navy:#171d28;background:#10141b;color:var(--ink)}
+html.dark-theme body{background:#10141b;color:var(--ink)}
+html.dark-theme .site-header{background:#111722f5;border-color:#303744}
+html.dark-theme .brand{color:#f4f5f7}
+html.dark-theme .nav a,html.dark-theme .nav-more summary{color:#d9dfeb}
+html.dark-theme .nav>a,html.dark-theme .nav-more>summary{background:linear-gradient(180deg,#202733,#191f29);border-color:#303a49;box-shadow:0 2px 8px #0003}
+html.dark-theme .nav>a:hover,html.dark-theme .nav-more>summary:hover,html.dark-theme .nav>a[aria-current=page],html.dark-theme .nav-more>summary[aria-current=page]{color:#ffd0a8;background:linear-gradient(135deg,#3b291f,#28212a);border-color:#925322}
+html.dark-theme .more-menu{background:linear-gradient(155deg,#202733,#171d27);border-color:#38404d}
+html.dark-theme .more-menu a{color:#e4e8ef}
+html.dark-theme .more-menu a:hover,html.dark-theme .more-menu a[aria-current=page]{background:#39291f;color:#ffd0a8}
+html.dark-theme .nav.open{background:#151b25;border-color:#303744;box-shadow:0 15px 24px #0006}
+html.dark-theme .theme-toggle{border-color:#3d4b68;background:linear-gradient(145deg,#202b42,#172033);box-shadow:0 5px 14px #0006,inset 0 1px 0 #ffffff20}
+html.dark-theme .theme-toggle:before{background:conic-gradient(from 0deg,transparent 0 60%,#7bc8ffbd 73%,#b28bff 80%,transparent 90%)}
+html.dark-theme .theme-toggle:after{background:linear-gradient(145deg,#283653,#182339)}
+html.dark-theme .hero,html.dark-theme .page-hero{background:linear-gradient(120deg,#1b202a,#121720 74%);color:var(--ink)}
+html.dark-theme .hero p,html.dark-theme .hero-meta,html.dark-theme .page-hero p{color:#b9c2d0}
+html.dark-theme .hero h1,html.dark-theme .hero h1 span{background-image:linear-gradient(112deg,#f4f1ed 0%,#f4f1ed 39%,#ef9855 45%,#fff5eb 50%,#e17a35 54%,#f4f1ed 61%,#f4f1ed 100%)}
+html.dark-theme .section,html.dark-theme .section-soft{background-color:#121720;background-image:linear-gradient(135deg,#171c25,#121720 70%);color:var(--ink)}
+html.dark-theme .card,html.dark-theme .program-card,html.dark-theme .program-content,html.dark-theme .mentorship-card,html.dark-theme .mentorship-footer,html.dark-theme .hero-image-note,html.dark-theme .stat{background:linear-gradient(145deg,#202733,#171d27);border-color:#35404e;color:#e8edf4;box-shadow:0 12px 28px #0004,inset 0 1px 0 #ffffff0b}
+html.dark-theme .card h3,html.dark-theme .program-content h3,html.dark-theme .mentorship-card h3{color:#f1f3f6}
+html.dark-theme .card p,html.dark-theme .program-content>p,html.dark-theme .program-content li,html.dark-theme .mentorship-card p,html.dark-theme .mentorship-footer>span,html.dark-theme .hero-image-note span{color:#b7c0ce}
+html.dark-theme .program-tags span{background:#2a2522;border-color:#6c492f;color:#ffce9f}
+html.dark-theme .mentorship-section{background:linear-gradient(145deg,#171c25,#11161e 75%)}
+html.dark-theme .mentorship-section:before{opacity:.28}
+html.dark-theme .field input,html.dark-theme .field select,html.dark-theme .field textarea,html.dark-theme .filter-row button{background:#1b222d;border-color:#3a4554;color:#eef2f7}
+html.dark-theme .field input::placeholder,html.dark-theme .field textarea::placeholder{color:#929eae}
+html.dark-theme .faq-item{border-color:#343d49}
+html.dark-theme .marquee{color:#bac4d2;border-color:#343d49}
+html.dark-theme .marquee strong{color:#f1c19b}
+html.dark-theme .mobile-bar{background:#151b25;border-color:#333d4b}
+html.dark-theme .mobile-bar a{color:#e6ebf2}
+html.dark-theme .cta-band{background:linear-gradient(130deg,#252d3a,#171d27)}
+html.dark-theme .demo-dialog{background:linear-gradient(150deg,#222a36,#171e29) padding-box,linear-gradient(145deg,#ff8735,#ffd8bb 55%,#f47721) border-box;color:#f2f4f7}
+html.dark-theme .demo-dialog>p,html.dark-theme .demo-dismiss{color:#b7c0ce}
+html.dark-theme .demo-benefit{background:linear-gradient(100deg,#30271f,#242933);border-color:#534130;color:#d5dbe4}
+html.dark-theme .site-footer{background:#0c1016}
+html.dark-theme .neet-page .section,html.dark-theme .neet-page .section-soft,html.dark-theme .neet-page main,html.dark-theme .neet-page .page-hero{background-color:#111a18;background-image:linear-gradient(130deg,#18251f,#11191a 70%)}
+html.dark-theme .neet-page .program-card,html.dark-theme .neet-page .program-content{background:linear-gradient(145deg,#1c2922,#151f1b);border-color:#365443}
+html.dark-theme .neet-page .program-art{background-image:radial-gradient(ellipse at 84% 42%,#4d8b6570,transparent 31%),linear-gradient(128deg,#1b3024,#15211c 58%,#1d2b22);color:#e1f5e7}
+html.dark-theme .neet-page .program-art-title,html.dark-theme .neet-page .program-art-brand,html.dark-theme .neet-page .program-art-caption,html.dark-theme .neet-page .program-content h3{color:#d9f1df}
+@media(prefers-reduced-motion:reduce){.theme-toggle:before,.theme-toggle-visual{animation:none}}
