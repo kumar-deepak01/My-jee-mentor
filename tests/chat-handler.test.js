@@ -6,7 +6,8 @@ const originalFetch = globalThis.fetch;
 const originalEnv = {
   AI_PROVIDER: process.env.AI_PROVIDER,
   AI_API_KEY: process.env.AI_API_KEY,
-  AI_MODEL: process.env.AI_MODEL
+  AI_MODEL: process.env.AI_MODEL,
+  AI_FALLBACK_MODEL: process.env.AI_FALLBACK_MODEL
 };
 
 const answers = new Map([
@@ -97,6 +98,43 @@ test('uses gemini-3.8-flash when AI_MODEL is not set', async () => {
   };
   await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'default-model-test'});
   assert.match(requestedUrl, /models\/gemini-3\.8-flash:generateContent/);
+});
+
+test('retries Gemini 429/503 responses twice, then uses the configured fallback model', async () => {
+  configureGemini();
+  process.env.AI_FALLBACK_MODEL = 'gemini-test-backup';
+  const requestedModels = [];
+  globalThis.fetch = async url => {
+    requestedModels.push(decodeURIComponent(url.match(/models\/([^:]+)/)[1]));
+    if (requestedModels.length <= 3) {
+      return new Response(JSON.stringify({error: {message: 'high demand'}}), {status: requestedModels.length === 1 ? 429 : 503});
+    }
+    return new Response(JSON.stringify({candidates: [{content: {parts: [{text: 'Backup response'}]}}]}), {status: 200});
+  };
+  const result = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'fallback-model-test'});
+  assert.equal(result.body.reply, 'Backup response');
+  assert.deepEqual(requestedModels, ['gemini-test-model', 'gemini-test-model', 'gemini-test-model', 'gemini-test-backup']);
+});
+
+test('retries truncated Gemini replies and sends the updated generation settings and prompt', async () => {
+  configureGemini();
+  let callCount = 0;
+  let requestBody;
+  globalThis.fetch = async (_url, options) => {
+    callCount += 1;
+    requestBody = JSON.parse(options.body);
+    const candidate = callCount === 1
+      ? {finishReason: 'MAX_TOKENS', content: {parts: [{text: 'partial'}]}}
+      : {finishReason: 'STOP', content: {parts: [{text: 'Complete answer'}]}};
+    return new Response(JSON.stringify({candidates: [candidate]}), {status: 200});
+  };
+  const result = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'max-tokens-test'});
+  assert.equal(result.body.reply, 'Complete answer');
+  assert.equal(callCount, 2);
+  assert.equal(requestBody.generationConfig.maxOutputTokens, 1024);
+  assert.equal(requestBody.generationConfig.thinkingConfig.thinkingBudget, 0);
+  assert.match(requestBody.system_instruction.parts[0].text, /3-5 short lines/);
+  assert.match(requestBody.system_instruction.parts[0].text, /Do not include a WhatsApp URL/);
 });
 
 test('debug diagnostics report config and test Gemini without exposing the API key', async () => {
