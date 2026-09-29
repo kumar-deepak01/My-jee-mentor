@@ -15,8 +15,9 @@ const allowed=(process.env.ALLOWED_ORIGIN||'http://localhost:3000').split(',').m
 app.use(cors({origin(origin,cb){if(!origin||allowed.includes(origin))return cb(null,true);return cb(new Error('Origin not allowed'))},credentials:true,methods:['GET','POST']}));
 app.use(express.json({limit:'20kb'}));app.use(cookieParser());
 app.get('/api/config',(req,res)=>res.json({turnstileSiteKey:process.env.TURNSTILE_SITE_KEY||''}));
-app.use('/api',leads);app.use(express.static(root,{extensions:['html'],index:'index.html',maxAge:process.env.NODE_ENV==='production'?'1d':0}));
+app.use('/api',leads);
 app.all('/api/chat',async(req,res)=>{try{const result=await handleChatRequest({method:req.method,body:req.body,ip:req.ip});res.set('Cache-Control','no-store').status(result.status).json(result.body);}catch{res.set('Cache-Control','no-store').status(200).json({reply:CHAT_FALLBACK});}});
+app.use(express.static(root,{extensions:['html'],index:'index.html',maxAge:process.env.NODE_ENV==='production'?'1d':0}));
 app.use((req,res)=>res.status(404).sendFile(path.join(root,'404.html')));
 app.use((err,req,res,next)=>{if(res.headersSent)return next(err);res.status(400).json({message:'Request could not be processed.'})});
 const port=Number(process.env.PORT)||3000;app.listen(port,'0.0.0.0',()=>console.log(`My JEE Mentor server listening on ${port}`));
