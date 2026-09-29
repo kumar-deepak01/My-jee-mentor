@@ -96,3 +96,14 @@ test('returns the fallback for an empty provider reply and overlong input', asyn
   assert.equal(long.body.reply, CHAT_FALLBACK);
   assert.equal(long.status, 400);
 });
+
+test('applies a per-IP request limit', async () => {
+  configureGemini();
+  installMockProvider();
+  let last;
+  for (let index = 0; index < 13; index += 1) {
+    last = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'rate-limit-test'});
+  }
+  assert.equal(last.status, 429);
+  assert.equal(last.body.reply, CHAT_FALLBACK);
+});
