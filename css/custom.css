@@ -92,3 +92,29 @@
 .courses-page .resource-card{display:flex;min-width:0}
 .courses-page .resource-card>.program-card{width:100%;height:100%}
 @media(max-width:640px){.program-grid,.courses-page .resource-grid{grid-template-columns:1fr;gap:18px}.program-art{min-height:164px;padding:18px}.program-art-title{font-size:2rem}.program-art-mark{right:9%;min-width:72px;min-height:72px;font-size:1.12rem}.program-content{padding:19px}.program-content>p{min-height:0}.program-content ul{gap:9px 10px}.program-content li{font-size:.78rem}}
+
+/* NEET program cards use a quiet medical-biology mint palette, with static detail only. */
+.neet-page .filter-row{display:none}
+.neet-page .resource-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.neet-page .resource-card{display:flex;min-width:0}
+.neet-page .resource-card>.program-card{width:100%;height:100%}
+.neet-page .program-card{border-color:#cde4d4;background:linear-gradient(155deg,#fff 0%,#f7fcf8 100%);box-shadow:0 12px 34px #174a2c13}
+.neet-page .program-card:hover{border-color:#83bd97;box-shadow:0 20px 40px #174a2c20}
+.neet-page .program-art{background-color:#edf8f0;background-image:radial-gradient(circle at 80% 32%,#9bd0a556 0 3px,transparent 4px),radial-gradient(circle at 86% 42%,#9bd0a54d 0 2px,transparent 3px),radial-gradient(circle at 75% 48%,#9bd0a54d 0 2px,transparent 3px),radial-gradient(ellipse at 84% 42%,#bfdfc65c,transparent 31%),linear-gradient(128deg,#edf8f0,#f9fcf8 58%,#e6f4ea);color:#174a34}
+.neet-page .program-art:before{border-color:#a9ceb5;border-radius:13px}
+.neet-page .program-art-brand{color:#276746}
+.neet-page .program-art-brand i{color:#57846a}
+.neet-page .program-art-title{color:#246342;text-shadow:0 2px 16px #7bb99426}
+.neet-page .program-art-caption{color:#47765a}
+.neet-page .program-art-mark{border-color:#9ac6a7;background:radial-gradient(circle at 35% 30%,#fff,#dcefe1 70%);box-shadow:0 0 28px #5b9c6b29,inset 0 0 20px #73aa7e21;color:#276746}
+.neet-page .program-art-orbit{border-color:#54936b42}
+.neet-page .program-content{background:linear-gradient(145deg,#fff 10%,#f7fcf8 100%)}
+.neet-page .program-tags span{border-color:#c6dfce;background:linear-gradient(135deg,#edf8f0,#fff);color:#276746}
+.neet-page .program-content li:before{background:linear-gradient(145deg,#71b585,#348255)}
+.neet-page .program-cta{border-color:#287247;background:linear-gradient(110deg,#ccebd4 0%,#83c697 48%,#39875a 100%);box-shadow:0 7px 16px #28724724,inset 0 1px 0 #fff;color:#153b27}
+.neet-page .program-cta:hover{filter:saturate(1.06) brightness(1.03);box-shadow:0 10px 22px #28724734,inset 0 1px 0 #fff}
+.neet-page .program-cta span{background:#174b32;color:#e4f5e8}
+.neet-page .program-foundation .program-art{background-image:radial-gradient(circle at 80% 32%,#8dc69c52 0 3px,transparent 4px),radial-gradient(circle at 86% 42%,#8dc69c45 0 2px,transparent 3px),radial-gradient(ellipse at 84% 42%,#c8e5cf75,transparent 31%),linear-gradient(128deg,#e9f6ed,#f7fcf8 58%,#deefe3)}
+.neet-page .program-one-to-one .program-art{background-image:radial-gradient(circle at 80% 32%,#85bda252 0 3px,transparent 4px),radial-gradient(circle at 86% 42%,#85bda245 0 2px,transparent 3px),radial-gradient(ellipse at 84% 42%,#d0eadd75,transparent 31%),linear-gradient(128deg,#edf8f4,#f9fcfa 58%,#e2f1e9)}
+.neet-page .program-ranker .program-art{background-image:radial-gradient(circle at 80% 32%,#8fbe6652 0 3px,transparent 4px),radial-gradient(circle at 86% 42%,#8fbe6645 0 2px,transparent 3px),radial-gradient(ellipse at 84% 42%,#d4e8bc75,transparent 31%),linear-gradient(128deg,#f0f7e9,#fbfcf8 58%,#e7f0d7)}
+@media(max-width:640px){.neet-page .resource-grid{grid-template-columns:1fr;gap:18px}}
