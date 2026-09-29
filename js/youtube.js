@@ -1,0 +1,2 @@
+// Use click-to-load embeds to avoid loading third-party video resources before user intent.
+document.querySelectorAll('[data-youtube]').forEach(button=>button.addEventListener('click',()=>{const id=button.dataset.youtube;if(!/^[\w-]{11}$/.test(id))return;const frame=document.createElement('iframe');frame.src=`https://www.youtube-nocookie.com/embed/${id}?autoplay=1`;frame.title=button.dataset.title||'My JEE Mentor class';frame.loading='lazy';frame.allow='accelerometer; autoplay; encrypted-media; picture-in-picture';frame.allowFullscreen=true;button.replaceWith(frame)}));

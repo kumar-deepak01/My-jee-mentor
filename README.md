@@ -1,0 +1,59 @@
+﻿# My JEE Mentor
+
+Responsive multi-page website for JEE, NEET and Foundation coaching. Pages use semantic HTML shells with shared ES modules and CSS. The lead API stores enquiries in SQLite using prepared statements.
+
+## Local setup
+
+1. Install Node.js 20 or newer.
+2. Copy `.env.example` to `.env` and configure the values. Set `ALLOWED_ORIGIN` to the exact origin used in your browser.
+3. Install dependencies: `npm install`.
+4. Compile Tailwind: `npm run build:css`.
+5. Start locally: `npm run dev`; visit `http://localhost:3000`.
+
+SQLite creates `data/leads.sqlite` on the first API request. Production must set `NODE_ENV=production`, a strong Cloudflare Turnstile site key and secret, an HTTPS origin, and the public WhatsApp number. The site intentionally does not ship a sample database or credentials.
+
+## Pages
+
+Home, JEE, NEET, Foundation, courses, JEE Booster detail, results, faculty, why us, reviews, resources, contact, 404, privacy, terms and refund pages are included. Static `.html` links work directly; Express also resolves extensionless URLs. Replace placeholder contact details and confirm the canonical domain before launch.
+
+## Deployment
+
+### VPS with Nginx
+
+Run `npm ci && npm run build:css`, then run `npm start` under a process manager such as systemd or PM2. Keep Node bound behind Nginx, terminate TLS with a valid certificate, and proxy to `127.0.0.1:3000` with `X-Forwarded-Proto` and `X-Forwarded-For`. Persist `data/` across deployments and restrict it to the application user. Set `.env` values through the host secret manager. Configure DNS and point Search Console to the verified domain.
+
+### Render
+
+Create a Node web service with build command `npm ci && npm run build:css` and start command `npm start`. Add all `.env` values in Render's secret environment settings. Attach a persistent disk and set `DATABASE_PATH` to a file on that disk; SQLite is intended for a modest single-instance deployment. Use managed PostgreSQL and a parameterized driver/ORM before scaling to multiple instances.
+
+### Vercel
+
+The Express server and SQLite file are not a suitable serverless persistence configuration. Deploy the static pages to Vercel and move `/api/leads` to a Vercel function backed by managed PostgreSQL (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
+
+## Database schema
+
+`server/db.js` creates `leads` with `id`, student/parent names, phone and WhatsApp, class, exam, target year, current coaching, preferred subject, city, language, message and a server-generated timestamp. All values use a prepared insert statement.
+
+## Security checklist
+
+- HTTPS redirect, Helmet headers and a restrictive Content Security Policy are configured for Express.
+- CORS is restricted to `ALLOWED_ORIGIN`; request size is capped; the lead route uses rate limiting, a honeypot, CSRF double-submit token, server-side field validation and optional Turnstile verification.
+- SQLite writes are parameterized; database and secrets remain server-side; generic API errors avoid exposing internals.
+- Keep dependencies updated and run `npm audit` before each production release. Back up and restrict the database file; add retention/deletion procedures for personal data.
+- Set Turnstile keys and validate behavior on the production domain. Configure a privacy-compliant analytics consent policy before enabling GA4 or Meta Pixel.
+
+## Replace before launch
+
+- Phone, WhatsApp, email, office location and map query.
+- Faculty names, qualifications, experience and previous institutes (verify every claim).
+- Results, ranks/scores and student stories only after verification and consent.
+- Testimonials and video IDs after consent; current social links are generic destinations.
+- Program calendars, batch sizes, subject fees and full fee structure.
+- Domain, SEO descriptions, Open Graph artwork, organization details and analytics IDs.
+- Turnstile credentials, production origin and legal policy wording reviewed for the operating business.
+
+The home hero image is a locally stored Pexels photo by Katerina Holmes, available on Pexels' free-to-use license: https://www.pexels.com/photo/crop-black-female-teacher-teaching-kids-remotely-on-laptop-5905964/ . It shows two learners on screen; the “up to 10” note describes the stated batch cap, not the number of people pictured.
+
+## Current limitations
+
+The course/results/faculty/review/resource grids use clearly identified placeholder content. No admin panel, email notifications, Google Sheets integration, GA4 or Meta Pixel IDs are configured. The 3D hero has a CSS fallback and conditionally loads a lightweight Three.js particle scene; third-party video embeds are click-to-load.

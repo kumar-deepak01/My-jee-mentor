@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 300" role="img" aria-labelledby="title">
+  <title id="title">Human heart diagram showing four chambers and major vessels</title>
+  <defs>
+    <linearGradient id="myocardium" x1=".12" y1="0" x2=".9" y2="1"><stop stop-color="#ffd2c4"/><stop offset=".45" stop-color="#ef8d83"/><stop offset="1" stop-color="#bf4050"/></linearGradient>
+    <linearGradient id="oxygenated" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff9e83"/><stop offset="1" stop-color="#c52d47"/></linearGradient>
+    <linearGradient id="deoxygenated" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9bd4e8"/><stop offset="1" stop-color="#397fae"/></linearGradient>
+    <filter id="depth" x="-25%" y="-20%" width="155%" height="155%"><feDropShadow dx="3" dy="6" stdDeviation="5" flood-color="#642b37" flood-opacity=".22"/></filter>
+  </defs>
+  <g filter="url(#depth)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 75C91 57 78 31 87 14c7-13 24-12 31 0l13 24 9-21c7-15 29-11 31 5 2 17-9 35-24 53" fill="none" stroke="url(#oxygenated)" stroke-width="19"/>
+    <path d="M111 69C94 49 69 47 56 59M151 69c19-22 40-21 53-9" fill="none" stroke="url(#deoxygenated)" stroke-width="15"/>
+    <path d="M90 77c-7-20-24-28-37-20M88 84c-9 16-10 29-7 43" fill="none" stroke="#438eb9" stroke-width="15"/>
+    <path d="M125 64c-40-31-90-9-84 40 6 49 48 104 86 145 37-40 83-98 87-146 4-50-48-68-89-39Z" fill="url(#myocardium)" stroke="#ac4854" stroke-width="4"/>
+    <path d="M128 72v164M51 122c24-6 45 0 69 20v76M207 120c-24-6-47 1-77 22v77" fill="none" stroke="#fff0e8" stroke-width="5" opacity=".9"/>
+    <path d="M53 121c16-11 42-9 67 9v34c-22-14-44-15-62-7-5-12-7-24-5-36Zm74 9c25-18 53-19 80-8 0 13-3 26-8 38-25-10-49-6-72 10Zm-69 28c20-11 42-7 62 8v70c-25-22-47-49-62-78Zm74 8c22-15 43-18 65-10-16 30-39 57-65 80Z" fill="#fff9f5" fill-opacity=".32" stroke="#b94753" stroke-opacity=".36" stroke-width="2"/>
+    <path d="M128 236c-1-28-1-45 0-72m-2-14-10-10m13 12 12-11" fill="none" stroke="#a53545" stroke-width="5"/>
+  </g>
+  <g font-family="Arial,sans-serif" font-size="10" font-weight="700" fill="#263747"><text x="38" y="120">RA</text><text x="65" y="193">RV</text><text x="169" y="121">LA</text><text x="162" y="194">LV</text></g>
+</svg>

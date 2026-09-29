@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Labeled schematic lungs and trachea">
+ <path d="M84 22v65M96 22v65M90 25v60" fill="none" stroke="#438b68" stroke-width="8" stroke-linecap="round"/>
+ <path d="M88 76 63 99M92 76l25 23" fill="none" stroke="#438b68" stroke-width="6" stroke-linecap="round"/>
+ <path d="M76 67C57 65 30 89 24 125c-5 31 15 40 36 29 19-10 25-34 25-59V75zM104 67c19-2 46 22 52 58 5 31-15 40-36 29-19-10-25-34-25-59V75z" fill="#f5a7a0" stroke="#b94c57" stroke-width="4"/>
+ <path d="M40 120c13 0 23-5 35-16M140 120c-13 0-23-5-35-16" fill="none" stroke="#fff0e8" stroke-width="4" stroke-linecap="round"/>
+ <path d="M60 157h60" stroke="#58736b" stroke-width="3" stroke-linecap="round"/><text x="90" y="174" text-anchor="middle" font-family="Arial" font-size="11" fill="#35584a">LUNGS · GAS EXCHANGE</text>
+</svg>

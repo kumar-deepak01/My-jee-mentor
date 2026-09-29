@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Schematic kidney and nephron diagram">
+ <path d="M105 25c-36-16-68 12-68 51 0 34 18 72 48 75 18 2 29-13 26-29-2-13-16-18-14-33 2-17 23-21 27-39 5-19-3-35-19-25z" fill="#cb6867" stroke="#93434b" stroke-width="5"/>
+ <path d="M107 55c-18 4-29 20-27 38 2 15 17 20 17 35" fill="none" stroke="#f5c4a9" stroke-width="7" stroke-linecap="round"/>
+ <path d="M90 126c2 17 1 23 1 31" fill="none" stroke="#d6a44d" stroke-width="5" stroke-linecap="round"/>
+ <path d="M119 71c19-8 26-2 29 8s-5 18-16 20-14 12-9 21" fill="none" stroke="#f3d77f" stroke-width="4" stroke-linecap="round"/>
+ <circle cx="137" cy="76" r="5" fill="#b75558"/><text x="90" y="174" text-anchor="middle" font-family="Arial" font-size="11" fill="#624448">KIDNEY · NEPHRON</text>
+</svg>
