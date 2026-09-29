@@ -72,3 +72,7 @@ popup?.addEventListener('click',event=>{if(event.target===popup)closePopup()});
 popup?.querySelector('.demo-whatsapp')?.addEventListener('click',closePopup);
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&popup&&!popup.hidden)closePopup()});
 if(popup)setTimeout(()=>{popup.hidden=false;document.body.classList.add('popup-open');popup.querySelector('.demo-close').focus()},3000);
+
+const loadPriyaChat=()=>import('/js/chat-widget.js').catch(()=>{});
+if('requestIdleCallback' in window)requestIdleCallback(loadPriyaChat,{timeout:1800});
+else setTimeout(loadPriyaChat,900);
