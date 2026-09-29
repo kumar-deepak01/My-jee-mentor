@@ -87,6 +87,18 @@ test('answers greetings without calling the AI provider', async () => {
   assert.match(result.body.reply, /Namaste! Main Priya/);
 });
 
+test('uses gemini-3.8-flash when AI_MODEL is not set', async () => {
+  configureGemini();
+  delete process.env.AI_MODEL;
+  let requestedUrl;
+  globalThis.fetch = async url => {
+    requestedUrl = url;
+    return new Response(JSON.stringify({candidates: [{content: {parts: [{text: 'Test reply'}]}}]}), {status: 200});
+  };
+  await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'default-model-test'});
+  assert.match(requestedUrl, /models\/gemini-3\.8-flash:generateContent/);
+});
+
 test('debug diagnostics report config and test Gemini without exposing the API key', async () => {
   configureGemini();
   let requestHeaders;

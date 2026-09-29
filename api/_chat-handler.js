@@ -6,7 +6,7 @@ const KNOWLEDGE_PATH = path.join(process.cwd(), 'knowledge', 'mentor-data.md');
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT = 12;
 const REQUEST_TIMEOUT_MS = 15_000;
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
 const rateBuckets = new Map();
 let knowledgePromise;
 
