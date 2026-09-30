@@ -70,7 +70,7 @@ function requiredEmail(value){
   const email=normalizeEmail(value);
   if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new HttpError(400,'INVALID_EMAIL','Enter a valid email address.');
   const allowed=(process.env.FACULTY_ALLOWED_EMAILS||'').split(',').map(normalizeEmail).filter(Boolean);
-  if(allowed.length&&!allowed.includes(email))throw new HttpError(403,'EMAIL_NOT_ALLOWED','This email is not approved for faculty access.');
+  if(process.env.NODE_ENV==='production'&&!allowed.length)throw new HttpError(503,'FACULTY_ALLOWLIST_REQUIRED','Faculty email access has not been configured yet. Contact the site administrator.');if(allowed.length&&!allowed.includes(email))throw new HttpError(403,'EMAIL_NOT_ALLOWED','This email is not approved for faculty access.');
   return email;
 }
 
@@ -225,7 +225,7 @@ export async function handleFacultyRequest(request){
     }
     if(request.method!=='POST')return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
     enforceOrigin(request);
-    if(action==='logout')return json({ok:true},{headers:{'set-cookie':sessionCookie(request,'',0)}});
+    if(action==='logout')return json({ok:true},200,{'set-cookie':sessionCookie(request,'',0)});
     if(action==='signup-request'){
       const body=await request.json(),email=requiredEmail(body.email),password=requiredPassword(body.password),passwordHash=await hashPassword(password);
       await sendSignupOtp(email,passwordHash);return json({ok:true,message:'Verification code sent.'},202);
@@ -237,6 +237,7 @@ export async function handleFacultyRequest(request){
       const body=await request.json(),email=requiredEmail(body.email),password=requiredPassword(body.password);rateLimit(`login:${email}`,10,15*60*1000);return await login(email,password,request);
     }
     if(action==='upload'){
+      if(!facultySession(request))throw new HttpError(401,'UNAUTHORIZED','Please log in to upload a resource.');
       const form=await request.formData();return await uploadLocalResource(request,form);
     }
     if(action==='publish-drive'){
