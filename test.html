@@ -53,8 +53,8 @@
       <h1>Welcome, student</h1>
       <p class="sub">Enter your test credentials to continue.</p>
       <form id="loginForm" novalidate>
-        <div class="field" id="fUser"><label for="userId">User ID</label><input id="userId" name="userId" type="text" placeholder="Enter your user ID" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
-        <div class="field" id="fPw"><label for="pw">Password</label><input id="pw" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required></div>
+        <div class="field" id="fUser"><label for="userId">User ID</label><input id="userId" name="userId" type="text" placeholder="Enter your user ID" autocomplete="off" autocapitalize="none" spellcheck="false" required></div>
+        <div class="field" id="fPw"><label for="pw">Password</label><input id="pw" name="password" type="password" placeholder="Enter your password" autocomplete="off" required></div>
         <p class="message" id="loginMessage" role="alert" aria-live="polite"></p>
         <div class="buttonZone"><button class="loginBtn" id="loginBtn" type="submit"><span>Enter Test</span><span class="buttonArrow" aria-hidden="true">→</span></button></div>
       </form>
