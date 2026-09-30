@@ -8,24 +8,24 @@ This file records information currently displayed in the project’s public page
 - Tagline: “Concept First. Rank Next.”
 - Programs shown on the site: JEE, NEET, and Foundation.
 - The site describes live interactive classes, personal mentorship, regular tests and DPPs, small-batch learning, progress tracking, and parent updates.
-- Mentorship copy says each batch of up to 10 students gets a dedicated mentor. Premium Batch is marked maximum 5 students. Foundation Batch and Ranker Batch are each marked maximum 10 students. These are program descriptions shown on the site, not a claim that every batch has those sizes.
+- Mentorship copy says each batch of up to 10 students gets a dedicated mentor. Personal Mentorship Batch is marked maximum 5 students. Foundation Batch and Ranker Batch are each marked maximum 10 students. These are program descriptions shown on the site, not a claim that every batch has those sizes.
 
 ## Programs
 
 ### JEE
 
 - The site lists preparation for Classes 11 and 12, droppers, revision, booster, and subject-wise support.
-- Premium Batch — Personal Mentorship: marked “Premium” and “Max 5 Students”; copy mentions personal guidance for IIT-JEE success, one-to-one mentoring, direct teacher support, priority doubt solving, and weekly performance review.
+- Personal Mentorship Batch: marked “Max 5 Students”; copy mentions personal guidance for IIT-JEE success, one-to-one mentoring, direct teacher support, priority doubt solving, and weekly performance review.
 - Foundation Batch — Strong Concepts: marked Classes 8–12, Foundation, and Max 10 Students; copy mentions learning from basics, step-by-step teaching, regular practice and tests, doubt solving, and mentor guidance.
 - One to One Program: marked “1:1 Program” and “100% Personal”; copy mentions one student and one mentor, a custom learning plan, direct teacher support, and performance tracking.
-- Ranker Batch — IIT-JEE 2027: marked “Premium” and “Top 1%”; copy mentions advanced problem solving, personalised mentorship, weekly rank analysis, and a maximum of 10 students.
+- Ranker Batch — IIT-JEE 2027: marked “Top 1%”; copy mentions advanced problem solving, personalised mentorship, weekly rank analysis, and a maximum of 10 students.
 - The JEE Booster page mentions live classes, DPPs, homework, PYQs, regular tests, doubt support, mentorship, performance tracking, and parent updates. It says schedules and batch details are shared during counselling.
 
 ### NEET
 
 - NEET preparation is described as Physics, Chemistry, and Biology learning with regular practice and personal support.
 - The NEET page lists Classes 11 and 12, droppers, revision, booster, and subject-wise classes.
-- Its four program cards mirror Premium, Foundation, One to One, and Ranker programs, with NEET subject guidance. The Ranker card is titled “Ranker Batch — NEET 2027” and mentions advanced NEET problem solving, weekly rank analysis, and maximum 10 students.
+- Its four program cards mirror Personal Mentorship, Foundation, One to One, and Ranker programs, with NEET subject guidance. The Ranker card is titled “Ranker Batch — NEET 2027” and mentions advanced NEET problem solving, weekly rank analysis, and maximum 10 students.
 
 ### Foundation
 

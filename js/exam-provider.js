@@ -1,4 +1,4 @@
-// Integration seam for the premium assessment platform.
+// Integration seam for the assessment platform.
 // Later, adapt its official authentication SDK/API here; never hard-code student passwords.
 export async function authenticateExam(credentials){
   const provider=window.MyJeeExamProvider;
