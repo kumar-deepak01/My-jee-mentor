@@ -100,11 +100,11 @@ export async function handleFacultyRequest(request){
     const url=new URL(request.url),action=url.searchParams.get('action')||'';
     if(request.method==='GET'&&action==='resources'){blobConfig();const{items}=await readResources();return json({ok:true,resources:items.map(publicResource)});}
     if(request.method==='GET'&&action==='me')return json({ok:readSession(request)});
-    if(request.method!=='POST')return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
+    if(!['POST','PUT','PATCH'].includes(request.method))return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
     enforceOrigin(request);
-    if(action==='logout')return json({ok:true},200,{'set-cookie':cookie('',0)});
+    if(action==='logout'&&request.method==='POST')return json({ok:true},200,{'set-cookie':cookie('',0)});
     facultyConfig();
-    if(action==='login'){
+    if(action==='login'&&request.method==='POST'){
       const body=await request.json(),id=typeof body?.id==='string'?body.id.slice(0,200):'',password=typeof body?.password==='string'?body.password.slice(0,500):'';
       const key=lockKey(requesterIp(request),id);
       const idOk=safeEqual(id,process.env.FACULTY_ID),passwordOk=safeEqual(password,process.env.FACULTY_PASSWORD),valid=idOk&&passwordOk;
@@ -114,7 +114,7 @@ export async function handleFacultyRequest(request){
       return json({ok:true},200,{'set-cookie':cookie(makeSession())});
     }
     requireSession(request);
-    if(action==='add'){
+    if(action==='add'&&request.method==='POST'){
       const item=validateResource(await request.json());
       const items=await mutateResources(current=>{
         if(current.some(existing=>existing.driveId&&item.driveId?existing.driveId===item.driveId:existing.url===item.url))throw new ApiError(409,'DUPLICATE_RESOURCE','This Drive link has already been added.');
@@ -122,11 +122,26 @@ export async function handleFacultyRequest(request){
       });
       return json({ok:true,resource:publicResource(items[0]),resources:items.map(publicResource)},201);
     }
-    if(action==='delete'){
+    if(action==='delete'&&request.method==='POST'){
       const body=await request.json(),id=typeof body?.id==='string'?body.id:'';if(!/^[0-9a-f-]{36}$/i.test(id))throw new ApiError(400,'INVALID_RESOURCE_ID','Resource not found.');
       let removed=false;const items=await mutateResources(current=>current.filter(item=>{if(item.id===id){removed=true;return false}return true}));
       if(!removed)throw new ApiError(404,'RESOURCE_NOT_FOUND','Resource not found.');
       return json({ok:true,resources:items.map(publicResource)});
+    }
+    if(action==='update'&&['PUT','PATCH'].includes(request.method)){
+      const body=await request.json(),id=typeof body?.id==='string'?body.id:'';
+      if(!/^[0-9a-f-]{36}$/i.test(id))throw new ApiError(400,'INVALID_RESOURCE_ID','Resource not found.');
+      const validated=validateResource(body),updatedAt=new Date().toISOString();
+      let updated=false;
+      const items=await mutateResources(current=>{
+        const existing=current.find(item=>item.id===id);
+        if(!existing)throw new ApiError(404,'RESOURCE_NOT_FOUND','Resource not found.');
+        if(current.some(item=>item.id!==id&&(item.driveId&&validated.driveId?item.driveId===validated.driveId:item.url===validated.url)))throw new ApiError(409,'DUPLICATE_RESOURCE','This Drive link has already been added.');
+        updated=true;
+        return current.map(item=>item.id===id?{...item,title:validated.title,type:validated.type,driveId:validated.driveId,url:validated.url,folderOnly:validated.folderOnly,updatedAt}:item);
+      });
+      if(!updated)throw new ApiError(404,'RESOURCE_NOT_FOUND','Resource not found.');
+      return json({ok:true,resource:publicResource(items.find(item=>item.id===id)),resources:items.map(publicResource)});
     }
     throw new ApiError(404,'ACTION_NOT_FOUND','This faculty action is not available.');
   }catch(error){
