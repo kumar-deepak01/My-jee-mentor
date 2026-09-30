@@ -10,7 +10,7 @@ export function facultyStudentReviewMarkup(){return `<section class="faculty-rev
 
 function reviewCard(review,{share=false}={}){
   const id=escapeHtml(review.id),videoId=escapeHtml(review.videoId),title=escapeHtml(review.title),description=escapeHtml(review.description||'');
-  return `<article class="student-review-card review-reveal" data-review-card="${id}" data-video-id="${videoId}"><div class="student-review-media"><div class="review-thumb" data-review-thumb><img src="https://i.ytimg.com/vi/${videoId}/hqdefault.jpg" alt="" loading="lazy" data-review-thumbnail><div class="review-thumb-fallback"></div><button class="review-play-button" type="button" data-review-play="${id}" aria-label="Play ${title}"><span aria-hidden="true">▶</span></button></div></div><div class="student-review-copy"><h3>${title}</h3>${description?`<p>${description}</p>`:''}</div>${share?`<div class="student-review-card-actions"><button type="button" class="review-share-button" data-review-share="${id}">Share</button></div>`:''}</article>`;
+  return `<article class="student-review-card review-reveal" data-review-card="${id}" data-video-id="${videoId}" tabindex="0" aria-label="Student review: ${title}"><div class="student-review-media"><div class="review-thumb" data-review-thumb><img src="https://i.ytimg.com/vi/${videoId}/hqdefault.jpg" alt="" loading="lazy" data-review-thumbnail><div class="review-thumb-fallback"></div><button class="review-play-button" type="button" data-review-play="${id}" aria-label="Play ${title}"><span aria-hidden="true">▶</span></button></div></div><div class="student-review-copy"><h3>${title}</h3>${description?`<p>${description}</p>`:''}</div>${share?`<div class="student-review-card-actions"><button type="button" class="review-share-button" data-review-share="${id}">Share</button></div>`:''}</article>`;
 }
 
 async function apiRequest(action='',options={}){
@@ -91,8 +91,10 @@ export function initStudentReviews(){
     const play=event.target.closest('[data-review-play]'),stop=event.target.closest('[data-review-stop]'),share=event.target.closest('[data-review-share]');
     if(stop){event.preventDefault();stopPlaying();return}
     if(play){const review=reviews.find(item=>item.id===play.dataset.reviewPlay);if(review)playVideo(review);return}
+    const card=event.target.closest('[data-review-card]');if(card&&!event.target.closest('button,a,iframe')){const review=reviews.find(item=>item.id===card.dataset.reviewCard);if(review)playVideo(review);return}
     if(share){const review=reviews.find(item=>item.id===share.dataset.reviewShare);if(review)shareReview(review)}
   });
+  document.addEventListener('keydown',event=>{const card=event.target.closest('[data-review-card]');if(card&&(event.key==='Enter'||event.key===' ')){if(event.target.closest('button,a'))return;event.preventDefault();const review=reviews.find(item=>item.id===card.dataset.reviewCard);if(review)playVideo(review)}});
   document.querySelector('[data-review-search]')?.addEventListener('input',()=>{stopPlaying();renderViews()});
   loadStudentReviews();
 }
