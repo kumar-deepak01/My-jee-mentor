@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10100d">
+  <meta name="description" content="My JEE Mentor online exam login">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Online Exam Login | My JEE Mentor</title>
+  <link rel="stylesheet" href="/css/test.css">
+  <script type="module" src="/js/test.js"></script>
+</head>
+<body>
+  <main class="exam-stage">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <section class="exam-intro" aria-label="Exam portal introduction">
+      <div class="exam-label"><span></span> MY JEE MENTOR <span class="label-divider">/</span> ONLINE EXAM</div>
+      <h1>Enter with focus.<br><em>Leave with progress.</em></h1>
+      <p>Your quiet space for a focused practice session.</p>
+      <div class="paper-scene" aria-hidden="true">
+        <div class="paper-shadow"></div>
+        <div class="exam-paper">
+          <div class="paper-top"><i></i><i></i><i></i><b>QUESTION PAPER</b></div>
+          <div class="paper-rule"></div>
+          <span class="paper-number">01</span>
+          <strong>If f(x) = x² + 3x + 2</strong>
+          <span>Find&nbsp; f(x + 1) − f(x − 1)</span>
+          <div class="paper-answer">f(x + 1) − f(x − 1) = ?</div>
+          <div class="paper-lines"><i></i><i></i><i></i></div>
+          <span class="paper-stamp">FOCUS<br>MODE</span>
+        </div>
+        <div class="desk-light"></div>
+      </div>
+      <div class="exam-footnote"><span class="footnote-mark">✦</span> Take a breath. Read each question carefully.</div>
+    </section>
+
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="logo-surface"><img src="/assets/my-jee-mentor-logo.svg" alt="My JEE Mentor" width="526" height="144"></div>
+      <div class="login-kicker"><span class="lock-mark" aria-hidden="true">⌑</span> SECURE EXAM PORTAL</div>
+      <h2 id="login-title">Welcome, student</h2>
+      <p class="login-intro">Enter your exam credentials to continue.</p>
+
+      <form class="login-form" novalidate>
+        <div class="login-field" id="user-field">
+          <label for="user-id">User ID</label>
+          <input id="user-id" name="userId" type="text" placeholder="Enter your user ID" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+        </div>
+        <div class="login-field" id="password-field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+        </div>
+        <p class="login-message" role="alert" aria-live="polite"></p>
+        <div class="submit-zone">
+          <button class="login-submit" type="submit"><span>Login</span><span aria-hidden="true">↗</span></button>
+        </div>
+      </form>
+      <div class="panel-bottom"><span class="status-dot"></span> Exam environment <span class="panel-separator">·</span> Stay focused</div>
+    </section>
+    <div class="stage-grain" aria-hidden="true"></div>
+  </main>
+</body>
+</html>
