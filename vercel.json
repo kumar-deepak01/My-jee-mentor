@@ -6,6 +6,9 @@
     },
     "api/faculty.js": {
       "maxDuration": 30
+    },
+    "api/student-reviews.js": {
+      "maxDuration": 30
     }
   }
 }
