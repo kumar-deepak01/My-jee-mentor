@@ -273,8 +273,11 @@ html.dark-theme .faculty-auth-card,html.dark-theme .faculty-resource-row{backgro
 .student-review-card{min-width:0;overflow:hidden;align-self:stretch;border:1px solid #ffffff1c;border-radius:20px;background:linear-gradient(145deg,#ffffff12,#ffffff05);box-shadow:0 18px 42px #0005;backdrop-filter:blur(14px);color:#f7f4ef;scroll-snap-align:center;transform:translateY(10px) scale(.965);transition:transform .35s ease,border-color .3s,box-shadow .3s,opacity .35s;opacity:0}
 .student-review-card.is-visible{opacity:1;transform:translateY(0) scale(.965);transition-delay:var(--review-delay,0ms)}
 .student-review-card.is-centered{transform:translateY(-5px) scale(1.015);border-color:#f5a63c9c;box-shadow:0 25px 55px #0007,0 0 26px #f09a2c16}
+.student-review-card.is-playing,.student-review-grid .student-review-card.is-playing{transform:translateY(-3px) scale(1.02);border-color:#f5a63c;box-shadow:0 22px 55px #0008,0 0 30px #f09a2c24}
+.student-review-card:not(.review-skeleton){position:relative}.student-review-card:not(.review-skeleton):before{position:absolute;z-index:3;inset:-80% auto -80% -65%;width:38%;transform:rotate(22deg) translateX(-240%);background:linear-gradient(90deg,transparent,#ffffff24,transparent);content:"";pointer-events:none}.student-review-card:not(.review-skeleton):hover:before{transform:rotate(22deg) translateX(700%);transition:transform .8s ease}
 .student-review-card.is-neighbor{transform:translateY(4px) rotateY(3deg) scale(.98)}
 .student-review-track.is-dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
+.student-review-card:focus-visible{outline:3px solid #f5a63c;outline-offset:3px}
 .student-review-media{position:relative;overflow:hidden;aspect-ratio:16/9;background:linear-gradient(135deg,#313541,#7e5331 52%,#151920)}
 .review-thumb{position:absolute;inset:0;overflow:hidden;cursor:pointer}
 .review-thumb:after{position:absolute;inset:0;background:linear-gradient(0deg,#090b10a8,transparent 60%);content:"";pointer-events:none}
@@ -294,4 +297,4 @@ html.dark-theme .faculty-auth-card,html.dark-theme .faculty-resource-row{backgro
 html.dark-theme .review-search{color:#edf0f4}html.dark-theme .review-search input{background:#171e28;border-color:#3b4655;color:#f2f4f7}html.dark-theme .faculty-review-manager{background:#171e28;border-color:#343d49;color:#edf0f4}
 @media(max-width:900px){.student-review-track{grid-auto-columns:calc((100% - 24px)/2)}.student-review-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.student-review-heading{align-items:start;flex-direction:column}.student-review-heading>.btn{align-self:flex-start}.student-review-track{grid-auto-columns:86%;gap:15px;padding-inline:9vw}.student-review-grid{grid-template-columns:1fr;gap:18px}.review-slider-arrow.prev{left:0}.review-slider-arrow.next{right:0}.faculty-review-manager{padding:16px}.review-play-button{width:56px;height:56px}}
-@media(prefers-reduced-motion:reduce){.student-review-card,.student-review-card.is-visible,.review-play-button,.review-thumb>img,.review-toast{transition:none}.skeleton-surface{animation:none}.student-review-track{scroll-behavior:auto}}
+@media(prefers-reduced-motion:reduce){.student-review-card,.student-review-card.is-visible,.review-play-button,.review-thumb>img,.review-toast,.student-review-card:before{transition:none;animation:none}.student-review-track{scroll-behavior:auto}}
