@@ -10,8 +10,11 @@ const TYPES=new Set(['PDF','PPT','Image','Doc']);
 class ApiError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code}}
 const json=(value,status=200,headers={})=>Response.json(value,{status,headers:{'cache-control':'no-store',...headers}});
 
-function blobConfig(){if(!process.env.BLOB_READ_WRITE_TOKEN)throw new ApiError(503,'BLOB_CONFIG_MISSING','Resource storage is not configured yet.')}
-function facultyConfig(){if(!process.env.FACULTY_ID||!process.env.FACULTY_PASSWORD||!process.env.FACULTY_SESSION_SECRET||process.env.FACULTY_SESSION_SECRET.length<32)throw new ApiError(503,'FACULTY_CONFIG_MISSING','Faculty login is not configured yet.');blobConfig()}
+function requireConfig(names){const missing=names.filter(name=>!process.env[name]||(name==='FACULTY_SESSION_SECRET'&&process.env[name].length<32));for(const name of missing)console.error(`Faculty configuration missing: ${name}`);if(missing.length)throw new ApiError(503,'FACULTY_CONFIG_MISSING','Faculty service is not configured yet.')}
+function blobConfig(){requireConfig(['BLOB_READ_WRITE_TOKEN'])}
+function facultyConfig(){requireConfig(['FACULTY_ID','FACULTY_PASSWORD','FACULTY_SESSION_SECRET','BLOB_READ_WRITE_TOKEN'])}
+function sanitizedErrorMessage(error){let message=String(error?.message||error||'Unknown error');for(const name of ['BLOB_READ_WRITE_TOKEN','FACULTY_ID','FACULTY_PASSWORD','FACULTY_SESSION_SECRET']){const secret=process.env[name];if(secret)message=message.split(secret).join('[redacted]')}return message.slice(0,1000)}
+export function logFacultyError(label,error){console.error(label,{name:String(error?.name||'Error'),message:sanitizedErrorMessage(error),...(error?.code?{code:String(error.code)}:{}),...(error?.status?{status:Number(error.status)}:{})})}
 function safeEqual(left,right){
   const a=createHash('sha256').update(String(left)).digest(),b=createHash('sha256').update(String(right)).digest();
   return timingSafeEqual(a,b)&&String(left).length===String(right).length;
@@ -36,7 +39,7 @@ function requesterIp(request){return(request.headers.get('x-forwarded-for')||req
 function lockKey(ip,id){return createHmac('sha256',process.env.FACULTY_SESSION_SECRET).update(`${ip}\0${id}`).digest('hex')}
 async function updateLoginAttempt(key,valid){
   for(let attempt=0;attempt<5;attempt++){
-    const stored=await get(LOGIN_LOCK_PATH,{access:'public',useCache:false});let locks={},etag=null;
+    const stored=await get(LOGIN_LOCK_PATH,{access:'private',token:process.env.BLOB_READ_WRITE_TOKEN,useCache:false});let locks={},etag=null;
     if(stored){if(stored.statusCode!==200||!stored.stream)throw new ApiError(503,'LOGIN_LOCK_READ_FAILED','Could not verify the login attempt limit.');try{locks=JSON.parse(await new Response(stored.stream).text())}catch{throw new ApiError(503,'LOGIN_LOCK_DATA_INVALID','Login protection data is invalid.')}if(!locks||Array.isArray(locks)||typeof locks!=='object')throw new ApiError(503,'LOGIN_LOCK_DATA_INVALID','Login protection data is invalid.');etag=stored.blob.etag}
     const now=Date.now();for(const[entryKey,entry]of Object.entries(locks))if(!entry||entry.expiresAt<now)delete locks[entryKey];
     const current=locks[key];if(current?.lockedUntil>now)return{locked:true};
@@ -48,7 +51,7 @@ async function updateLoginAttempt(key,valid){
       locks[key]=entry;
     }
     if(Object.keys(locks).length>5000)for(const oldKey of Object.keys(locks).slice(0,Object.keys(locks).length-5000))delete locks[oldKey];
-    try{await put(LOGIN_LOCK_PATH,JSON.stringify(locks),{access:'public',contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:Boolean(etag),...(etag?{ifMatch:etag}:{})});return{locked:false,blocked:Boolean(!valid&&locks[key]?.lockedUntil>now)}}
+    try{await put(LOGIN_LOCK_PATH,JSON.stringify(locks),{access:'private',token:process.env.BLOB_READ_WRITE_TOKEN,contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:Boolean(etag),...(etag?{ifMatch:etag}:{})});return{locked:false,blocked:Boolean(!valid&&locks[key]?.lockedUntil>now)}}
     catch(error){const collision=!etag&&/already.?exists|precondition/i.test(String(error?.name||error?.message));if((error instanceof BlobPreconditionFailedError||collision)&&attempt<4)continue;throw error}
   }
   throw new ApiError(409,'LOGIN_LOCK_CONFLICT','Could not safely update the login attempt limit. Try again.');
@@ -72,7 +75,7 @@ function validateResource(body){
   return{id:randomUUID(),title,type,driveId:link.driveId,url:link.url,createdAt:new Date().toISOString(),folderOnly:link.folderOnly};
 }
 async function readResources(){
-  const stored=await get(RESOURCE_PATH,{access:'public',useCache:false});
+  const stored=await get(RESOURCE_PATH,{access:'private',token:process.env.BLOB_READ_WRITE_TOKEN,useCache:false});
   if(!stored)return{items:[],etag:null};
   if(stored.statusCode!==200||!stored.stream)throw new ApiError(503,'RESOURCE_STORE_READ_FAILED','Could not read the resource list.');
   let items;try{items=JSON.parse(await new Response(stored.stream).text())}catch{throw new ApiError(503,'RESOURCE_STORE_INVALID','The stored resource list is invalid.')}
@@ -80,7 +83,7 @@ async function readResources(){
   return{items,etag:stored.blob.etag};
 }
 async function writeResources(items,etag){
-  return put(RESOURCE_PATH,JSON.stringify(items),{access:'public',contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:Boolean(etag),...(etag?{ifMatch:etag}:{})});
+  return put(RESOURCE_PATH,JSON.stringify(items),{access:'private',token:process.env.BLOB_READ_WRITE_TOKEN,contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:Boolean(etag),...(etag?{ifMatch:etag}:{})});
 }
 async function mutateResources(mutator){
   for(let attempt=0;attempt<5;attempt++){
@@ -128,7 +131,7 @@ export async function handleFacultyRequest(request){
     throw new ApiError(404,'ACTION_NOT_FOUND','This faculty action is not available.');
   }catch(error){
     if(error instanceof ApiError)return json({ok:false,code:error.code,message:error.message},error.status);
-    console.error('Faculty resource API error:',error?.name||'Error');
+    logFacultyError('Faculty resource API error:',error);
     return json({ok:false,code:'SERVICE_ERROR',message:'The faculty service is temporarily unavailable.'},500);
   }
 }
