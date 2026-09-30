@@ -252,3 +252,5 @@ html.dark-theme .shared-resources-section,html.dark-theme .faculty-portal-sectio
 
 .shared-resource-track.resource-full-grid{grid-auto-flow:initial;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-columns:unset;overflow:visible;scroll-snap-type:none}.resource-full-grid .resource-placeholder{display:none}
 @media(max-width:900px){.shared-resource-track.resource-full-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.shared-resource-track.resource-full-grid{grid-template-columns:1fr}}
+
+.upload-source>.drive-glyph{background:#fff}.drive-glyph svg{width:25px;height:23px;display:block}
