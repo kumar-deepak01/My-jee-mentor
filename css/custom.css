@@ -16,8 +16,9 @@
 @media(max-width:640px){.demo-overlay{padding:15px}.demo-dialog{padding:34px 20px 22px;border-radius:22px}.demo-close{top:10px;right:10px;width:35px;height:35px}.demo-icon{margin-top:8px}.demo-dialog>p{font-size:.94rem}.demo-benefit{font-size:.81rem}.demo-whatsapp{font-size:.97rem}.hero-image-wrap{transform:none}.hero-image-wrap:before{inset:8px -6px -7px 7px}.hero-image{border-width:6px}}
 :root{--orange:#c94d00;--orange-dark:#873300}
 .brand{color:#111}.brand-accent{color:var(--orange)}
-.brand-logo img{display:block;width:132px;height:auto;max-width:100%}
-@media(max-width:640px){.brand-logo img{width:122px}}
+.brand-logo img{display:block;width:160px;height:auto;max-width:100%;object-fit:contain}
+@media(max-width:900px){.brand-logo img{width:145px}}
+@media(max-width:640px){.brand-logo img{width:132px}}
 .hero{background:linear-gradient(118deg,#ffefe1 0%,#fff7ef 48%,#fff 100%)}.hero:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 88% 16%,#c94d0028,transparent 32%),radial-gradient(ellipse at 8% 92%,#d9651430,transparent 30%)}.hero-image-wrap{animation:hero-float 7s ease-in-out infinite}.hero-image-wrap:before{background:linear-gradient(145deg,#d85a0b,#8f3500 50%,#ffe8d7);border-color:#a94404;box-shadow:10px 12px 0 #8a340027,0 0 34px #c94d0022}.hero-image{opacity:.72;filter:saturate(.88) contrast(1.03)}.hero-image-wrap:after{background:linear-gradient(140deg,#fff6 0%,transparent 44%,#b94a0021 100%)}.btn-primary{background:linear-gradient(135deg,#d85a0b,#9f3b00);box-shadow:0 6px 16px #9f3b0040}.btn-primary:hover{background:linear-gradient(135deg,#b94a00,#792c00)}.hero h1 span,.brand-mark{color:#b94500}.eyebrow,.card .text-link,.demo-benefit span{color:#873300}.card-icon{color:#873300;background:linear-gradient(145deg,#ffead8,#ffd1ad);box-shadow:inset 0 1px 0 #fff,0 4px 10px #9e400015}.step:before{background:linear-gradient(145deg,#e46818,#963500);box-shadow:0 5px 12px #8b350035}.progress-bar{background:linear-gradient(90deg,#8c3200,#c94d00,#f28a3b)}
 @keyframes hero-float{0%,100%{transform:perspective(1100px) rotateY(-3deg) rotateX(1deg) translateY(0)}50%{transform:perspective(1100px) rotateY(-2deg) rotateX(1deg) translateY(-5px)}}
 @media(max-width:640px){.hero-image-wrap{animation:none}}
