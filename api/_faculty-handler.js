@@ -100,7 +100,7 @@ export async function handleFacultyRequest(request){
     const url=new URL(request.url),action=url.searchParams.get('action')||'';
     if(request.method==='GET'&&action==='resources'){blobConfig();const{items}=await readResources();return json({ok:true,resources:items.map(publicResource)});}
     if(request.method==='GET'&&action==='me')return json({ok:readSession(request)});
-    if(!['POST','PUT','PATCH'].includes(request.method))return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
+    if(!['POST','PUT','PATCH','DELETE'].includes(request.method))return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
     enforceOrigin(request);
     if(action==='logout'&&request.method==='POST')return json({ok:true},200,{'set-cookie':cookie('',0)});
     facultyConfig();
@@ -122,7 +122,7 @@ export async function handleFacultyRequest(request){
       });
       return json({ok:true,resource:publicResource(items[0]),resources:items.map(publicResource)},201);
     }
-    if(action==='delete'&&request.method==='POST'){
+    if(action==='delete'&&request.method==='DELETE'){
       const body=await request.json(),id=typeof body?.id==='string'?body.id:'';if(!/^[0-9a-f-]{36}$/i.test(id))throw new ApiError(400,'INVALID_RESOURCE_ID','Resource not found.');
       let removed=false;const items=await mutateResources(current=>current.filter(item=>{if(item.id===id){removed=true;return false}return true}));
       if(!removed)throw new ApiError(404,'RESOURCE_NOT_FOUND','Resource not found.');
