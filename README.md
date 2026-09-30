@@ -1,4 +1,4 @@
-Ôªø# My JEE Mentor
+# My JEE Mentor
 
 Responsive multi-page website for JEE, NEET and Foundation coaching. Pages use semantic HTML shells with shared ES modules and CSS. The lead API stores enquiries in SQLite using prepared statements.
 
@@ -10,11 +10,11 @@ Responsive multi-page website for JEE, NEET and Foundation coaching. Pages use s
 4. Compile Tailwind: `npm run build:css`.
 5. Start locally: `npm run dev`; visit `http://localhost:3000`.
 
-### Priya ‚Äî JEE Mentor AI chat
+### Priya ó JEE Mentor AI chat
 
 1. Copy `.env.example` to `.env.local` and set `AI_PROVIDER=gemini`, `AI_API_KEY` to a Google AI Studio key, `AI_MODEL=gemini-3.8-flash`, and `AI_FALLBACK_MODEL=gemini-2.5-flash-lite`. The fallback model can be changed in Vercel Environment Variables without a code change. The API key is server-only; `.env.local` is ignored by Git.
 2. Run `npm run dev` and open any page. Use the floating Priya button to ask about fees, faculty, or a demo. Run `npm test` for the mocked API checks, including unrelated questions and provider failure.
-3. In Vercel Project Settings ‚Üí Environment Variables, add `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL` for Production (and Preview if desired), then redeploy. The `/api/chat` function reads `knowledge/mentor-data.md`; `vercel.json` includes that file in the function bundle.
+3. In Vercel Project Settings ? Environment Variables, add `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL` for Production (and Preview if desired), then redeploy. The `/api/chat` function reads `knowledge/mentor-data.md`; `vercel.json` includes that file in the function bundle.
 
 The widget is dynamically loaded after the shared page script, and its styles are namespaced in `js/chat-widget.css`. Gemini is the default provider; OpenAI and Anthropic can be selected with `AI_PROVIDER` and a matching `AI_MODEL`.
 
@@ -45,11 +45,11 @@ The faculty portal is `/login.html`. Set these server-side Vercel Environment Va
 - `FACULTY_ID`: one fixed faculty login ID.
 - `FACULTY_PASSWORD`: its password.
 - `FACULTY_SESSION_SECRET`: random secret with at least 32 characters.
-- `BLOB_READ_WRITE_TOKEN`: Vercel Blob read/write token for the public JSON resource list.
+- `BLOB_READ_WRITE_TOKEN`: Vercel Blob read/write token for the private resource and login-lock JSON files.
 
-Credentials are read only by the API and are never placed in browser code. A successful login sets a signed, HttpOnly, Secure, SameSite=Lax cookie for seven days. Five failed attempts for the same IP and ID lock that IP+ID combination for 15 minutes; the hashed attempt state is stored in a second Blob JSON file so the lock is shared across Vercel function instances. Add `/api/faculty?action=resources` reads the Blob list without credentials. The local `.env` file is gitignored. Add and delete operations update the Blob JSON without a redeploy.
+Credentials are read only by the API and are never placed in browser code. Configure the Blob store as private; the API reads and writes both JSON files through the Blob SDK using `BLOB_READ_WRITE_TOKEN`. Browser pages get resource metadata only through `/api/faculty?action=resources` and never fetch a Blob URL. A successful login sets a signed, HttpOnly, Secure, SameSite=Lax cookie for seven days. Five failed attempts for the same IP and ID lock that IP+ID combination for 15 minutes; the hashed attempt state is stored in the private login-lock Blob JSON file so the lock is shared across Vercel function instances. The local `.env` file is gitignored. Add and delete operations update the Blob JSON without a redeploy.
 
-Faculty add a title (up to 80 characters), Google Drive link, and type. The link must be HTTPS from `drive.google.com` or `docs.google.com`; share the file as ‚ÄúAnyone with the link ‚Äì Viewer‚Äù. The public resource API returns the resource list only.
+Faculty add a title (up to 80 characters), Google Drive link, and type. The link must be HTTPS from `drive.google.com` or `docs.google.com`; share the file as ìAnyone with the link ñ Viewerî. The public resource API returns the resource list only.
 ### Vercel
 
 The new `/api/chat` route is a Vercel Node.js function. The Express server and SQLite file are not a suitable serverless persistence configuration for `/api/leads`; move that route to a Vercel function backed by a managed database (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
@@ -76,7 +76,7 @@ The new `/api/chat` route is a Vercel Node.js function. The Express server and S
 - Domain, SEO descriptions, Open Graph artwork, organization details and analytics IDs.
 - Turnstile credentials, production origin and legal policy wording reviewed for the operating business.
 
-The home hero image is a locally stored Pexels photo by Katerina Holmes, available on Pexels' free-to-use license: https://www.pexels.com/photo/crop-black-female-teacher-teaching-kids-remotely-on-laptop-5905964/ . It shows two learners on screen; the ‚Äúup to 10‚Äù note describes the stated batch cap, not the number of people pictured.
+The home hero image is a locally stored Pexels photo by Katerina Holmes, available on Pexels' free-to-use license: https://www.pexels.com/photo/crop-black-female-teacher-teaching-kids-remotely-on-laptop-5905964/ . It shows two learners on screen; the ìup to 10î note describes the stated batch cap, not the number of people pictured.
 
 ## Current limitations
 

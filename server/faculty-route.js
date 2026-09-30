@@ -1,4 +1,4 @@
-﻿import {handleFacultyRequest} from '../api/_faculty-handler.js';
+import {handleFacultyRequest,logFacultyError} from '../api/_faculty-handler.js';
 
 export default async function facultyRoute(req,res){
   try{
@@ -11,7 +11,7 @@ export default async function facultyRoute(req,res){
     response.headers.forEach((value,name)=>res.setHeader(name,value));
     res.status(response.status).send(Buffer.from(await response.arrayBuffer()));
   }catch(error){
-    console.error('Faculty Express adapter error:',error?.name||'Error');
+    logFacultyError('Faculty Express adapter error:',error);
     res.status(500).set('cache-control','no-store').json({ok:false,code:'SERVICE_ERROR',message:'The faculty service is temporarily unavailable.'});
   }
 }

@@ -1,4 +1,4 @@
-﻿import {handleFacultyRequest} from './_faculty-handler.js';
+import {handleFacultyRequest,logFacultyError} from './_faculty-handler.js';
 
 export default async function facultyHandler(req,res){
   try{
@@ -16,7 +16,7 @@ export default async function facultyHandler(req,res){
     res.statusCode=response.status;
     res.end(Buffer.from(await response.arrayBuffer()));
   }catch(error){
-    console.error('Faculty API adapter error:',error?.name||'Error');
+    logFacultyError('Faculty API adapter error:',error);
     res.statusCode=500;res.setHeader('cache-control','no-store');res.setHeader('content-type','application/json; charset=utf-8');
     res.end(JSON.stringify({ok:false,code:'SERVICE_ERROR',message:'The faculty service is temporarily unavailable.'}));
   }
