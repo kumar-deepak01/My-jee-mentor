@@ -260,7 +260,7 @@ html.dark-theme .faculty-auth-card,html.dark-theme .faculty-resource-row{backgro
 @media(max-width:800px){.resource-full-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:560px){.resource-library-tools{grid-template-columns:1fr}.faculty-resource-row{grid-template-columns:38px minmax(0,1fr) auto auto;gap:8px}.faculty-open-link{grid-column:2;grid-row:2}.faculty-edit{grid-column:3;grid-row:2}.faculty-delete{grid-column:4;grid-row:2}.resource-full-grid{grid-template-columns:1fr!important}.resource-viewer{padding:0}.resource-viewer-dialog{width:100%;height:100dvh;max-height:none;border:0;border-radius:0}.resource-viewer-head{padding:14px}.resource-viewer-head h2{font-size:17px}.resource-form-actions .btn{flex:1;min-width:125px}}
 
 /* Keep the home wordmark on one responsive line. */
-.hero h1{font-family:Inter,Arial,sans-serif;font-size:clamp(1.7rem,5.1vw,4.25rem);line-height:1.04;letter-spacing:-.055em;white-space:nowrap}
+.hero h1{font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:clamp(1.7rem,5.1vw,4.25rem);font-weight:900;font-kerning:normal;font-feature-settings:"kern" 1,"liga" 1;line-height:1.04;letter-spacing:-.06em;text-rendering:geometricPrecision;white-space:nowrap}
 .hero-inner>h2{display:table;margin:0 0 15px;padding:0 0 7px;border-bottom:2px solid #d85a0b}
 
 /* Student video reviews */
