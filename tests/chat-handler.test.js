@@ -11,7 +11,7 @@ const originalEnv = {
 };
 
 const answers = new Map([
-  ['Fees kya hai?', 'Site par subject-wise fees ₹3,000/month se start dikhayi gayi hai; yeh placeholder hai, final fee counsellor se confirm karein.'],
+  ['Program details?', 'Current program details ke liye counsellor ko call ya WhatsApp karein.'],
   ['Teacher kaun hain?', 'Faculty ke naam aur verified details abhi site par listed nahi hain. Aap counsellor se confirm kar sakte hain.'],
   ['Demo class chahiye', 'Haan, free demo class available hai. Demo book karne ke liye counsellor se contact karein.'],
   ['Is cricket score?', CHAT_FALLBACK]
@@ -47,10 +47,10 @@ afterEach(() => {
   resetChatRateLimitsForTests();
 });
 
-test('answers a fees question using the injected knowledge and warns that the displayed fee is a placeholder', async () => {
+test('routes program cost questions to a counsellor instead of publishing figures', async () => {
   configureGemini();
   const getBody = installMockProvider();
-  const result = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?', history: []}, ip: 'fees-test'});
+  const result = await handleChatRequest({method: 'POST', body: {message: 'Program details?', history: []}, ip: 'fees-test'});
   assert.equal(result.status, 200);
   assert.match(result.body.reply, /₹3,000\/month/);
   assert.match(result.body.reply, /placeholder/);
@@ -96,7 +96,7 @@ test('uses gemini-3.8-flash when AI_MODEL is not set', async () => {
     requestedUrl = url;
     return new Response(JSON.stringify({candidates: [{content: {parts: [{text: 'Test reply'}]}}]}), {status: 200});
   };
-  await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'default-model-test'});
+  await handleChatRequest({method: 'POST', body: {message: 'Program details?'}, ip: 'default-model-test'});
   assert.match(requestedUrl, /models\/gemini-3\.8-flash:generateContent/);
 });
 
@@ -111,7 +111,7 @@ test('retries Gemini 429/503 responses twice, then uses the configured fallback 
     }
     return new Response(JSON.stringify({candidates: [{content: {parts: [{text: 'Backup response'}]}}]}), {status: 200});
   };
-  const result = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'fallback-model-test'});
+  const result = await handleChatRequest({method: 'POST', body: {message: 'Program details?'}, ip: 'fallback-model-test'});
   assert.equal(result.body.reply, 'Backup response');
   assert.deepEqual(requestedModels, ['gemini-test-model', 'gemini-test-model', 'gemini-test-model', 'gemini-test-backup']);
 });
@@ -128,7 +128,7 @@ test('retries truncated Gemini replies and sends the updated generation settings
       : {finishReason: 'STOP', content: {parts: [{text: 'Complete answer'}]}};
     return new Response(JSON.stringify({candidates: [candidate]}), {status: 200});
   };
-  const result = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'max-tokens-test'});
+  const result = await handleChatRequest({method: 'POST', body: {message: 'Program details?'}, ip: 'max-tokens-test'});
   assert.equal(result.body.reply, 'Complete answer');
   assert.equal(callCount, 2);
   assert.equal(requestBody.generationConfig.maxOutputTokens, 1024);
@@ -158,7 +158,7 @@ test('debug diagnostics report config and test Gemini without exposing the API k
 test('returns the fallback when the AI provider fails', async () => {
   configureGemini();
   globalThis.fetch = async () => { throw new Error('simulated provider outage'); };
-  const result = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'failure-test'});
+  const result = await handleChatRequest({method: 'POST', body: {message: 'Program details?'}, ip: 'failure-test'});
   assert.equal(result.status, 200);
   assert.equal(result.body.reply, CHAT_FALLBACK);
 });
@@ -166,7 +166,7 @@ test('returns the fallback when the AI provider fails', async () => {
 test('returns the fallback for an empty provider reply and overlong input', async () => {
   configureGemini();
   globalThis.fetch = async () => new Response(JSON.stringify({candidates: [{content: {parts: []}}]}), {status: 200});
-  const empty = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'empty-test'});
+  const empty = await handleChatRequest({method: 'POST', body: {message: 'Program details?'}, ip: 'empty-test'});
   const long = await handleChatRequest({method: 'POST', body: {message: 'x'.repeat(501)}, ip: 'long-test'});
   assert.equal(empty.body.reply, CHAT_FALLBACK);
   assert.equal(long.body.reply, CHAT_FALLBACK);
@@ -178,7 +178,7 @@ test('applies a per-IP request limit', async () => {
   installMockProvider();
   let last;
   for (let index = 0; index < 13; index += 1) {
-    last = await handleChatRequest({method: 'POST', body: {message: 'Fees kya hai?'}, ip: 'rate-limit-test'});
+    last = await handleChatRequest({method: 'POST', body: {message: 'Program details?'}, ip: 'rate-limit-test'});
   }
   assert.equal(last.status, 429);
   assert.equal(last.body.reply, CHAT_FALLBACK);

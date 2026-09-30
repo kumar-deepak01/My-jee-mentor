@@ -135,7 +135,7 @@
       const card = document.createElement('div');
       card.className = 'jma-whatsapp-card';
       const copy = document.createElement('p');
-      copy.textContent = 'WhatsApp par counsellor se program details, demo aur doubts ke baare mein baat karein.';
+      copy.textContent = 'WhatsApp par counsellor se program details aur demo ke baare mein baat karein.';
       const link = document.createElement('a');
       link.href = WHATSAPP_URL;
       link.target = '_blank';
@@ -147,7 +147,7 @@
       const card = document.createElement('div');
       card.className = 'jma-whatsapp-card jma-whatsapp-inline';
       const copy = document.createElement('p');
-      copy.textContent = '📱 Counsellor se WhatsApp par directly baat karein.';
+      copy.textContent = 'WhatsApp par counsellor se program details aur demo ke baare mein baat karein.';
       const link = document.createElement('a');
       link.href = WHATSAPP_URL;
       link.target = '_blank';
@@ -251,7 +251,7 @@
     addUserMessage(label);
     messages.push({
       role: 'assistant',
-      copy.textContent = 'WhatsApp par counsellor se program details, demo aur doubts ke baare mein baat karein.';
+      text: 'WhatsApp par counsellor se program details aur demo ke baare mein baat karein.',
       type: 'whatsapp',
       time: Date.now()
     });
