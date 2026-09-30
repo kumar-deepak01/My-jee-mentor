@@ -10,10 +10,8 @@ const failedLogins=new Map();
 class ApiError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code}}
 const json=(value,status=200,headers={})=>Response.json(value,{status,headers:{'cache-control':'no-store',...headers}});
 
-function config(){
-  if(!process.env.FACULTY_ID||!process.env.FACULTY_PASSWORD||!process.env.FACULTY_SESSION_SECRET||process.env.FACULTY_SESSION_SECRET.length<32)throw new ApiError(503,'FACULTY_CONFIG_MISSING','Faculty login is not configured yet.');
-  if(!process.env.BLOB_READ_WRITE_TOKEN)throw new ApiError(503,'BLOB_CONFIG_MISSING','Resource storage is not configured yet.');
-}
+function blobConfig(){if(!process.env.BLOB_READ_WRITE_TOKEN)throw new ApiError(503,'BLOB_CONFIG_MISSING','Resource storage is not configured yet.')}
+function facultyConfig(){if(!process.env.FACULTY_ID||!process.env.FACULTY_PASSWORD||!process.env.FACULTY_SESSION_SECRET||process.env.FACULTY_SESSION_SECRET.length<32)throw new ApiError(503,'FACULTY_CONFIG_MISSING','Faculty login is not configured yet.');blobConfig()}
 function safeEqual(left,right){
   const a=createHash('sha256').update(String(left)).digest(),b=createHash('sha256').update(String(right)).digest();
   return timingSafeEqual(a,b)&&String(left).length===String(right).length;
@@ -80,12 +78,12 @@ function publicResource(item){return{...item,previewUrl:item.folderOnly?null:`ht
 export async function handleFacultyRequest(request){
   try{
     const url=new URL(request.url),action=url.searchParams.get('action')||'';
-    if(request.method==='GET'&&action==='resources'){config();const{items}=await readResources();return json({ok:true,resources:items.map(publicResource)});}
+    if(request.method==='GET'&&action==='resources'){blobConfig();const{items}=await readResources();return json({ok:true,resources:items.map(publicResource)});}
     if(request.method==='GET'&&action==='me')return json({ok:readSession(request)});
     if(request.method!=='POST')return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
     enforceOrigin(request);
     if(action==='logout')return json({ok:true},200,{'set-cookie':cookie('',0)});
-    config();
+    facultyConfig();
     if(action==='login'){
       const body=await request.json(),id=typeof body?.id==='string'?body.id.slice(0,200):'',password=typeof body?.password==='string'?body.password.slice(0,500):'';
       const key=lockKey(requesterIp(request),id);checkLocked(key);

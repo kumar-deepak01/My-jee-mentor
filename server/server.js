@@ -6,7 +6,6 @@ import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import leads from './routes/leads.js';
-import facultyRoute from './faculty-route.js';
 import {CHAT_FALLBACK,handleChatRequest} from '../api/_chat-handler.js';
 const app=express(),here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'..');
 app.disable('x-powered-by');app.set('trust proxy',1);
@@ -15,7 +14,6 @@ app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptS
 const allowed=(process.env.ALLOWED_ORIGIN||'http://localhost:3000').split(',').map(x=>x.trim());
 app.use(cors({origin(origin,cb){if(!origin||allowed.includes(origin))return cb(null,true);return cb(new Error('Origin not allowed'))},credentials:true,methods:['GET','POST']}));
 app.use(express.json({limit:'20kb'}));app.use(cookieParser());
-app.all('/api/faculty',facultyRoute);
 app.get('/api/config',(req,res)=>res.json({turnstileSiteKey:process.env.TURNSTILE_SITE_KEY||''}));
 app.use('/api',leads);
 app.all('/api/chat',async(req,res)=>{try{const result=await handleChatRequest({method:req.method,body:req.body,ip:req.ip});res.set('Cache-Control','no-store').status(result.status).json(result.body);}catch{res.set('Cache-Control','no-store').status(200).json({reply:CHAT_FALLBACK});}});

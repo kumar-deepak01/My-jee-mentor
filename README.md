@@ -38,19 +38,18 @@ Run `npm ci && npm run build:css`, then run `npm start` under a process manager 
 
 Create a Node web service with build command `npm ci && npm run build:css` and start command `npm start`. Add all `.env` values in Render's secret environment settings. Attach a persistent disk and set `DATABASE_PATH` to a file on that disk; SQLite is intended for a modest single-instance deployment. Use managed PostgreSQL and a parameterized driver/ORM before scaling to multiple instances.
 
-### Faculty uploads and free resources
+### Faculty login and free resources
 
-Faculty access uses `/faculty-login.html`; resources appear on the home page and `/freeresource.html`. In Vercel, connect a managed PostgreSQL database and Vercel Blob store, then configure these environment variables before deployment:
+The faculty portal is `/login.html`. Set these server-side Vercel Environment Variables:
 
-- `DATABASE_URL`: managed PostgreSQL connection string.
-- `BLOB_READ_WRITE_TOKEN`: Vercel Blob read/write token.
+- `FACULTY_ID`: one fixed faculty login ID.
+- `FACULTY_PASSWORD`: its password.
 - `FACULTY_SESSION_SECRET`: random secret with at least 32 characters.
-- `FACULTY_ALLOWED_EMAILS`: comma-separated faculty email addresses permitted to create accounts. Production signup is disabled until this allow-list is configured.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM`: SMTP credentials for sending the email verification code. For Gmail, use an app password and send from the authenticated account or a configured alias.
+- `BLOB_READ_WRITE_TOKEN`: Vercel Blob read/write token for the public JSON resource list.
 
-Accounts require a verified email and a password of at least 10 characters. Local uploads accept PDF, PPT, PPTX, JPEG and PNG files up to 4 MB. Larger files can be placed in Drive and published using a share URL; set the Drive file permission to “Anyone with the link”. The Google Drive option opens Drive and accepts a share link; it does not connect to a Google account or browse private Drive files.
+Credentials are read only by the API and are never placed in browser code. A successful login sets a signed, HttpOnly, Secure, SameSite=Lax cookie for seven days. Five failed attempts for the same IP and ID lock that running function instance for 15 minutes. Add and delete operations update the Blob JSON without a redeploy.
 
-The upload limit leaves room below Vercel’s 4.5 MB request payload limit for multipart form data. For direct large-file uploads, use Vercel Blob’s client upload flow.
+Faculty add a title (up to 80 characters), Google Drive link, and type. The link must be HTTPS from `drive.google.com` or `docs.google.com`; share the file as “Anyone with the link – Viewer”. The public resource API returns the resource list only.
 ### Vercel
 
 The new `/api/chat` route is a Vercel Node.js function. The Express server and SQLite file are not a suitable serverless persistence configuration for `/api/leads`; move that route to a Vercel function backed by managed PostgreSQL (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
