@@ -2,10 +2,8 @@ import {createHmac,randomBytes,randomInt,randomUUID,scrypt as scryptCallback,tim
 import {promisify} from 'node:util';
 import nodemailer from 'nodemailer';
 import {del,put} from '@vercel/blob';
-import pg from 'pg';
 
 const scrypt=promisify(scryptCallback);
-const {Pool}=pg;
 const SESSION_COOKIE='mjm_faculty_session';
 const SESSION_TTL=7*24*60*60;
 const OTP_TTL_MS=10*60*1000;
@@ -161,14 +159,14 @@ async function verifySignupOtp(email,code,request){
   }
   await database.query('INSERT INTO faculty_users(email,password_hash) VALUES($1,$2) ON CONFLICT(email) DO NOTHING',[email,row.password_hash]);
   await database.query('DELETE FROM faculty_otps WHERE email=$1',[email]);
-  return json({ok:true,email},{headers:{'set-cookie':sessionCookie(request,makeSession(email))}});
+  return json({ok:true,email},200,{'set-cookie':sessionCookie(request,makeSession(email))});
 }
 
 async function login(email,password,request){
   const database=await db();
   const result=await database.query('SELECT password_hash FROM faculty_users WHERE email=$1',[email]);
   if(!result.rowCount||!await verifyPassword(password,result.rows[0].password_hash))throw new HttpError(401,'INVALID_CREDENTIALS','Email or password is incorrect.');
-  return json({ok:true,email},{headers:{'set-cookie':sessionCookie(request,makeSession(email))}});
+  return json({ok:true,email},200,{'set-cookie':sessionCookie(request,makeSession(email))});
 }
 
 function validateTitle(value){
@@ -228,13 +226,6 @@ export async function handleFacultyRequest(request){
     if(request.method!=='POST')return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
     enforceOrigin(request);
     if(action==='logout')return json({ok:true},{headers:{'set-cookie':sessionCookie(request,'',0)}});
-    if(action==='blob-token'){
-      const session=facultySession(request);if(!session)throw new HttpError(401,'UNAUTHORIZED','Please log in before uploading.');
-      const body=await request.json();
-      const {handleUpload}=await import('@vercel/blob/client');
-      const result=await handleUpload({body,request,token:process.env.BLOB_READ_WRITE_TOKEN,onBeforeGenerateToken:async(pathname)=>({allowedContentTypes:Object.values(allowedTypes),maximumSizeInBytes:MAX_FILE_BYTES,addRandomSuffix:true,tokenPayload:JSON.stringify({email:session.email}),pathname:`faculty-resources/${safeFilename(pathname)}`}),onUploadCompleted:async()=>{}});
-      return json(result);
-    }
     if(action==='signup-request'){
       const body=await request.json(),email=requiredEmail(body.email),password=requiredPassword(body.password),passwordHash=await hashPassword(password);
       await sendSignupOtp(email,passwordHash);return json({ok:true,message:'Verification code sent.'},202);
