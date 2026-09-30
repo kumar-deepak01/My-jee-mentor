@@ -22,7 +22,7 @@ SQLite creates `data/leads.sqlite` on the first API request. Production must set
 
 ## Pages
 
-Home, JEE, NEET, Foundation, courses, JEE Booster detail, results, faculty, why us, reviews, resources, contact, 404, privacy, terms and refund pages are included. Static `.html` links work directly; Express also resolves extensionless URLs. Replace placeholder contact details and confirm the canonical domain before launch.
+Home, JEE, NEET, Foundation, courses, JEE Booster detail, results, faculty, why us, reviews, free resources, faculty login, contact, 404, privacy, terms and refund pages are included. Static `.html` links work directly; Express also resolves extensionless URLs. Replace placeholder contact details and confirm the canonical domain before launch.
 
 ## Deployment
 
@@ -38,6 +38,19 @@ Run `npm ci && npm run build:css`, then run `npm start` under a process manager 
 
 Create a Node web service with build command `npm ci && npm run build:css` and start command `npm start`. Add all `.env` values in Render's secret environment settings. Attach a persistent disk and set `DATABASE_PATH` to a file on that disk; SQLite is intended for a modest single-instance deployment. Use managed PostgreSQL and a parameterized driver/ORM before scaling to multiple instances.
 
+### Faculty uploads and free resources
+
+Faculty access uses `/faculty-login.html`; resources appear on the home page and `/freeresource.html`. In Vercel, connect a managed PostgreSQL database and Vercel Blob store, then configure these environment variables before deployment:
+
+- `DATABASE_URL`: managed PostgreSQL connection string.
+- `BLOB_READ_WRITE_TOKEN`: Vercel Blob read/write token.
+- `FACULTY_SESSION_SECRET`: random secret with at least 32 characters.
+- `FACULTY_ALLOWED_EMAILS`: comma-separated faculty email addresses permitted to create accounts. Production signup is disabled until this allow-list is configured.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM`: SMTP credentials for sending the email verification code. For Gmail, use an app password and send from the authenticated account or a configured alias.
+
+Accounts require a verified email and a password of at least 10 characters. Local uploads accept PDF, PPT, PPTX, JPEG and PNG files up to 4 MB. Larger files can be placed in Drive and published using a share URL; set the Drive file permission to “Anyone with the link”. The Google Drive option opens Drive and accepts a share link; it does not connect to a Google account or browse private Drive files.
+
+The upload limit leaves room below Vercel’s 4.5 MB request payload limit for multipart form data. For direct large-file uploads, use Vercel Blob’s client upload flow.
 ### Vercel
 
 The new `/api/chat` route is a Vercel Node.js function. The Express server and SQLite file are not a suitable serverless persistence configuration for `/api/leads`; move that route to a Vercel function backed by managed PostgreSQL (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
@@ -56,7 +69,7 @@ The new `/api/chat` route is a Vercel Node.js function. The Express server and S
 
 ## Replace before launch
 
-- Phone, WhatsApp, email, office location and map query.
+- Phone, WhatsApp, office location and map query.
 - Faculty names, qualifications, experience and previous institutes (verify every claim).
 - Results, ranks/scores and student stories only after verification and consent.
 - Testimonials and video IDs after consent; current social links are generic destinations.
@@ -68,4 +81,4 @@ The home hero image is a locally stored Pexels photo by Katerina Holmes, availab
 
 ## Current limitations
 
-The course/results/faculty/review/resource grids use clearly identified placeholder content. No admin panel, email notifications, Google Sheets integration, GA4 or Meta Pixel IDs are configured. The 3D hero has a CSS fallback and conditionally loads a lightweight Three.js particle scene; third-party video embeds are click-to-load.
+The course/results/faculty/review/resource grids use clearly identified placeholder content. No Google Drive Picker/OAuth integration, Google Sheets integration, GA4 or Meta Pixel IDs are configured. The 3D hero has a CSS fallback and conditionally loads a lightweight Three.js particle scene; third-party video embeds are click-to-load.

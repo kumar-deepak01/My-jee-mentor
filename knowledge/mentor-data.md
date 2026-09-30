@@ -52,7 +52,7 @@ This file records information currently displayed in the project’s public page
 ## Contact and social links
 
 - Phone and WhatsApp: +91 73042 56203.
-- Email: hello@myjeementor.com.
+- Email: thejeementor@gmail.com.
 - WhatsApp contact link: https://wa.me/917304256203
 - YouTube channel: https://www.youtube.com/@MyJEEMentor
 - The footer currently links to the generic Instagram destination https://www.instagram.com/; no specific handle is shown.
