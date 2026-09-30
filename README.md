@@ -47,7 +47,7 @@ The faculty portal is `/login.html`. Set these server-side Vercel Environment Va
 - `FACULTY_SESSION_SECRET`: random secret with at least 32 characters.
 - `BLOB_READ_WRITE_TOKEN`: Vercel Blob read/write token for the public JSON resource list.
 
-Credentials are read only by the API and are never placed in browser code. A successful login sets a signed, HttpOnly, Secure, SameSite=Lax cookie for seven days. Five failed attempts for the same IP and ID lock that running function instance for 15 minutes. Add and delete operations update the Blob JSON without a redeploy.
+Credentials are read only by the API and are never placed in browser code. A successful login sets a signed, HttpOnly, Secure, SameSite=Lax cookie for seven days. Five failed attempts for the same IP and ID lock the running function instance for 15 minutes. Add `/api/faculty?action=resources` reads the Blob list without credentials. The local `.env` file is gitignored. Add and delete operations update the Blob JSON without a redeploy.
 
 Faculty add a title (up to 80 characters), Google Drive link, and type. The link must be HTTPS from `drive.google.com` or `docs.google.com`; share the file as “Anyone with the link – Viewer”. The public resource API returns the resource list only.
 ### Vercel
