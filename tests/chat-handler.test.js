@@ -52,9 +52,9 @@ test('routes program cost questions to a counsellor instead of publishing figure
   const getBody = installMockProvider();
   const result = await handleChatRequest({method: 'POST', body: {message: 'Program details?', history: []}, ip: 'fees-test'});
   assert.equal(result.status, 200);
-  assert.match(result.body.reply, /₹3,000\/month/);
-  assert.match(result.body.reply, /placeholder/);
-  assert.match(getBody().system_instruction.parts[0].text, /₹3,000 per month per subject/);
+  assert.match(result.body.reply, /call ya WhatsApp/i);
+  assert.doesNotMatch(result.body.reply, /placeholder/i);
+  assert.doesNotMatch(getBody().system_instruction.parts[0].text, /\u20b93,000|starting fee/i);
 });
 
 test('does not invent teacher names when the site has no verified faculty details', async () => {

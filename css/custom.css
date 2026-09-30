@@ -262,4 +262,3 @@ html.dark-theme .faculty-auth-card,html.dark-theme .faculty-resource-row{backgro
 /* Keep the home wordmark on one responsive line. */
 .hero h1{font-family:Inter,Arial,sans-serif;font-size:clamp(1.7rem,5.1vw,4.25rem);line-height:1.04;letter-spacing:-.055em;white-space:nowrap}
 .hero-inner>h2{display:table;margin:0 0 15px;padding:0 0 7px;border-bottom:2px solid #d85a0b}
-
