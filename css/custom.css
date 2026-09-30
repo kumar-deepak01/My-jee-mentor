@@ -62,7 +62,7 @@
 @media(max-width:900px){.bio-lungs{right:4%;width:60px}.bio-kidney{left:7%;width:58px}.bio-microscope{width:68px}.neet-page .neet-section-art{right:18px;width:68px;opacity:.16}}
 @media(max-width:640px){.bio-lungs{right:2%;top:26%;width:48px}.bio-kidney{left:1%;bottom:2%;width:48px}.bio-microscope{right:1%;bottom:19%;width:52px}.neet-page .neet-section-art{right:12px;bottom:12px;width:48px;opacity:.13}}
 
-/* Shared premium mentoring program cards on Home and Courses pages. */
+/* Shared personal mentoring program cards on Home and Courses pages. */
 .program-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;max-width:1160px;margin-inline:auto}
 .program-card{display:flex;min-width:0;flex-direction:column;overflow:hidden;border:1px solid #ead6c3;border-radius:22px;background:#fff;box-shadow:0 12px 34px #39200e12;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
 .program-card:hover{transform:translateY(-4px);border-color:#d98a4e;box-shadow:0 20px 42px #39200e1c}
