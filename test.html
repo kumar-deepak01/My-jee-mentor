@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#10100d">
+  <meta name="theme-color" content="#080907">
   <meta name="description" content="My JEE Mentor online exam login">
   <meta name="robots" content="noindex, nofollow">
   <title>Online Exam Login | My JEE Mentor</title>
@@ -11,54 +11,58 @@
   <script type="module" src="/js/test.js"></script>
 </head>
 <body>
-  <main class="exam-stage">
-    <div class="ambient ambient-one" aria-hidden="true"></div>
-    <div class="ambient ambient-two" aria-hidden="true"></div>
+<main class="stage" id="stage">
+  <div class="stage-brand" aria-hidden="true">MY JEE MENTOR <span>·</span> ONLINE ASSESSMENT</div>
+  <div class="stage-grid" aria-hidden="true"></div>
 
-    <section class="exam-intro" aria-label="Exam portal introduction">
-      <div class="exam-label"><span></span> MY JEE MENTOR <span class="label-divider">/</span> ONLINE EXAM</div>
-      <h1>Enter with focus.<br><em>Leave with progress.</em></h1>
-      <p>Your quiet space for a focused practice session.</p>
-      <div class="paper-scene" aria-hidden="true">
-        <div class="paper-shadow"></div>
-        <div class="exam-paper">
-          <div class="paper-top"><i></i><i></i><i></i><b>QUESTION PAPER</b></div>
-          <div class="paper-rule"></div>
-          <span class="paper-number">01</span>
-          <strong>If f(x) = x² + 3x + 2</strong>
-          <span>Find&nbsp; f(x + 1) − f(x − 1)</span>
-          <div class="paper-answer">f(x + 1) − f(x − 1) = ?</div>
-          <div class="paper-lines"><i></i><i></i><i></i></div>
-          <span class="paper-stamp">FOCUS<br>MODE</span>
-        </div>
-        <div class="desk-light"></div>
-      </div>
-      <div class="exam-footnote"><span class="footnote-mark">✦</span> Take a breath. Read each question carefully.</div>
-    </section>
+  <svg id="beamSvg" aria-hidden="true">
+    <defs>
+      <linearGradient id="beamGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#fff8e0" stop-opacity=".95"/>
+        <stop offset=".5" stop-color="#f7f6f2" stop-opacity=".4"/>
+        <stop offset="1" stop-color="#f7f6f2" stop-opacity=".12"/>
+      </linearGradient>
+      <radialGradient id="tipGlow"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".35" stop-color="#fef0c8" stop-opacity=".7"/><stop offset="1" stop-color="#ff9d0e" stop-opacity="0"/></radialGradient>
+      <filter id="soft" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
+      <clipPath id="beamClip"><polygon id="clipPoly" points="0,0 0,0 0,0"/></clipPath>
+    </defs>
+    <g id="beamGroup"><polygon id="beamPoly" fill="url(#beamGrad)" filter="url(#soft)" points="0,0 0,0 0,0"/><g id="dust" clip-path="url(#beamClip)"></g><circle id="tipCircle" r="26" fill="url(#tipGlow)" cx="0" cy="0"/></g>
+  </svg>
 
-    <section class="login-panel" aria-labelledby="login-title">
+  <div class="kidWrap">
+    <div id="kid" title="Tap to replay the torch animation">
+      <svg viewBox="0 0 120 200" role="img" aria-label="A student walks in holding a torch">
+        <g class="armBack"><rect x="37" y="70" width="11" height="40" rx="5.5" fill="#5fb04a"/><circle cx="42.5" cy="112" r="6" fill="#f1c79a"/></g>
+        <g class="leg legB"><rect x="52" y="124" width="13" height="56" rx="5" fill="#f1c79a"/><rect x="50" y="170" width="20" height="10" rx="5" fill="#d8433a"/></g>
+        <g class="leg legA"><rect x="43" y="124" width="13" height="56" rx="5" fill="#f1c79a"/><rect x="39" y="170" width="20" height="10" rx="5" fill="#d8433a"/></g>
+        <g class="body">
+          <rect x="40" y="116" width="36" height="26" rx="8" fill="#3d63a8"/><rect x="40" y="64" width="36" height="58" rx="12" fill="#5fb04a"/>
+          <circle cx="58" cy="38" r="24" fill="#f1c79a"/><circle cx="34.5" cy="40" r="4.5" fill="#e6b184"/><path d="M33 38 Q34 12 59 13 Q84 13 82 38 Q72 25 58 27 Q44 27 33 38Z" fill="#5a3a1f"/>
+          <ellipse class="eye" cx="66" cy="40" rx="2.6" ry="3" fill="#231810"/><ellipse class="eye" cx="52" cy="40" rx="2.6" ry="3" fill="#231810"/><path d="M53 50 Q59 55 66 50" stroke="#8a4a2b" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle id="shoulder" cx="66" cy="76" r="1" fill="none"/>
+          <g id="armFront"><line x1="66" y1="76" x2="94" y2="76" stroke="#5fb04a" stroke-width="11" stroke-linecap="round"/><circle cx="96" cy="76" r="6" fill="#f1c79a"/><rect x="94" y="69" width="16" height="14" rx="3" fill="#3a3a3a"/><rect x="108" y="67" width="5" height="18" rx="2" fill="#ffe9a8"/></g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="cardWrap">
+    <section class="card" id="card" aria-label="Online test login" inert>
       <div class="logo-surface"><img src="/assets/my-jee-mentor-logo.svg" alt="My JEE Mentor" width="526" height="144"></div>
-      <div class="login-kicker"><span class="lock-mark" aria-hidden="true">⌑</span> SECURE EXAM PORTAL</div>
-      <h2 id="login-title">Welcome, student</h2>
-      <p class="login-intro">Enter your exam credentials to continue.</p>
-
-      <form class="login-form" novalidate>
-        <div class="login-field" id="user-field">
-          <label for="user-id">User ID</label>
-          <input id="user-id" name="userId" type="text" placeholder="Enter your user ID" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-        </div>
-        <div class="login-field" id="password-field">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
-        </div>
-        <p class="login-message" role="alert" aria-live="polite"></p>
-        <div class="submit-zone">
-          <button class="login-submit" type="submit"><span>Login</span><span aria-hidden="true">↗</span></button>
-        </div>
+      <span class="kicker"><i></i> SECURE EXAM PORTAL</span>
+      <h1>Welcome, student</h1>
+      <p class="sub">Enter your test credentials to continue.</p>
+      <form id="loginForm" novalidate>
+        <div class="field" id="fUser"><label for="userId">User ID</label><input id="userId" name="userId" type="text" placeholder="Enter your user ID" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+        <div class="field" id="fPw"><label for="pw">Password</label><input id="pw" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required></div>
+        <p class="message" id="loginMessage" role="alert" aria-live="polite"></p>
+        <div class="buttonZone"><button class="loginBtn" id="loginBtn" type="submit"><span>Enter Test</span><span class="buttonArrow" aria-hidden="true">→</span></button></div>
       </form>
-      <div class="panel-bottom"><span class="status-dot"></span> Exam environment <span class="panel-separator">·</span> Stay focused</div>
+      <div class="foot"><span class="onlineDot"></span> My JEE Mentor <span class="footDivider">·</span> Assessment portal</div>
     </section>
-    <div class="stage-grain" aria-hidden="true"></div>
-  </main>
+  </div>
+
+  <button class="replay" id="replay" type="button" aria-label="Replay torch reveal">↻ &nbsp; Replay</button>
+</main>
 </body>
 </html>

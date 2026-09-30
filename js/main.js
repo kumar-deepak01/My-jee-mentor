@@ -3,7 +3,7 @@ let darkMode=false;
 try{darkMode=localStorage.getItem(themeStorageKey)==='dark'}catch{}
 document.documentElement.classList.toggle('dark-theme',darkMode);
 const path=location.pathname.replace(/\/$/,'')||'/';
-const nav=[['Home','/'],['JEE','/jee.html'],['NEET','/neet.html'],['Foundation','/foundation.html'],['Courses','/courses.html']];
+const nav=[['Home','/'],['JEE','/jee.html'],['NEET','/neet.html'],['Foundation','/foundation.html'],['Courses','/courses.html'],['Test','/test.html']];
 const more=[['Results','/results.html'],['Our Faculty','/faculty.html'],['Why My JEE Mentor','/why-my-jee-mentor.html'],['Student Reviews','/reviews.html'],['Free Resources','/resources.html'],['Contact Us','/contact.html']];
 const pages={
 '/jee.html':{title:'JEE Coaching for Class 11, 12 & Droppers',tag:'JEE PROGRAMS',heading:'Prepare with clarity. Perform with confidence.',intro:'Concept focused JEE preparation with live teaching, personal mentorship and a plan you can track.',cards:['Premium Batch — Personal Mentorship','Foundation Batch — Strong Concepts','One to One Program','Ranker Batch — IIT-JEE 2027']},
