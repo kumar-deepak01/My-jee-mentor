@@ -36,7 +36,7 @@ Run `npm ci && npm run build:css`, then run `npm start` under a process manager 
 
 ### Render
 
-Create a Node web service with build command `npm ci && npm run build:css` and start command `npm start`. Add all `.env` values in Render's secret environment settings. Attach a persistent disk and set `DATABASE_PATH` to a file on that disk; SQLite is intended for a modest single-instance deployment. Use managed PostgreSQL and a parameterized driver/ORM before scaling to multiple instances.
+Create a Node web service with build command `npm ci && npm run build:css` and start command `npm start`. Add all `.env` values in Render's secret environment settings. Attach a persistent disk and set `DATABASE_PATH` to a file on that disk; SQLite is intended for a modest single-instance deployment. Use a managed database and a parameterized driver before scaling to multiple instances.
 
 ### Faculty login and free resources
 
@@ -52,7 +52,7 @@ Credentials are read only by the API and are never placed in browser code. A suc
 Faculty add a title (up to 80 characters), Google Drive link, and type. The link must be HTTPS from `drive.google.com` or `docs.google.com`; share the file as “Anyone with the link – Viewer”. The public resource API returns the resource list only.
 ### Vercel
 
-The new `/api/chat` route is a Vercel Node.js function. The Express server and SQLite file are not a suitable serverless persistence configuration for `/api/leads`; move that route to a Vercel function backed by managed PostgreSQL (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
+The new `/api/chat` route is a Vercel Node.js function. The Express server and SQLite file are not a suitable serverless persistence configuration for `/api/leads`; move that route to a Vercel function backed by a managed database (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
 
 ## Database schema
 

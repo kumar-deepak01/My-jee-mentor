@@ -80,13 +80,13 @@ async function readResources(){
   return{items,etag:stored.blob.etag};
 }
 async function writeResources(items,etag){
-  return put(RESOURCE_PATH,JSON.stringify(items),{access:'public',contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:true,...(etag?{ifMatch:etag}:{})});
+  return put(RESOURCE_PATH,JSON.stringify(items),{access:'public',contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:Boolean(etag),...(etag?{ifMatch:etag}:{})});
 }
 async function mutateResources(mutator){
   for(let attempt=0;attempt<5;attempt++){
     const{items,etag}=await readResources(),next=mutator([...items]);
     try{await writeResources(next,etag);return next}
-    catch(error){if(error instanceof BlobPreconditionFailedError&&attempt<4)continue;throw error}
+    catch(error){const collision=!etag&&/already.?exists|precondition/i.test(String(error?.name||error?.message));if((error instanceof BlobPreconditionFailedError||collision)&&attempt<4)continue;throw error}
   }
   throw new ApiError(409,'RESOURCE_CONFLICT','The list changed at the same time. Please try again.');
 }
