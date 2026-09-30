@@ -2,10 +2,8 @@
   const $=id=>document.getElementById(id);
   const stage=$('stage'),kid=$('kid'),kidSvg=kid.querySelector('svg'),arm=$('armFront'),shoulder=$('shoulder');
   const card=$('card'),beamGroup=$('beamGroup'),poly=$('beamPoly'),clipPoly=$('clipPoly'),tipC=$('tipCircle'),grad=$('beamGrad'),dust=$('dust');
-  const form=$('loginForm'),userId=$('userId'),password=$('pw'),userField=$('fUser'),passwordField=$('fPw');
-  const message=$('loginMessage'),loginButton=$('loginBtn'),buttonZone=loginButton.parentElement;
-  const EXAM_PORTAL='https://myjeementor.theonlinetests.com/';
-  let timers=[],raf=0,geometry=null,settled=false,held=0,invalidAttempt=false;
+  const enterBtn=$('enterBtn');
+  let timers=[],raf=0,geometry=null,settled=false,held=0;
   const svgNS='http://www.w3.org/2000/svg';
   const later=(fn,ms)=>timers.push(setTimeout(fn,ms));
   const normalizeAngle=angle=>{while(angle>Math.PI)angle-=2*Math.PI;while(angle<-Math.PI)angle+=2*Math.PI;return angle};
@@ -79,33 +77,16 @@
     later(()=>{if(!settled){cancelAnimationFrame(raf);finish()}},8500);
   }
 
-  function markInvalid(field,input,invalid){field.classList.toggle('bad',invalid);input.setAttribute('aria-invalid',String(invalid))}
-  function shake(){card.classList.remove('shake');void card.offsetWidth;card.classList.add('shake')}
-  function moveLoginButton(){
-    const zone=buttonZone.getBoundingClientRect(),button=loginButton.getBoundingClientRect();
-    const xRoom=Math.max(0,(zone.width-button.width)/2-3),yRoom=Math.max(0,zone.height-button.height-3);
-    loginButton.style.setProperty('--move-x',`${Math.round((Math.random()*2-1)*Math.min(xRoom,30))}px`);
-    loginButton.style.setProperty('--move-y',`${Math.round(Math.random()*yRoom)}px`);
-  }
-
-  form.addEventListener('submit',event=>{
-    event.preventDefault();
-    const missingUser=!userId.value.trim(),missingPassword=!password.value;
-    markInvalid(userField,userId,missingUser);markInvalid(passwordField,password,missingPassword);
-    if(missingUser||missingPassword){
-      invalidAttempt=true;message.textContent='User ID aur password dono enter karein.';shake();moveLoginButton();
-      (missingUser?userId:password).focus();return;
-    }
-    message.textContent='';loginButton.disabled=true;loginButton.querySelector('span:first-child').textContent='Entering…';
-    kid.classList.remove('jump');void kid.offsetWidth;kid.classList.add('jump');
-    userId.value='';password.value='';
-    window.location.assign(EXAM_PORTAL);
+  enterBtn.addEventListener('click',event=>{
+    if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    const destination=enterBtn.href;
+    try{
+      window.setTimeout(()=>{window.location.href=destination},500);
+      event.preventDefault();
+      enterBtn.querySelector('span:first-child').textContent='Opening…';
+      kid.classList.remove('jump');void kid.offsetWidth;kid.classList.add('jump');
+    }catch{window.location.href=destination}
   });
-
-  [[userId,userField],[password,passwordField]].forEach(([input,field])=>input.addEventListener('input',()=>{
-    markInvalid(field,input,false);message.textContent='';loginButton.style.setProperty('--move-x','0px');loginButton.style.setProperty('--move-y','0px');
-  }));
-  loginButton.addEventListener('pointerenter',()=>{if(invalidAttempt)moveLoginButton()});
   window.addEventListener('resize',()=>{if(!geometry)return;measure();buildDust();if(settled){arm.style.transition='none';draw(geometry.target)}});
   $('replay').addEventListener('click',play);kidSvg.addEventListener('click',play);
   play();
