@@ -6,9 +6,11 @@ export default async function facultyHandler(req,res){
     const host=req.headers.host||'localhost';
     const requestUrl=new URL(req.url||'/api/faculty',`${protocol}://${host}`).toString();
     const headers=new Headers();
-    for(const name of ['cookie','content-type','origin'])if(req.headers[name])headers.set(name,req.headers[name]);
+    for(const name of ['cookie','content-type','origin','x-forwarded-for','x-real-ip'])if(req.headers[name])headers.set(name,req.headers[name]);
     const hasBody=!['GET','HEAD'].includes(req.method||'GET');
-    const request=new Request(requestUrl,{method:req.method||'GET',headers,...(hasBody?{body:req,duplex:'half'}:{})});
+    const parsedBody=req.body;
+    const requestBody=parsedBody!==undefined?typeof parsedBody==='string'?parsedBody:JSON.stringify(parsedBody):req;
+    const request=new Request(requestUrl,{method:req.method||'GET',headers,...(hasBody?parsedBody!==undefined?{body:requestBody}:{body:requestBody,duplex:'half'}:{})});
     const response=await handleFacultyRequest(request);
     response.headers.forEach((value,name)=>res.setHeader(name,value));
     res.statusCode=response.status;
