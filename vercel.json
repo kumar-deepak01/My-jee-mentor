@@ -3,6 +3,9 @@
     "api/chat.js": {
       "includeFiles": "knowledge/mentor-data.md",
       "maxDuration": 20
+    },
+    "api/faculty.js": {
+      "maxDuration": 30
     }
   }
 }
