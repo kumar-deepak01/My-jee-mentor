@@ -85,7 +85,7 @@ function setupHomeSlider(){
 async function shareReview(review){
   const url=`${location.origin}/studentreview.html?v=${encodeURIComponent(review.videoId)}`;
   if(navigator.share){try{await navigator.share({title:review.title,url});return}catch(error){if(error?.name==='AbortError')return}}
-  try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(url);else{const input=document.createElement('textarea');input.value=url;input.style.position='fixed';input.style.opacity='0';document.body.append(input);input.select();if(!document.execCommand('copy'))throw new Error('copy failed');input.remove()}toast('Link copy ho gaya')}
+  try{if(navigator.clipboard?.writeText){try{await navigator.clipboard.writeText(url);toast('Link copy ho gaya');return}catch{}}const input=document.createElement('textarea');input.value=url;input.style.position='fixed';input.style.opacity='0';document.body.append(input);input.select();const copied=document.execCommand('copy');input.remove();if(!copied)throw new Error('copy failed');toast('Link copy ho gaya')}
   catch{toast('Link copy nahi ho paaya')}
 }
 async function loadStudentReviews(){
