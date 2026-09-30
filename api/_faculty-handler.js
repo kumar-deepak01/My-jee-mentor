@@ -33,7 +33,6 @@ function readSession(request){
   if(expected.length!==received.length||!timingSafeEqual(expected,received))return false;
   try{return JSON.parse(Buffer.from(payload,'base64url').toString()).exp>Date.now()/1000}catch{return false}
 }
-export function hasFacultySession(request){return readSession(request)}
 function requireSession(request){if(!readSession(request))throw new ApiError(401,'LOGIN_REQUIRED','Log in to manage resources.')}
 function enforceOrigin(request){const origin=request.headers.get('origin');if(origin&&new URL(origin).origin!==new URL(request.url).origin)throw new ApiError(403,'ORIGIN_DENIED','Request origin is not allowed.')}
 function requesterIp(request){return(request.headers.get('x-forwarded-for')||request.headers.get('x-real-ip')||'unknown').split(',')[0].trim().slice(0,100)}
