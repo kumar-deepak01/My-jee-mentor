@@ -42,10 +42,9 @@ This file records information currently displayed in the project’s public page
 - Study plans: a custom revision and practice schedule tailored to weak topics.
 - Parents: monthly progress calls about the student’s JEE preparation.
 
-## Fees and demo class
+## Program enquiries and demo class
 
-- The contact page and tuition sections display subject-wise classes starting at ₹3,000 per month per subject.
-- The same copy says fees are placeholders until confirmed. Always describe ₹3,000/month/subject as a displayed starting figure that must be confirmed with a counsellor, not as a final fee quote.
+- For current program details and class options, visitors should call or WhatsApp the counsellor.
 - The site offers a free demo class and free counselling/demo booking. It does not publish a schedule or a specific demo date; visitors are directed to contact the team.
 - The demo popup says there is no pressure to decide after the demo.
 
@@ -69,8 +68,8 @@ This file records information currently displayed in the project’s public page
 
 - Free Resources page lists JEE PYQs, NEET PYQs, DPPs, formula sheets, short notes, previous-year papers, important questions, study material, free YouTube classes, and blogs.
 - The contact form asks for student/parent names, phone/WhatsApp, class, exam, target year, current coaching, preferred subject, city, language, and message.
-- The site provides Privacy Policy, Terms & Conditions, and Refund Policy pages. The terms page says schedules, fees, and features may vary by course and batch; the refund page directs visitors to contact the counsellor for applicable terms.
+- The site provides Privacy Policy, Terms & Conditions, and Refund Policy pages. The terms page says schedules and features may vary by course and batch; the refund page directs visitors to contact the counsellor for applicable terms.
 
 ## Review before giving a definitive answer
 
-<!-- Confirm the final fee sheet, class ranges for Foundation, batch schedules, office location, faculty names/credentials, verified results, and testimonial permissions before publishing those as confirmed facts. -->
+<!-- Confirm class ranges for Foundation, batch schedules, office location, faculty names/credentials, verified results, and testimonial permissions before publishing those as confirmed facts. -->

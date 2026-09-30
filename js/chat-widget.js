@@ -135,7 +135,7 @@
       const card = document.createElement('div');
       card.className = 'jma-whatsapp-card';
       const copy = document.createElement('p');
-      copy.textContent = '📱 WhatsApp pe connect karo! Hamare counsellor se directly baat karo — demo schedule karo, fees poochho, ya koi bhi doubt clear karo!';
+      copy.textContent = 'WhatsApp par counsellor se program details, demo aur doubts ke baare mein baat karein.';
       const link = document.createElement('a');
       link.href = WHATSAPP_URL;
       link.target = '_blank';
@@ -192,19 +192,19 @@
   }
 
   const welcomeChips = [
-    {label: '💰 Fees kya hai?'},
+    {label: 'Program details?'},
     {label: '👨‍🏫 Teacher kaun hain?'},
     {label: '🎓 Demo class chahiye'},
     {label: '📚 Subjects kaunse hain?'},
     {label: '💬 WhatsApp pe baat karo', whatsapp: true}
   ];
   const followupChips = [
-    {label: '💰 Fees details'},
+    {label: 'Program options'},
     {label: '📚 Subjects info'},
     {label: '👨‍🏫 Faculty info'}
   ];
   const errorChips = [
-    {label: '💰 Fees?'},
+    {label: 'Ask a question'},
     {label: '🎓 Free demo'},
     {label: '📞 Contact', whatsapp: true}
   ];
@@ -251,7 +251,7 @@
     addUserMessage(label);
     messages.push({
       role: 'assistant',
-      text: '📱 WhatsApp pe connect karo! Hamare counsellor se directly baat karo — demo schedule karo, fees poochho, ya koi bhi doubt clear karo!',
+      copy.textContent = 'WhatsApp par counsellor se program details, demo aur doubts ke baare mein baat karein.';
       type: 'whatsapp',
       time: Date.now()
     });
