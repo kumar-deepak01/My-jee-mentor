@@ -4,8 +4,8 @@ import {BlobPreconditionFailedError,get,put} from '@vercel/blob';
 const COOKIE='mjm_faculty_session';
 const SESSION_SECONDS=7*24*60*60;
 const RESOURCE_PATH='mjm-data/faculty-resources.json';
+const LOGIN_LOCK_PATH='mjm-data/faculty-login-locks.json';
 const TYPES=new Set(['PDF','PPT','Image','Doc']);
-const failedLogins=new Map();
 
 class ApiError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code}}
 const json=(value,status=200,headers={})=>Response.json(value,{status,headers:{'cache-control':'no-store',...headers}});
@@ -33,9 +33,26 @@ function readSession(request){
 function requireSession(request){if(!readSession(request))throw new ApiError(401,'LOGIN_REQUIRED','Log in to manage resources.')}
 function enforceOrigin(request){const origin=request.headers.get('origin');if(origin&&new URL(origin).origin!==new URL(request.url).origin)throw new ApiError(403,'ORIGIN_DENIED','Request origin is not allowed.')}
 function requesterIp(request){return(request.headers.get('x-forwarded-for')||request.headers.get('x-real-ip')||'unknown').split(',')[0].trim().slice(0,100)}
-function lockKey(ip,id){return createHash('sha256').update(`${ip}\0${id}`).digest('hex')}
-function checkLocked(key){const entry=failedLogins.get(key);if(!entry)return;if(entry.lockedUntil>Date.now())throw new ApiError(429,'LOGIN_LOCKED','Five incorrect attempts. Try again in 15 minutes.');if(entry.lockedUntil)failedLogins.delete(key)}
-function failLogin(key){let entry=failedLogins.get(key)||{count:0,lockedUntil:0};entry.count++;if(entry.count>=5){entry.lockedUntil=Date.now()+15*60*1000;failedLogins.set(key,entry);throw new ApiError(429,'LOGIN_LOCKED','Five incorrect attempts. Try again in 15 minutes.')}failedLogins.set(key,entry);if(failedLogins.size>2000){for(const [stored,value] of failedLogins)if(value.lockedUntil&&value.lockedUntil<Date.now())failedLogins.delete(stored)}}
+function lockKey(ip,id){return createHmac('sha256',process.env.FACULTY_SESSION_SECRET).update(`${ip}\0${id}`).digest('hex')}
+async function updateLoginAttempt(key,valid){
+  for(let attempt=0;attempt<5;attempt++){
+    const stored=await get(LOGIN_LOCK_PATH,{access:'public',useCache:false});let locks={},etag=null;
+    if(stored){if(stored.statusCode!==200||!stored.stream)throw new ApiError(503,'LOGIN_LOCK_READ_FAILED','Could not verify the login attempt limit.');try{locks=JSON.parse(await new Response(stored.stream).text())}catch{throw new ApiError(503,'LOGIN_LOCK_DATA_INVALID','Login protection data is invalid.')}if(!locks||Array.isArray(locks)||typeof locks!=='object')throw new ApiError(503,'LOGIN_LOCK_DATA_INVALID','Login protection data is invalid.');etag=stored.blob.etag}
+    const now=Date.now();for(const[entryKey,entry]of Object.entries(locks))if(!entry||entry.expiresAt<now)delete locks[entryKey];
+    const current=locks[key];if(current?.lockedUntil>now)return{locked:true};
+    if(valid){delete locks[key];if(!current)return{locked:false};}
+    else{
+      const entry=current&&current.windowUntil>now?current:{count:0,windowUntil:now+15*60*1000,lockedUntil:0,expiresAt:now+15*60*1000};
+      entry.count++;entry.expiresAt=entry.count>=5?now+15*60*1000:entry.windowUntil;
+      if(entry.count>=5)entry.lockedUntil=entry.expiresAt;
+      locks[key]=entry;
+    }
+    if(Object.keys(locks).length>5000)for(const oldKey of Object.keys(locks).slice(0,Object.keys(locks).length-5000))delete locks[oldKey];
+    try{await put(LOGIN_LOCK_PATH,JSON.stringify(locks),{access:'public',contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:Boolean(etag),...(etag?{ifMatch:etag}:{})});return{locked:false,blocked:Boolean(!valid&&locks[key]?.lockedUntil>now)}}
+    catch(error){const collision=!etag&&/already.?exists|precondition/i.test(String(error?.name||error?.message));if((error instanceof BlobPreconditionFailedError||collision)&&attempt<4)continue;throw error}
+  }
+  throw new ApiError(409,'LOGIN_LOCK_CONFLICT','Could not safely update the login attempt limit. Try again.');
+}
 function validateDriveLink(value){
   if(typeof value!=='string'||value.length>2048)throw new ApiError(400,'INVALID_LINK','Enter a valid Google Drive link.');
   let parsed;try{parsed=new URL(value.trim())}catch{throw new ApiError(400,'INVALID_LINK','Enter a valid Google Drive link.')}
@@ -86,10 +103,11 @@ export async function handleFacultyRequest(request){
     facultyConfig();
     if(action==='login'){
       const body=await request.json(),id=typeof body?.id==='string'?body.id.slice(0,200):'',password=typeof body?.password==='string'?body.password.slice(0,500):'';
-      const key=lockKey(requesterIp(request),id);checkLocked(key);
-      const idOk=safeEqual(id,process.env.FACULTY_ID),passwordOk=safeEqual(password,process.env.FACULTY_PASSWORD);
-      if(!idOk||!passwordOk)failLogin(key);
-      failedLogins.delete(key);
+      const key=lockKey(requesterIp(request),id);
+      const idOk=safeEqual(id,process.env.FACULTY_ID),passwordOk=safeEqual(password,process.env.FACULTY_PASSWORD),valid=idOk&&passwordOk;
+      const throttle=await updateLoginAttempt(key,valid);
+      if(throttle.locked||throttle.blocked)throw new ApiError(429,'LOGIN_LOCKED','Five incorrect attempts. Try again in 15 minutes.');
+      if(!valid)throw new ApiError(401,'INVALID_CREDENTIALS','ID or password is incorrect.');
       return json({ok:true},200,{'set-cookie':cookie(makeSession())});
     }
     requireSession(request);
