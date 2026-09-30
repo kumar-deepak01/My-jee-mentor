@@ -42,6 +42,13 @@ function playVideo(review,{updateUrl=true}={}){
 }
 function setupReveal(root){
   const cards=root.querySelectorAll('.review-reveal');if(!cards.length)return;
+  const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  cards.forEach(card=>{
+    if(card.dataset.reviewTiltReady)return;card.dataset.reviewTiltReady='true';
+    if(reduceMotion)return;
+    card.addEventListener('pointermove',event=>{if(event.pointerType!=='mouse'||card.classList.contains('is-playing'))return;const bounds=card.getBoundingClientRect(),x=(event.clientX-bounds.left)/bounds.width-.5,y=(event.clientY-bounds.top)/bounds.height-.5;card.style.setProperty('--review-tilt-x',`${x*5}deg`);card.style.setProperty('--review-tilt-y',`${-y*4}deg`)});
+    card.addEventListener('pointerleave',()=>{card.style.setProperty('--review-tilt-x','0deg');card.style.setProperty('--review-tilt-y','0deg')});
+  });
   if(!('IntersectionObserver'in window)){cards.forEach(card=>card.classList.add('is-visible'));return}
   const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target)}}),{threshold:.12});
   cards.forEach((card,index)=>{card.style.setProperty('--review-delay',`${Math.min(index%6,5)*75}ms`);observer.observe(card)});

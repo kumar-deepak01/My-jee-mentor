@@ -270,14 +270,14 @@ html.dark-theme .faculty-auth-card,html.dark-theme .faculty-resource-row{backgro
 .student-review-carousel{position:relative;padding:18px 0 28px}
 .student-review-track{display:grid;grid-auto-columns:calc((100% - 48px)/3);grid-auto-flow:column;gap:24px;overflow-x:auto;padding:18px 16px 28px;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;perspective:1100px;touch-action:pan-x pan-y}
 .student-review-track::-webkit-scrollbar{display:none}
-.student-review-card{min-width:0;overflow:hidden;align-self:stretch;border:1px solid #ffffff1c;border-radius:20px;background:linear-gradient(145deg,#ffffff12,#ffffff05);box-shadow:0 18px 42px #0005;backdrop-filter:blur(14px);color:#f7f4ef;scroll-snap-align:center;transform:translateY(10px) scale(.965);transition:transform .35s ease,border-color .3s,box-shadow .3s,opacity .35s;opacity:0}
-.student-review-card.is-visible{opacity:1;transform:translateY(0) scale(.965);transition-delay:var(--review-delay,0ms)}
-.student-review-card.is-centered{transform:translateY(-5px) scale(1.015);border-color:#f5a63c9c;box-shadow:0 25px 55px #0007,0 0 26px #f09a2c16}
-.student-review-card.is-playing,.student-review-grid .student-review-card.is-playing{transform:translateY(-3px) scale(1.02);border-color:#f5a63c;box-shadow:0 22px 55px #0008,0 0 30px #f09a2c24}
+.student-review-card{--review-tilt-x:0deg;--review-tilt-y:0deg;min-width:0;overflow:hidden;align-self:stretch;border:1px solid #ffffff1c;border-radius:20px;background:linear-gradient(145deg,#ffffff12,#ffffff05);box-shadow:0 18px 42px #0005;backdrop-filter:blur(14px);color:#f7f4ef;scroll-snap-align:center;transform:perspective(1100px) translateY(10px) scale(.965) rotateX(var(--review-tilt-y)) rotateY(var(--review-tilt-x));transition:transform .35s ease,border-color .3s,box-shadow .3s,opacity .35s;opacity:0}
+.student-review-card.is-visible{opacity:1;transform:perspective(1100px) translateY(0) scale(.965) rotateX(var(--review-tilt-y)) rotateY(var(--review-tilt-x));transition-delay:var(--review-delay,0ms)}
+.student-review-card.is-centered{transform:perspective(1100px) translateY(-5px) scale(1.015) rotateX(var(--review-tilt-y)) rotateY(var(--review-tilt-x));border-color:#f5a63c9c;box-shadow:0 25px 55px #0007,0 0 26px #f09a2c16}
+.student-review-card.is-playing,.student-review-grid .student-review-card.is-playing{transform:perspective(1100px) translateY(-3px) scale(1.02);border-color:#f5a63c;box-shadow:0 22px 55px #0008,0 0 30px #f09a2c24}
 .student-review-card:not(.review-skeleton){position:relative}.student-review-card:not(.review-skeleton):before{position:absolute;z-index:3;inset:-80% auto -80% -65%;width:38%;transform:rotate(22deg) translateX(-240%);background:linear-gradient(90deg,transparent,#ffffff24,transparent);content:"";pointer-events:none}.student-review-card:not(.review-skeleton):hover:before{transform:rotate(22deg) translateX(700%);transition:transform .8s ease}
-.student-review-card.is-neighbor{transform:translateY(4px) rotateY(3deg) scale(.98)}
+.student-review-card.is-neighbor{transform:perspective(1100px) translateY(4px) rotateY(calc(3deg + var(--review-tilt-x))) rotateX(var(--review-tilt-y)) scale(.98)}
 .student-review-track.is-dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
-.student-review-card:focus-visible{outline:3px solid #f5a63c;outline-offset:3px}
+.student-review-card:focus-visible{outline:3px solid #f5a63c;outline-offset:3px}.review-inline-player{animation:review-player-in .28s ease both}@keyframes review-player-in{from{opacity:0}to{opacity:1}}
 .student-review-media{position:relative;overflow:hidden;aspect-ratio:16/9;background:linear-gradient(135deg,#313541,#7e5331 52%,#151920)}
 .review-thumb{position:absolute;inset:0;overflow:hidden;cursor:pointer}
 .review-thumb:after{position:absolute;inset:0;background:linear-gradient(0deg,#090b10a8,transparent 60%);content:"";pointer-events:none}
