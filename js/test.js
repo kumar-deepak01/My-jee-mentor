@@ -1,11 +1,10 @@
-import {authenticateExam} from './exam-provider.js';
-
 (function(){
   const $=id=>document.getElementById(id);
   const stage=$('stage'),kid=$('kid'),kidSvg=kid.querySelector('svg'),arm=$('armFront'),shoulder=$('shoulder');
   const card=$('card'),beamGroup=$('beamGroup'),poly=$('beamPoly'),clipPoly=$('clipPoly'),tipC=$('tipCircle'),grad=$('beamGrad'),dust=$('dust');
   const form=$('loginForm'),userId=$('userId'),password=$('pw'),userField=$('fUser'),passwordField=$('fPw');
   const message=$('loginMessage'),loginButton=$('loginBtn'),buttonZone=loginButton.parentElement;
+  const EXAM_PORTAL='https://myjeementor.theonlinetests.com/';
   let timers=[],raf=0,geometry=null,settled=false,held=0,invalidAttempt=false;
   const svgNS='http://www.w3.org/2000/svg';
   const later=(fn,ms)=>timers.push(setTimeout(fn,ms));
@@ -89,7 +88,7 @@ import {authenticateExam} from './exam-provider.js';
     loginButton.style.setProperty('--move-y',`${Math.round(Math.random()*yRoom)}px`);
   }
 
-  form.addEventListener('submit',async event=>{
+  form.addEventListener('submit',event=>{
     event.preventDefault();
     const missingUser=!userId.value.trim(),missingPassword=!password.value;
     markInvalid(userField,userId,missingUser);markInvalid(passwordField,password,missingPassword);
@@ -97,26 +96,10 @@ import {authenticateExam} from './exam-provider.js';
       invalidAttempt=true;message.textContent='User ID aur password dono enter karein.';shake();moveLoginButton();
       (missingUser?userId:password).focus();return;
     }
-    loginButton.disabled=true;loginButton.querySelector('span:first-child').textContent='Checking…';message.textContent='';
-    try{
-      const result=await authenticateExam({userId:userId.value.trim(),password:password.value});
-      if(result?.status==='not_configured'){
-        message.textContent='Premium test platform abhi connect nahi hai. Integration details milne par yahan add kar denge.';
-        markInvalid(userField,userId,true);markInvalid(passwordField,password,true);invalidAttempt=true;shake();moveLoginButton();return;
-      }
-      if(!result?.ok){
-        message.textContent=result?.message||'User ID ya password galat hai. Dobara check karke try karein.';
-        markInvalid(userField,userId,true);markInvalid(passwordField,password,true);invalidAttempt=true;shake();moveLoginButton();return;
-      }
-      if(result.redirectUrl)window.location.assign(result.redirectUrl);
-      loginButton.querySelector('span:first-child').textContent='Login successful';loginButton.classList.add('ok');
-      kid.classList.remove('jump');void kid.offsetWidth;kid.classList.add('jump');
-    }catch{
-      message.textContent='Login verify nahi ho saka. Thodi der baad phir try karein.';invalidAttempt=true;shake();moveLoginButton();
-    }finally{
-      loginButton.disabled=false;
-      if(!loginButton.classList.contains('ok'))loginButton.querySelector('span:first-child').textContent='Enter Test';
-    }
+    message.textContent='';loginButton.disabled=true;loginButton.querySelector('span:first-child').textContent='Entering…';
+    kid.classList.remove('jump');void kid.offsetWidth;kid.classList.add('jump');
+    userId.value='';password.value='';
+    window.location.assign(EXAM_PORTAL);
   });
 
   [[userId,userField],[password,passwordField]].forEach(([input,field])=>input.addEventListener('input',()=>{
