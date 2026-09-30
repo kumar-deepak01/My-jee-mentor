@@ -35,15 +35,15 @@ function enforceOrigin(request){const origin=request.headers.get('origin');if(or
 function requesterIp(request){return(request.headers.get('x-forwarded-for')||request.headers.get('x-real-ip')||'unknown').split(',')[0].trim().slice(0,100)}
 function lockKey(ip,id){return createHash('sha256').update(`${ip}\0${id}`).digest('hex')}
 function checkLocked(key){const entry=failedLogins.get(key);if(!entry)return;if(entry.lockedUntil>Date.now())throw new ApiError(429,'LOGIN_LOCKED','Five incorrect attempts. Try again in 15 minutes.');if(entry.lockedUntil)failedLogins.delete(key)}
-function failLogin(key){let entry=failedLogins.get(key)||{count:0,lockedUntil:0};entry.count++;if(entry.count>=5){entry.lockedUntil=Date.now()+15*60*1000;failedLogins.set(key,entry);throw new ApiError(429,'LOGIN_LOCKED','Five incorrect attempts. Try again in 15 minutes.')}failedLogins.set(key,entry)}
+function failLogin(key){let entry=failedLogins.get(key)||{count:0,lockedUntil:0};entry.count++;if(entry.count>=5){entry.lockedUntil=Date.now()+15*60*1000;failedLogins.set(key,entry);throw new ApiError(429,'LOGIN_LOCKED','Five incorrect attempts. Try again in 15 minutes.')}failedLogins.set(key,entry);if(failedLogins.size>2000){for(const [stored,value] of failedLogins)if(value.lockedUntil&&value.lockedUntil<Date.now())failedLogins.delete(stored)}}
 function validateDriveLink(value){
   if(typeof value!=='string'||value.length>2048)throw new ApiError(400,'INVALID_LINK','Enter a valid Google Drive link.');
   let parsed;try{parsed=new URL(value.trim())}catch{throw new ApiError(400,'INVALID_LINK','Enter a valid Google Drive link.')}
   if(parsed.protocol!=='https:'||!['drive.google.com','docs.google.com'].includes(parsed.hostname)||parsed.username||parsed.password||parsed.port)throw new ApiError(400,'INVALID_LINK','Only https links from drive.google.com or docs.google.com are allowed.');
-  const match=parsed.pathname.match(/\/(?:file\/d|(?:presentation|document|spreadsheets)\/d|drive\/folders)\/([A-Za-z0-9_-]+)/);
+  const match=parsed.pathname.match(/\/(?:file\/d|(?:presentation|document|spreadsheets)\/d|drive\/(?:u\/\d+\/)?folders)\/([A-Za-z0-9_-]+)/);
   const driveId=match?.[1]||parsed.searchParams.get('id')||null;
   if(driveId&&!/^[A-Za-z0-9_-]{1,200}$/.test(driveId))throw new ApiError(400,'INVALID_LINK','The Drive file ID is not valid.');
-  const folderOnly=/\/drive\/folders\//.test(parsed.pathname)||(!driveId&&/\/drive\/(?:my-drive|shared-with-me)/.test(parsed.pathname));
+  const folderOnly=/\/drive\/(?:u\/\d+\/)?folders\//.test(parsed.pathname)||(!driveId&&/\/drive\/(?:my-drive|shared-with-me)/.test(parsed.pathname));
   if(!driveId&&!folderOnly)throw new ApiError(400,'INVALID_LINK','This Drive link does not contain a supported file or folder ID.');
   return{url:parsed.toString(),driveId,folderOnly};
 }
