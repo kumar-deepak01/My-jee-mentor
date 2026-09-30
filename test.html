@@ -47,18 +47,13 @@
   </div>
 
   <div class="cardWrap">
-    <section class="card" id="card" aria-label="Online test login" inert>
+    <section class="card" id="card" aria-label="Online test portal" inert>
       <div class="logo-surface"><img src="/assets/my-jee-mentor-logo.svg" alt="My JEE Mentor" width="526" height="144"></div>
       <span class="kicker"><i></i> SECURE EXAM PORTAL</span>
       <h1>Welcome, student</h1>
-      <p class="sub">Enter your test credentials to continue.</p>
-      <form id="loginForm" novalidate>
-        <div class="field" id="fUser"><label for="userId">User ID</label><input id="userId" name="userId" type="text" placeholder="Enter your user ID" autocomplete="off" autocapitalize="none" spellcheck="false" required></div>
-        <div class="field" id="fPw"><label for="pw">Password</label><input id="pw" name="password" type="password" placeholder="Enter your password" autocomplete="off" required></div>
-        <p class="message" id="loginMessage" role="alert" aria-live="polite"></p>
-        <div class="buttonZone"><button class="loginBtn" id="loginBtn" type="submit"><span>Enter Test</span><span class="buttonArrow" aria-hidden="true">→</span></button></div>
-      </form>
-      <p class="external-login-note">Aapko wahan ek baar apna login dobara daalna pad sakta hai.</p>
+      <p class="sub">Tap the button below to open your test portal.</p>
+      <a class="loginBtn" id="enterBtn" href="https://myjeementor.theonlinetests.com/" rel="noopener"><span>Enter Test</span><span class="buttonArrow" aria-hidden="true">→</span></a>
+      <p class="external-login-note">You will log in on the test portal.</p>
       <div class="foot"><span class="onlineDot"></span> My JEE Mentor <span class="footDivider">·</span> Assessment portal</div>
     </section>
   </div>
