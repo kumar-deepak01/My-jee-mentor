@@ -1,12 +1,22 @@
 const formatMoney=value=>new Intl.NumberFormat('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);
-const formatDate=value=>{if(!value)return'-';const parts=String(value).split('-');if(parts.length!==3)return String(value);const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return parts[2]+' '+(months[Number(parts[1])-1]||'')+' '+parts[0]};
+export function formatFeeDate(value){
+  if(value==null||value==='')return'-';
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];let year,month,day;
+  if(value instanceof Date){if(Number.isNaN(value.getTime()))return'-';year=value.getFullYear();month=value.getMonth()+1;day=value.getDate()}
+  else if(typeof value==='string'){
+    const text=value.trim();if(!text)return'-';const iso=/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(text);
+    if(iso){year=Number(iso[1]);month=Number(iso[2]);day=Number(iso[3]);const check=new Date(Date.UTC(year,month-1,day));if(check.getUTCFullYear()!==year||check.getUTCMonth()+1!==month||check.getUTCDate()!==day)return'-'}
+    else{const parsed=new Date(text);if(Number.isNaN(parsed.getTime()))return'-';year=parsed.getFullYear();month=parsed.getMonth()+1;day=parsed.getDate()}
+  }else return'-';
+  if(month<1||month>12||day<1||day>31)return'-';return String(day).padStart(2,'0')+' '+months[month-1]+' '+year;
+}
 function amountToWords(value){
   const below=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'],tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
   const under=n=>{if(n<20)return below[n];if(n<100)return tens[Math.floor(n/10)]+(n%10?' '+below[n%10]:'');return below[Math.floor(n/100)]+' Hundred'+(n%100?' '+under(n%100):'')};
   const n0=Math.round((Number(value)||0)*100),rupees=Math.floor(n0/100),paise=n0%100;let n=rupees;const parts=[];const crore=Math.floor(n/10000000);n%=10000000;const lakh=Math.floor(n/100000);n%=100000;const thousand=Math.floor(n/1000);n%=1000;if(crore)parts.push(under(crore)+' Crore');if(lakh)parts.push(under(lakh)+' Lakh');if(thousand)parts.push(under(thousand)+' Thousand');if(n)parts.push(under(n));return'Rupees '+(parts.join(' ')||'Zero')+(paise?' and '+under(paise)+' Paise':'')+' Only';
 }
 async function logoData(){try{const r=await fetch('/mainlogo.png',{cache:'force-cache'});if(!r.ok)return'';const blob=await r.blob();return await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>resolve('');reader.readAsDataURL(blob)})}catch{return''}}
-function stampDateText(value){const p=String(value||'').split('-'),m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];return p.length===3?(p[2]+' '+(m[Number(p[1])-1]||'')+' '+p[0]).trim():'DATE'}
+function stampDateText(value){const formatted=formatFeeDate(value);return formatted==='-'?'DATE':formatted.slice(0,2)+' '+formatted.slice(3,6).toUpperCase()+' '+formatted.slice(7)}
 async function paidStampData(date){
   try{
     if(document.fonts&&document.fonts.load){await Promise.allSettled([document.fonts.load('900 100px Poppins'),document.fonts.load('700 26px Poppins')]);await document.fonts.ready}
@@ -30,7 +40,7 @@ export async function downloadReceiptPdf(record){
   d.setFillColor(...navy);d.rect(0,0,210,60,'F');d.setFillColor(...orange);d.rect(0,0,3,60,'F');d.setFillColor(255,255,255);d.roundedRect(13,9,47,40,4,4,'F');
   const logo=await logoData();if(logo){try{const im=new Image();im.src=logo;await im.decode();const w=Math.min(43,40*im.width/im.height),h=w*im.height/im.width;d.addImage(logo,'PNG',15+(43-w)/2,9+(40-h)/2,w,h)}catch{}}
   d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(19);d.text('My JEE Mentor',66,24);d.setFontSize(8.5);d.text('IIT-JEE | NEET | FOUNDATION',66,35);d.setFont('helvetica','normal');d.setFontSize(9);d.text('Concept First. Rank Next.',66,43);
-  d.setFont('helvetica','bold');d.setFontSize(22);d.text('FEE RECEIPT',197,20,{align:'right'});d.setFillColor(38,54,84);d.roundedRect(126,28,71,23,3,3,'F');d.setFontSize(8.5);d.text('Receipt No: '+(record.receiptNo||'-'),132,37);d.setFont('helvetica','normal');d.setFontSize(9);d.text('Date: '+formatDate(record.date),132,45);
+  d.setFont('helvetica','bold');d.setFontSize(22);d.text('FEE RECEIPT',197,20,{align:'right'});d.setFillColor(38,54,84);d.roundedRect(126,28,71,23,3,3,'F');d.setFontSize(8.5);d.text('Receipt No: '+(record.receiptNo||'-'),132,37);d.setFont('helvetica','normal');d.setFontSize(9);d.text('Date: '+formatFeeDate(record.date),132,45);
   d.setFillColor(...cream);d.setDrawColor(...edge);d.setLineWidth(.35);d.roundedRect(13,68,184,61,3,3,'FD');d.setFillColor(...orange);d.rect(13,71,2,55,'F');d.setDrawColor(...edge);d.line(105,68,105,129);d.line(15,88.3,197,88.3);d.line(15,108.6,197,108.6);
   const fields=[['Student Name',record.studentName],['Parent Name',record.parentName],['Phone',record.phone],['Course',record.course],['Batch',record.batch],['Fee Period',record.feePeriod]];fields.forEach((f,i)=>{const col=i%2,row=Math.floor(i/2),x=col?111:19,y=68+row*20.3;labelText(d,f[0],x,y+7,label);d.setTextColor(...ink);fitLine(d,f[1],x,y+16,79,13,9,'bold')});
   d.setFont('helvetica','bold');d.setFontSize(12);d.setTextColor(...navy);d.text('PAYMENT DETAILS',13,141);const cols=[13,80,119,154,197],top=145,hh=11,rh=18;d.setFillColor(...navy);d.roundedRect(13,top,184,hh,2,2,'F');d.rect(13,top+7,184,4,'F');d.setFont('helvetica','bold');d.setFontSize(9);d.setTextColor(255,255,255);['Description','Fee Period','Payment Mode','Amount'].forEach((v,i)=>d.text(v,i===0?cols[i]+4:(cols[i]+cols[i+1])/2,top+7.5,{align:i===0?'left':'center'}));
