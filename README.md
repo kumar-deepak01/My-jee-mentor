@@ -22,7 +22,27 @@ SQLite creates `data/leads.sqlite` on the first API request. Production must set
 
 ## Pages
 
-Home, JEE, NEET, Foundation, courses, JEE Booster detail, results, faculty, why us, reviews, free resources, faculty login, contact, 404, privacy, terms and refund pages are included. Static `.html` links work directly; Express also resolves extensionless URLs. Replace placeholder contact details and confirm the canonical domain before launch.
+Home, JEE, NEET, Foundation, courses, JEE Booster detail, results, faculty, why us, reviews, free resources, faculty login, private fee desk, contact, 404, privacy, terms and refund pages are included. Static `.html` links work directly; Express also resolves extensionless URLs. Replace placeholder contact details and confirm the canonical domain before launch.
+
+## Private fee collection and receipts
+
+The private fee desk is available at `/fees` and is intentionally omitted from navigation and the sitemap. It has a `noindex` meta tag. The page shell is static, while every login, history and payment operation is checked server-side. The Apps Script URL and shared secret are only used by the server API at `/api/fees`; the browser never calls Google Apps Script directly. This project is not Next.js, so `/api/fees` is implemented as a Vercel Node function and an equivalent Express route.
+
+### Create and configure the fee sheet
+
+1. Create a Google Spreadsheet for the fee register. Open **Extensions → Apps Script** from that spreadsheet so the Apps Script project is bound to the sheet.
+2. Replace the editor contents with `apps-script/Code.gs` and save. The script creates a `Fees` tab and the receipt columns the first time it is used.
+3. In Apps Script **Project Settings → Script Properties**, add `SHEET_SECRET` with a long, random value. Use the same value for the Vercel environment variable; never put it in browser code or commit the value.
+4. Choose **Deploy → New deployment → Web app**, execute as the spreadsheet owner, and allow access to anyone. The web app verifies the shared secret for every request. Copy the deployed URL ending in `/exec`.
+5. Set these environment variables in Vercel for Production (and Preview if you use it), and locally in the ignored `.env` file:
+
+   - `ADMIN_PASSWORD`: a long, unique password for the fee desk. The server checks it and issues an HttpOnly, Secure, SameSite=Strict session cookie; changing the password invalidates existing sessions.
+   - `SHEET_WEBAPP_URL`: the Apps Script deployment HTTPS `/exec` URL.
+   - `SHEET_SECRET`: the same random value stored in the Apps Script project properties.
+
+6. Redeploy after adding or changing the Vercel variables. Visit `/fees`, sign in, and check that the history loads before recording the first payment. A receipt is created only after Apps Script confirms the appended row and receipt number.
+
+The app validates entries on the server, serializes receipt number generation with Apps Script `LockService`, and records `MJM-YYYY-0001` style receipt numbers. Search and date filtering run through the authenticated server API. Never share the Apps Script `/exec` URL together with the secret.
 
 ## Deployment
 
@@ -80,4 +100,4 @@ The home hero image is a locally stored Pexels photo by Katerina Holmes, availab
 
 ## Current limitations
 
-The course/results/faculty/review/resource grids use clearly identified placeholder content. No Google Drive Picker/OAuth integration, Google Sheets integration, GA4 or Meta Pixel IDs are configured. The 3D hero has a CSS fallback and conditionally loads a lightweight Three.js particle scene; third-party video embeds are click-to-load.
+The course/results/faculty/review/resource grids use clearly identified placeholder content. No Google Drive Picker/OAuth integration, GA4 or Meta Pixel IDs are configured. The fee portal requires a deployed Apps Script web app and server-side environment variables before use. The 3D hero has a CSS fallback and conditionally loads a lightweight Three.js particle scene; third-party video embeds are click-to-load.

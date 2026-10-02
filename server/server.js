@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import leads from './routes/leads.js';
 import facultyRoute from './faculty-route.js';
 import studentReviewRoute from './student-review-route.js';
+import feesRoute from './fees-route.js';
 import {CHAT_FALLBACK,handleChatRequest} from '../api/_chat-handler.js';
 const app=express(),here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'..');
 app.disable('x-powered-by');app.set('trust proxy',1);
@@ -18,6 +19,7 @@ app.use(cors({origin(origin,cb){if(!origin||allowed.includes(origin))return cb(n
 app.use(express.json({limit:'20kb'}));app.use(cookieParser());
 app.all('/api/faculty',facultyRoute);
 app.all('/api/student-reviews',studentReviewRoute);
+app.all('/api/fees',feesRoute);
 app.get('/api/config',(req,res)=>res.json({turnstileSiteKey:process.env.TURNSTILE_SITE_KEY||''}));
 app.use('/api',leads);
 app.all('/api/chat',async(req,res)=>{try{const result=await handleChatRequest({method:req.method,body:req.body,ip:req.ip});res.set('Cache-Control','no-store').status(result.status).json(result.body);}catch{res.set('Cache-Control','no-store').status(200).json({reply:CHAT_FALLBACK});}});

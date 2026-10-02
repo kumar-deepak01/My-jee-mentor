@@ -9,6 +9,12 @@
     },
     "api/student-reviews.js": {
       "maxDuration": 30
+    },
+    "api/fees.js": {
+      "maxDuration": 30
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/fees", "destination": "/fees.html" }
+  ]
 }
