@@ -39,9 +39,10 @@ function doPost(e) {
     const data = JSON.parse(e && e.postData && e.postData.contents || '{}');
     if (!validSecret(data.secret)) return jsonOutput({ok: false, message: 'Unauthorized request.'});
     const studentName = cleanCell(data.studentName, 100);
-    const phone = cleanCell(data.phone, 20);
+    const phone = String(data.phone == null ? '' : data.phone).trim().replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 30);
     const amount = Number(data.amount);
-    if (!studentName || !/^\+?[0-9 ()-]{8,20}$/.test(phone) || phone.replace(/\D/g, '').length < 8 || !isFinite(amount) || amount <= 0) {
+    const phoneDigits = (phone.match(/[0-9]/g) || []).length;
+    if (!studentName || !/^\+?[0-9-]+$/.test(phone) || phoneDigits < 10 || phoneDigits > 15 || !isFinite(amount) || amount <= 0) {
       return jsonOutput({ok: false, message: 'Student name, valid phone and amount are required.'});
     }
 
@@ -73,7 +74,7 @@ function doPost(e) {
       collectedBy: cleanCell(data.collectedBy, 100),
       remarks: cleanCell(data.remarks, 500)
     };
-    sheet.appendRow([record.receiptNo, "'" + record.date, record.studentName, record.parentName, record.phone, record.course, record.batch, record.feePeriod, record.amount, record.paymentMode, record.balanceDue, record.collectedBy, record.remarks]);
+    sheet.appendRow([record.receiptNo, "'" + record.date, record.studentName, record.parentName, cleanCell(record.phone, 30), record.course, record.batch, record.feePeriod, record.amount, record.paymentMode, record.balanceDue, record.collectedBy, record.remarks]);
     return jsonOutput({ok: true, receiptNo: receiptNo, record: record});
   } catch (error) {
     return jsonOutput({ok: false, message: 'Could not save the fee record. Please retry.'});

@@ -17,9 +17,9 @@ function clearLoginAttempts(request){loginAttempts.delete(requesterKey(request))
 const text=(value,max)=>typeof value==='string'?value.trim().replace(/[\u0000-\u001f\u007f]/g,'').slice(0,max):'';
 const COURSES=new Set(['JEE','NEET','Foundation']),PAYMENT_MODES=new Set(['Cash','UPI','Card','Bank Transfer']);
 function validateRecord(body){
-  const studentName=text(body?.studentName,100),parentName=text(body?.parentName,100),phone=text(body?.phone,20),course=text(body?.course,30),batch=text(body?.batch,80),feePeriod=text(body?.feePeriod,50),collectedBy=text(body?.collectedBy,100),remarks=text(body?.remarks,500),date=text(body?.date,10),paymentMode=text(body?.paymentMode,30),amount=Number(body?.amount),balanceDue=body?.balanceDue===''||body?.balanceDue==null?0:Number(body.balanceDue);
+  const studentName=text(body?.studentName,100),parentName=text(body?.parentName,100),phone=text(body?.phone,30),course=text(body?.course,30),batch=text(body?.batch,80),feePeriod=text(body?.feePeriod,50),collectedBy=text(body?.collectedBy,100),remarks=text(body?.remarks,500),date=text(body?.date,10),paymentMode=text(body?.paymentMode,30),amount=Number(body?.amount),balanceDue=body?.balanceDue===''||body?.balanceDue==null?0:Number(body.balanceDue);
   if(!studentName)throw new FeesError(400,'STUDENT_REQUIRED','Student name is required.');
-  if(!/^\+?[0-9 ()-]{8,20}$/.test(phone)||phone.replace(/\D/g,'').length<8)throw new FeesError(400,'PHONE_INVALID','Enter a valid phone number.');
+  const phoneDigits=(phone.match(/[0-9]/g)||[]).length;if(!/^\+?[0-9-]+$/.test(phone)||phoneDigits<10||phoneDigits>15)throw new FeesError(400,'PHONE_INVALID','Enter 10 to 15 digits; only a leading + and hyphens are allowed.');
   if(!Number.isFinite(amount)||amount<=0||amount>99999999.99)throw new FeesError(400,'AMOUNT_INVALID','Enter a valid amount greater than zero.');
   if(!COURSES.has(course))throw new FeesError(400,'COURSE_INVALID','Select a valid course.');
   if(!PAYMENT_MODES.has(paymentMode))throw new FeesError(400,'PAYMENT_MODE_INVALID','Select a valid payment mode.');
