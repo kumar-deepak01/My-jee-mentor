@@ -72,11 +72,11 @@ Credentials are read only by the API and are never placed in browser code. Confi
 Faculty add a title (up to 80 characters), Google Drive link, and type. The link must be HTTPS from `drive.google.com` or `docs.google.com`; share the file as �Anyone with the link � Viewer�. The public resource API returns the resource list only.
 ### Vercel
 
-The new `/api/chat` route is a Vercel Node.js function. The Express server and SQLite file are not a suitable serverless persistence configuration for `/api/leads`; move that route to a Vercel function backed by a managed database (parameterized SQL) or deploy the supplied Express API on Render. Configure the frontend API URL and CORS origin for that split deployment.
+The site includes Vercel functions for `/api/chat`, `/api/config`, `/api/csrf` and `/api/leads`. Counselling enquiries are emailed through Resend; set `RESEND_API_KEY` and `LEADS_FROM_EMAIL` in Vercel, and verify the sender domain in Resend. Enquiry emails go to `amyjeementor@gmail.com`; student email is set as reply-to. Set Turnstile keys for production form protection. The local Express lead route also stores submitted leads in SQLite, but Vercel submissions are email-only and should use managed database storage if a persistent web dashboard is needed.
 
 ## Database schema
 
-`server/db.js` creates `leads` with `id`, student/parent names, phone and WhatsApp, class, exam, target year, current coaching, preferred subject, city, language, message and a server-generated timestamp. All values use a prepared insert statement.
+`server/db.js` creates `leads` with `id`, student/parent names and email, phone and WhatsApp, class, course, target year, current coaching, preferred subject, city, language, message and a server-generated timestamp. All values use a prepared insert statement.
 
 ## Security checklist
 
