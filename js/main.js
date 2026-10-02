@@ -36,7 +36,7 @@ const programs=[
 ];
 const homePrograms=[
   {slug:'foundation',tags:['FOUNDATION','CLASSES 8–12'],title:'Foundation Program',headline:'Strong Foundations',summary:'Build strong academic basics across core subjects with step-by-step teaching and personal guidance.',features:['SCIENCE','MATH','SOCIAL SCIENCE','ENGLISH','SPOKEN ENGLISH'],art:'FOUNDATION',mark:'8–12',caption:'STRONG BASICS · BROADER CONFIDENCE'},
-  {slug:'jee-prep',tags:['IIT-JEE','SUBJECT PREPARATION'],title:'IIT-JEE Preparation',headline:'Prepare for IIT-JEE',summary:'Focused subject learning to strengthen concepts and problem-solving skills for the IIT-JEE journey.',features:['Physics','Chemistry','Math'],art:'IIT-JEE',mark:'JEE',caption:'PHYSICS · CHEMISTRY · MATH'},
+  {slug:'jee-prep',tags:['IIT-JEE','SUBJECT PREPARATION'],title:'IIT-JEE Preparation',headline:'Prepare for IIT-JEE',summary:'Focused subject learning to strengthen concepts and problem-solving skills for the IIT-JEE journey.',features:['Physics','Chemistry','Math'],art:'IIT-JEE',mark:'RANKER',caption:'PHYSICS · CHEMISTRY · MATH'},
   {slug:'one-to-one',tags:['PREMIUM BATCH','1:1 PROGRAM','100% PERSONAL'],title:'Premium Batch — One to One',headline:'Your goals. Your plan.',summary:'One student, one mentor. Follow a custom learning plan with direct support and performance tracking.',features:['One-to-one personal mentoring','Direct teacher support','Custom learning plan','Regular performance tracking'],art:'ONE TO ONE',mark:'1 : 1',caption:'100% PERSONAL · 100% FOCUSED'}
 ];
 const neetPrograms=programs.map((program,index)=>({...program,...[
