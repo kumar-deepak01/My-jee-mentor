@@ -96,7 +96,7 @@ const seoDescriptions={
   '/privacy-policy.html':'Learn how My JEE Mentor handles information submitted through this website.',
   '/refund-policy.html':'Read the My JEE Mentor refund policy and contact the team about enrollment terms.'
 };
-const seoTitle=home?'Best Online JEE Coaching | Classes 11–12 | My JEE Mentor':`${page.title} | My JEE Mentor`;
+const seoTitle=home?'Best Online JEE Coaching | Classes 11–12 | My JEE Mentor':path==='/neet.html'?`${page.title} | My NEET Mentor`:`${page.title} | My JEE Mentor`;
 document.title=seoTitle;
 const setMeta=(selector,key,value,attribute)=>{let element=document.head.querySelector(selector);if(!element){element=document.createElement('meta');element.setAttribute(attribute,key);document.head.append(element)}element.setAttribute('content',value)};
 const description=seoDescriptions[path]||page.intro||'Explore live online classes, practice and personal mentorship for JEE, NEET and Foundation at My JEE Mentor.';
