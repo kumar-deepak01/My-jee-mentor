@@ -4,6 +4,7 @@ import {BlobPreconditionFailedError,get,put} from '@vercel/blob';
 const COOKIE='mjm_faculty_session';
 const SESSION_SECONDS=7*24*60*60;
 const RESOURCE_PATH='mjm-data/faculty-resources.json';
+const JOB_PATH='mjm-data/career-jobs.json';
 const LOGIN_LOCK_PATH='mjm-data/faculty-login-locks.json';
 const TYPES=new Set(['PDF','PPT','Image','Doc']);
 
@@ -94,11 +95,20 @@ async function mutateResources(mutator){
   throw new ApiError(409,'RESOURCE_CONFLICT','The list changed at the same time. Please try again.');
 }
 function publicResource(item){return{...item,previewUrl:item.folderOnly?null:`https://drive.google.com/file/d/${encodeURIComponent(item.driveId)}/preview`,thumbnailUrl:item.folderOnly?null:`https://drive.google.com/thumbnail?id=${encodeURIComponent(item.driveId)}&sz=w400`}}
+function validateJob(body,existing={}){
+  const clean=(value,max)=>String(value??'').trim().replace(/[\u0000-\u001f\u007f]/g,'').slice(0,max);
+  const title=clean(body?.title,100),subject=clean(body?.subject,100),location=clean(body?.location,100),type=String(body?.type||''),description=clean(body?.description,1200),eligibility=clean(body?.eligibility,800),lastDate=clean(body?.lastDate,10);
+  if(!title||!subject||!location||!description||!eligibility||!/^\d{4}-\d{2}-\d{2}$/.test(lastDate)||!['Full-time','Part-time'].includes(type))throw new ApiError(400,'INVALID_JOB','Complete all job fields and choose a valid job type and last date.');
+  return{id:existing.id||randomUUID(),title,subject,location,type,description,eligibility,lastDate,createdAt:existing.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+}
+async function readJobs(){const stored=await get(JOB_PATH,{access:'private',token:process.env.BLOB_READ_WRITE_TOKEN,useCache:false});if(!stored)return{items:[],etag:null};if(stored.statusCode!==200||!stored.stream)throw new ApiError(503,'JOB_STORE_READ_FAILED','Could not read job postings.');let items;try{items=JSON.parse(await new Response(stored.stream).text())}catch{throw new ApiError(503,'JOB_STORE_INVALID','The stored job list is invalid.')}if(!Array.isArray(items))throw new ApiError(503,'JOB_STORE_INVALID','The stored job list is invalid.');return{items,etag:stored.blob.etag}}
+async function mutateJobs(mutator){for(let attempt=0;attempt<5;attempt++){const{items,etag}=await readJobs(),next=mutator([...items]);try{await put(JOB_PATH,JSON.stringify(next),{access:'private',token:process.env.BLOB_READ_WRITE_TOKEN,contentType:'application/json; charset=utf-8',cacheControlMaxAge:60,allowOverwrite:Boolean(etag),...(etag?{ifMatch:etag}:{})});return next}catch(error){const collision=!etag&&/already.?exists|precondition/i.test(String(error?.name||error?.message));if((error instanceof BlobPreconditionFailedError||collision)&&attempt<4)continue;throw error}}throw new ApiError(409,'JOB_CONFLICT','The job list changed at the same time. Please try again.')}
 
 export async function handleFacultyRequest(request){
   try{
     const url=new URL(request.url),action=url.searchParams.get('action')||'';
     if(request.method==='GET'&&action==='resources'){blobConfig();const{items}=await readResources();return json({ok:true,resources:items.map(publicResource)});}
+    if(request.method==='GET'&&action==='jobs'){blobConfig();const{items}=await readJobs();return json({ok:true,jobs:items.filter(job=>job.lastDate>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.lastDate.localeCompare(b.lastDate))});}
     if(request.method==='GET'&&action==='me')return json({ok:readSession(request)});
     if(!['POST','PUT','PATCH','DELETE'].includes(request.method))return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
     enforceOrigin(request);
@@ -122,6 +132,9 @@ export async function handleFacultyRequest(request){
       });
       return json({ok:true,resource:publicResource(items[0]),resources:items.map(publicResource)},201);
     }
+    if(action==='job-add'&&request.method==='POST'){const item=validateJob(await request.json());const jobs=await mutateJobs(current=>[item,...current.filter(job=>job.id!==item.id)]);return json({ok:true,jobs},201);}
+    if(action==='job-update'&&['PUT','PATCH'].includes(request.method)){const body=await request.json(),id=typeof body?.id==='string'?body.id:'';if(!/^[0-9a-f-]{36}$/i.test(id))throw new ApiError(400,'INVALID_JOB_ID','Job not found.');let updated=false;const jobs=await mutateJobs(current=>{if(!current.some(job=>job.id===id))throw new ApiError(404,'JOB_NOT_FOUND','Job not found.');updated=true;return current.map(job=>job.id===id?validateJob(body,job):job)});if(!updated)throw new ApiError(404,'JOB_NOT_FOUND','Job not found.');return json({ok:true,jobs});}
+    if(action==='job-delete'&&request.method==='DELETE'){const body=await request.json(),id=typeof body?.id==='string'?body.id:'';if(!/^[0-9a-f-]{36}$/i.test(id))throw new ApiError(400,'INVALID_JOB_ID','Job not found.');let removed=false;const jobs=await mutateJobs(current=>current.filter(job=>{if(job.id===id){removed=true;return false}return true}));if(!removed)throw new ApiError(404,'JOB_NOT_FOUND','Job not found.');return json({ok:true,jobs});}
     if(action==='delete'&&request.method==='DELETE'){
       const body=await request.json(),id=typeof body?.id==='string'?body.id:'';if(!/^[0-9a-f-]{36}$/i.test(id))throw new ApiError(400,'INVALID_RESOURCE_ID','Resource not found.');
       let removed=false;const items=await mutateResources(current=>current.filter(item=>{if(item.id===id){removed=true;return false}return true}));
