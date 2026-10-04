@@ -109,6 +109,7 @@ export async function handleFacultyRequest(request){
     const url=new URL(request.url),action=url.searchParams.get('action')||'';
     if(request.method==='GET'&&action==='resources'){blobConfig();const{items}=await readResources();return json({ok:true,resources:items.map(publicResource)});}
     if(request.method==='GET'&&action==='jobs'){blobConfig();const{items}=await readJobs();return json({ok:true,jobs:items.filter(job=>job.lastDate>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.lastDate.localeCompare(b.lastDate))});}
+    if(request.method==='GET'&&action==='job-list'){requireSession(request);blobConfig();const{items}=await readJobs();return json({ok:true,jobs:items});}
     if(request.method==='GET'&&action==='me')return json({ok:readSession(request)});
     if(!['POST','PUT','PATCH','DELETE'].includes(request.method))return json({ok:false,code:'METHOD_NOT_ALLOWED',message:'Method not allowed.'},405);
     enforceOrigin(request);
@@ -124,7 +125,6 @@ export async function handleFacultyRequest(request){
       return json({ok:true},200,{'set-cookie':cookie(makeSession())});
     }
     requireSession(request);
-    if(action==='job-list'&&request.method==='GET'){blobConfig();const{items}=await readJobs();return json({ok:true,jobs:items});}
     if(action==='add'&&request.method==='POST'){
       const item=validateResource(await request.json());
       const items=await mutateResources(current=>{
