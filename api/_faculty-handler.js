@@ -124,6 +124,7 @@ export async function handleFacultyRequest(request){
       return json({ok:true},200,{'set-cookie':cookie(makeSession())});
     }
     requireSession(request);
+    if(action==='job-list'&&request.method==='GET'){blobConfig();const{items}=await readJobs();return json({ok:true,jobs:items});}
     if(action==='add'&&request.method==='POST'){
       const item=validateResource(await request.json());
       const items=await mutateResources(current=>{
