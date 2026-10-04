@@ -20,7 +20,7 @@ function sendApplicationResult(token, ok, message) {
   const safeToken = /^[a-f0-9-]{36}$/i.test(String(token || '')) ? String(token) : '';
   const result = JSON.stringify({token: safeToken, ok: Boolean(ok), message: String(message || '')});
   const encoded = JSON.stringify(result);
-  return HtmlService.createHtmlOutput('<!doctype html><script>parent.postMessage(JSON.parse(' + encoded + '), "*");</script>');
+  return HtmlService.createHtmlOutput('<!doctype html><script>parent.postMessage(JSON.parse(' + encoded + '), "*");</script>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function doPost(e) {
