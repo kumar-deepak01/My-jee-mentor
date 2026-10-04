@@ -336,3 +336,7 @@ html.dark-theme body.jee-page .brand-logo img,html.dark-theme body.neet-page .br
 /* Foundation uses the same theme-aware logo filter as JEE/NEET. */
 html.dark-theme body.foundation-page .brand-logo img{filter:invert(1) hue-rotate(180deg)}
 @media(max-width:640px){.hero-highlights{gap:7px;margin:15px 0 20px}.hero-highlights li{padding:7px 9px;font-size:.75rem}}
+
+/* Use the JEE dark-mode logo treatment on every page except NEET. */
+html.dark-theme .brand-logo img:not(.brand-logo-neet){filter:invert(1) hue-rotate(180deg)}.hero-meta{font-family:'Segoe Script','Bradley Hand',cursive;font-style:italic;letter-spacing:.01em}
+
