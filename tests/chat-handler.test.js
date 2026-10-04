@@ -11,9 +11,9 @@ const originalEnv = {
 };
 
 const answers = new Map([
-  ['Program details?', 'Current program details ke liye counsellor ko call ya WhatsApp karein.'],
-  ['Teacher kaun hain?', 'Faculty ke naam aur verified details abhi site par listed nahi hain. Aap counsellor se confirm kar sakte hain.'],
-  ['Demo class chahiye', 'Haan, free demo class available hai. Demo book karne ke liye counsellor se contact karein.'],
+  ['Program details?', 'Current program details ke liye counselor ko call ya WhatsApp karein.'],
+  ['Teacher kaun hain?', 'Faculty ke naam aur verified details abhi site par listed nahi hain. Aap counselor se confirm kar sakte hain.'],
+  ['Demo class chahiye', 'Haan, free demo class available hai. Demo book karne ke liye counselor se contact karein.'],
   ['Is cricket score?', CHAT_FALLBACK]
 ]);
 
@@ -47,7 +47,7 @@ afterEach(() => {
   resetChatRateLimitsForTests();
 });
 
-test('routes program cost questions to a counsellor instead of publishing figures', async () => {
+test('routes program cost questions to a counselor instead of publishing figures', async () => {
   configureGemini();
   const getBody = installMockProvider();
   const result = await handleChatRequest({method: 'POST', body: {message: 'Program details?', history: []}, ip: 'fees-test'});

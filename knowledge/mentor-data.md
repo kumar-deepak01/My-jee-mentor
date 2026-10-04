@@ -31,7 +31,7 @@ This file records information currently displayed in the project’s public page
 
 - The Foundation page describes Maths, Science, and logical reasoning for Classes 7–10, with an early base for JEE and NEET.
 - A separate Foundation Batch program card says Classes 8–12, maximum 10 students, and describes fundamentals, step-by-step learning, practice/tests, doubt support, and mentor guidance.
-- These two visible class ranges differ. If asked which range is correct, explain that the site shows both and suggest confirming with the counsellor; do not silently choose one.
+- These two visible class ranges differ. If asked which range is correct, explain that the site shows both and suggest confirming with the counselor; do not silently choose one.
 
 ## Mentorship support
 
@@ -44,7 +44,7 @@ This file records information currently displayed in the project’s public page
 
 ## Program enquiries and demo class
 
-- For current program details and class options, visitors should call or WhatsApp the counsellor.
+- For current program details and class options, visitors should call or WhatsApp the counselor.
 - The site offers a free demo class and free counselling/demo booking. It does not publish a schedule or a specific demo date; visitors are directed to contact the team.
 - The demo popup says there is no pressure to decide after the demo.
 
@@ -68,7 +68,7 @@ This file records information currently displayed in the project’s public page
 
 - Free Resources page lists JEE PYQs, NEET PYQs, DPPs, formula sheets, short notes, previous-year papers, important questions, study material, free YouTube classes, and blogs.
 - The contact form asks for student/parent names, phone/WhatsApp, class, exam, target year, current coaching, preferred subject, city, language, and message.
-- The site provides Privacy Policy, Terms & Conditions, and Refund Policy pages. The terms page says schedules and features may vary by course and batch; the refund page directs visitors to contact the counsellor for applicable terms.
+- The site provides Privacy Policy, Terms & Conditions, and Refund Policy pages. The terms page says schedules and features may vary by course and batch; the refund page directs visitors to contact the counselor for applicable terms.
 
 ## Review before giving a definitive answer
 

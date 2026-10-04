@@ -28,7 +28,7 @@ export default async function handler(req,res){
       if(!(await verify.json()).success)return res.status(400).json({message:'Please complete the security check and try again.'});
     }catch{return res.status(503).json({message:'Form service is temporarily unavailable.'})}
   }
-  if(!process.env.RESEND_API_KEY||!process.env.LEADS_FROM_EMAIL)return res.status(503).json({message:'Email delivery is not configured yet. Please call or WhatsApp our counsellor.'});
+  if(!process.env.RESEND_API_KEY||!process.env.LEADS_FROM_EMAIL)return res.status(503).json({message:'Email delivery is not configured yet. Please call or WhatsApp our counselor.'});
   const labels={studentName:'Student Name',parentName:'Parent Name',email:'Email',mobile:'Mobile',whatsapp:'WhatsApp',className:'Class',exam:'Course',targetYear:'Target Year',currentCoaching:'Current Coaching',preferredSubject:'Preferred Subject',city:'City',language:'Preferred Language',message:'Message'};
   const lines=Object.entries(labels).filter(([key])=>lead[key]).map(([key,label])=>`${label}: ${lead[key]}`);
   try{
