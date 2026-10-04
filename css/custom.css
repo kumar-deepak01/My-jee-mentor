@@ -330,3 +330,9 @@ html.dark-theme .fees-portal{background:linear-gradient(180deg,#171d27,#111720)}
 html.dark-theme .career-card,html.dark-theme .career-empty,html.dark-theme .career-modal-card,html.dark-theme .classroom-card,html.dark-theme .classroom-login{border-color:#394352;background:linear-gradient(145deg,#202733,#171d27);color:#edf1f7}html.dark-theme .career-card h2,html.dark-theme .career-empty h2,html.dark-theme .career-modal-card h2,html.dark-theme .classroom-card h2{color:#f3f4f6}html.dark-theme .career-card p,html.dark-theme .career-meta,html.dark-theme .classroom-card p{color:#b7c0ce}html.dark-theme .career-type,html.dark-theme .fee-badge,html.dark-theme .foundation-fee{border-color:#81502f;background:#35271e;color:#ffd3b2}
 /* Dark theme uses the supplied light lettering and mark treatment for JEE/NEET brand logos. */
 html.dark-theme body.jee-page .brand-logo img,html.dark-theme body.neet-page .brand-logo img{filter:invert(1) hue-rotate(180deg)}
+
+/* Home hero learning features */
+.hero-highlights{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 25px;padding:0;list-style:none;max-width:640px}.hero-highlights li{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #f2dfd0;border-radius:999px;background:#fffaf5;color:#50596a;font-size:.8rem;font-weight:700;line-height:1.25}.hero-highlights li:before{content:'✓';color:#d85c16;font-weight:900}html.dark-theme .hero-highlights li{border-color:#38404d;background:#202733;color:#e1e6ee}html.dark-theme .hero-highlights li:before{color:#ffad67}
+/* Foundation uses the same theme-aware logo filter as JEE/NEET. */
+html.dark-theme body.foundation-page .brand-logo img{filter:invert(1) hue-rotate(180deg)}
+@media(max-width:640px){.hero-highlights{gap:7px;margin:15px 0 20px}.hero-highlights li{padding:7px 9px;font-size:.75rem}}
