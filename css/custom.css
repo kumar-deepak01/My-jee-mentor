@@ -333,11 +333,104 @@ html.dark-theme .career-card,html.dark-theme .career-empty,html.dark-theme .care
 html.dark-theme body.jee-page .brand-logo img,html.dark-theme body.neet-page .brand-logo img{filter:invert(1) hue-rotate(180deg)}
 
 /* Home hero learning features */
-.hero-highlights{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 25px;padding:0;list-style:none;max-width:640px}.hero-highlights li{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #f2dfd0;border-radius:999px;background:#fffaf5;color:#50596a;font-size:.8rem;font-weight:700;line-height:1.25}.hero-highlights li:before{content:'✓';color:#d85c16;font-weight:900}html.dark-theme .hero-highlights li{border-color:#38404d;background:#202733;color:#e1e6ee}html.dark-theme .hero-highlights li:before{color:#ffad67}
+
 /* Foundation uses the same theme-aware logo filter as JEE/NEET. */
 html.dark-theme body.foundation-page .brand-logo img{filter:invert(1) hue-rotate(180deg)}
-@media(max-width:640px){.hero-highlights{gap:7px;margin:15px 0 20px}.hero-highlights li{padding:7px 9px;font-size:.75rem}}
+@media(max-width:640px){}
 
 /* Use the JEE dark-mode logo treatment on every page except NEET. */
 html.dark-theme .brand-logo img:not(.brand-logo-neet){filter:invert(1) hue-rotate(180deg)}.hero-meta{font-family:'Segoe Script','Bradley Hand',cursive;font-style:italic;letter-spacing:.01em}
 
+
+/* Home page hero refresh: all selectors stay inside the home hero. */
+.hero{min-height:0;overflow:hidden;background:linear-gradient(118deg,#fffaf6 0%,#fff4eb 52%,#fff 100%)}
+.hero:before{background:radial-gradient(ellipse at 88% 18%,#f4772112,transparent 35%),radial-gradient(ellipse at 5% 90%,#f477210d,transparent 30%)}
+.hero-layout{grid-template-columns:minmax(0,1.04fr) minmax(390px,.96fr);gap:clamp(28px,5vw,74px);padding:clamp(48px,6vw,84px) 0;align-items:center}
+.hero-inner{max-width:660px}
+.hero h1{margin:16px 0 16px;font-size:clamp(3.15rem,5.5vw,5.55rem);letter-spacing:-.055em}
+.hero h2.hero-tagline{position:relative;display:table;margin:0 0 22px;padding-bottom:10px;font-size:clamp(1.35rem,2.2vw,1.75rem);font-weight:750}
+.hero h2.hero-tagline:after{position:absolute;left:0;bottom:0;width:76px;height:3px;border-radius:5px;background:var(--orange);content:""}
+
+.hero .hero-meta{max-width:530px;margin:0 0 22px;color:#626b78;font-size:.95rem;line-height:1.65}
+.hero-actions{display:flex;flex-wrap:wrap;gap:11px}
+.hero-actions .btn{min-height:48px;padding:13px 19px}
+.hero-actions .btn-outline{background:#fff;border-color:#f0c8ad;color:#98400b}
+.hero .stat-row{gap:10px;margin-top:27px;perspective:none}
+.hero .stat{min-width:0;padding:13px 14px;border-color:#f0e1d5;border-radius:13px;background:#ffffffd9;box-shadow:0 7px 20px #47220b0b;transform:none;transition:transform .2s ease,box-shadow .2s ease}
+.hero .stat:hover{transform:translateY(-3px);box-shadow:0 12px 24px #47220b14}
+.hero .stat strong{font-size:1rem;color:#c45110}
+.hero .stat span{display:block;margin-top:3px;color:#68717f;font-size:.72rem;line-height:1.4}
+.hero-image-wrap{position:relative;isolation:isolate;display:grid;min-height:480px;place-items:center;overflow:visible;transform:none;animation:none}
+.hero-image-wrap:before,.hero-image-wrap:after{content:none}
+.hero-art-circle{position:absolute;z-index:-1;top:50%;left:50%;width:min(88%,420px);aspect-ratio:1;border-radius:50%;background:linear-gradient(145deg,#ff8a3d 0%,#ffb27a 100%);box-shadow:0 28px 70px #d46a2a22;transform:translate(-50%,-48%)}
+.hero-edu-icon{position:absolute;color:#fff;font-weight:700;opacity:.19;line-height:1}
+.hero-icon-bulb{top:18%;left:19%;font-size:2.8rem}.hero-icon-formula{top:28%;right:15%;font-size:2rem}.hero-icon-atom{right:16%;bottom:23%;font-size:2.45rem}.hero-icon-triangle{left:15%;bottom:24%;font-size:2.5rem}.hero-icon-book{left:46%;bottom:11%;font-size:2rem}
+.hero-portrait-window{position:absolute;left:50%;bottom:0;width:min(90%,420px);height:min(94%,470px);overflow:hidden;border-radius:48% 48% 28% 28% / 45% 45% 20% 20%;background:linear-gradient(145deg,#ff994f,#ffc59a);box-shadow:0 24px 54px #8a3c1e26;transform:translateX(-50%);animation:hero-teacher-enter .75s cubic-bezier(.2,.75,.25,1) both}
+.hero .hero-image{position:absolute;top:-49%;left:0;display:block;width:300%;max-width:none;height:auto;max-height:none;aspect-ratio:auto;object-fit:cover;border:0;border-radius:0;outline:0;box-shadow:none;opacity:1;filter:none}
+.hero-course-badges{position:absolute;z-index:3;top:30%;left:43%;width:54%;height:150px;pointer-events:none}
+.hero-course-badge{position:absolute;display:grid;min-height:43px;place-items:center;padding:0 17px;border:1px solid #ffffff80;border-radius:13px;background:linear-gradient(135deg,#f47721,#e45c0d);box-shadow:0 12px 24px #83320e35;color:white;font-size:.83rem;font-weight:850;letter-spacing:.035em;pointer-events:auto;transition:transform .22s ease,box-shadow .22s ease}
+.hero-course-badge:hover{z-index:2;transform:scale(1.08) rotate(0deg)!important;box-shadow:0 17px 30px #69280950}
+.hero-course-badge:focus-visible{outline:3px solid #202633;outline-offset:4px}
+.badge-jee{top:4px;left:5%;transform:rotate(-9deg);animation:badge-float-one 4.8s ease-in-out infinite}
+.badge-neet{top:54px;left:35%;transform:rotate(7deg);animation:badge-float-two 5.4s ease-in-out -1.5s infinite}
+.badge-foundation{top:105px;left:0;transform:rotate(-5deg);animation:badge-float-three 5s ease-in-out -2.1s infinite}
+.hero-dot{position:absolute;z-index:2;width:9px;height:9px;border-radius:50%;background:#f47721;box-shadow:0 0 0 5px #fff8;animation:hero-dot-drift 5s ease-in-out infinite}
+.hero-dot-one{top:22%;right:15%}.hero-dot-two{top:53%;left:7%;width:7px;height:7px;background:#ffc16d;animation-delay:-2s}.hero-dot-three{right:9%;bottom:16%;width:6px;height:6px;background:#e8945b;animation-delay:-3.5s}
+@keyframes hero-teacher-enter{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes badge-float-one{0%,100%{translate:0 0}50%{translate:0 -9px}}
+@keyframes badge-float-two{0%,100%{translate:0 0}50%{translate:0 -11px}}
+@keyframes badge-float-three{0%,100%{translate:0 0}50%{translate:0 -8px}}
+@keyframes hero-dot-drift{0%,100%{translate:0 0;opacity:.65}50%{translate:0 -10px;opacity:1}}
+@media(max-width:900px){.hero-layout{grid-template-columns:minmax(0,1fr);gap:24px;padding:48px 0 54px}.hero-inner{max-width:720px}.hero-image-wrap{width:min(100%,560px);min-height:470px;margin:0 auto}.hero-course-badges{left:44%;width:52%}}
+@media(max-width:640px){.hero-layout{gap:12px;padding:42px 0 48px}.hero h1{font-size:clamp(2.8rem,12vw,4.1rem);line-height:.98}.hero .hero-meta{font-size:.9rem}.hero-actions{display:grid;grid-template-columns:1fr;gap:9px}.hero-actions .btn{width:100%;min-height:48px}.hero .stat-row{gap:7px;margin-top:21px}.hero .stat{padding:11px 9px}.hero .stat strong{font-size:.93rem}.hero .stat span{font-size:.67rem}.hero-image-wrap{min-height:385px;width:100%;margin-top:4px}.hero-art-circle{width:min(88%,345px)}.hero-portrait-window{width:min(88%,350px);height:355px}.hero-course-badges{top:29%;left:43%;width:55%;height:135px}.hero-course-badge{min-height:37px;padding:0 12px;border-radius:11px;font-size:.73rem}.badge-neet{top:48px}.badge-foundation{top:92px}.hero-dot-one{right:8%}.hero-dot-three{right:5%}}
+@media(max-width:380px){.hero .stat{padding-inline:7px}.hero .stat span{font-size:.62rem}.hero-course-badge{padding-inline:10px;font-size:.68rem}.hero-image-wrap{min-height:355px}.hero-portrait-window{height:330px}}
+html.dark-theme .hero{background:linear-gradient(118deg,#191e27 0%,#1d2029 52%,#141a23 100%)}
+html.dark-theme .hero .hero-meta{color:#bac3d0}
+html.dark-theme .hero-actions .btn-outline{background:#1b222d;border-color:#754d35;color:#ffd0a8}
+html.dark-theme .hero .stat{background:linear-gradient(145deg,#202733,#171d27);border-color:#35404e;box-shadow:0 8px 22px #0004}
+html.dark-theme .hero .stat strong{color:#ffad67}
+html.dark-theme .hero .stat span{color:#c1cad6}
+html.dark-theme .hero-art-circle{box-shadow:0 28px 70px #0005}
+html.dark-theme .hero-course-badge{background:linear-gradient(135deg,#d96217,#a83f08);border-color:#ffffff42}
+@media(prefers-reduced-motion:reduce){.hero .hero-portrait-window,.hero .hero-course-badge,.hero .hero-dot{animation:none!important}.hero .hero-course-badge:hover{transform:none!important}.hero .stat,.hero .stat:hover{transition:none;transform:none}}
+
+/* Home hero: show the full wide teacher photo and place program links on the open palm. */
+.hero-art-circle,.hero-edu-icon,.hero-dot{display:none}
+.hero-portrait-window{position:absolute;right:-8%;bottom:0;left:auto;width:min(125%,700px);height:auto;aspect-ratio:3/2;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;transform:none;animation:hero-photo-enter .75s ease both}
+.hero .hero-image{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;max-height:none;aspect-ratio:3/2;object-fit:contain;object-position:center;border:0;border-radius:0;outline:0;box-shadow:none;opacity:1;filter:none}
+.hero-course-badges{position:absolute;z-index:3;top:55%;left:4%;display:flex;width:max-content;height:auto;gap:4px;pointer-events:none}
+.hero-course-badge{position:static;min-height:34px;padding:0 10px;border:1px solid #ffffffa8;border-radius:9px;background:linear-gradient(135deg,#f47721,#df5609);box-shadow:0 4px 12px #30130866;color:#fff;font-size:.7rem;font-weight:850;letter-spacing:.025em;white-space:nowrap;pointer-events:auto;animation:none;transform:none}
+.badge-jee,.badge-neet,.badge-foundation{top:auto;left:auto;animation:none;transform:none}
+@media(max-width:900px){.hero-portrait-window{right:0;width:min(100%,760px)}.hero-course-badges{left:4%;top:55%}}
+@media(max-width:640px){.hero-image-wrap{min-height:0;aspect-ratio:3/2}.hero-portrait-window{inset:auto 0 0;width:100%;height:auto;aspect-ratio:3/2}.hero-course-badges{top:55%;left:4%;gap:3px}.hero-course-badge{min-height:29px;padding:0 7px;border-radius:8px;font-size:.62rem}}
+@media(max-width:380px){.hero-course-badges{top:55%;left:3%;gap:2px}.hero-course-badge{min-height:27px;padding:0 6px;font-size:.58rem}}
+@keyframes hero-photo-enter{from{opacity:0}to{opacity:1}}
+
+/* Home hero finishing touches: lifted course chips and a deliberate base for the portrait. */
+.hero-course-badges{top:36%;left:2%;display:block;width:46%;height:25%;}
+.hero-course-badge{position:absolute;display:grid;min-height:44px;padding:0 15px;border:2px solid #fff;border-radius:13px;background:linear-gradient(145deg,#ff7a37,#f05b18);box-shadow:0 9px 20px #49200d55,0 2px 0 #ffc28f inset;color:#fff;font-size:.9rem;font-weight:900;letter-spacing:.035em;text-shadow:0 1px 2px #8c310c55;transition:transform .2s ease,box-shadow .2s ease;}
+.badge-neet{top:0;left:0;transform:rotate(8deg)}
+.badge-jee{top:0;left:61%;transform:rotate(-38deg)}
+.badge-foundation{top:52%;left:27%;transform:rotate(13deg)}
+.hero-course-badge:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 13px 25px #49200d66,0 2px 0 #ffc28f inset}
+.hero-portrait-window:after{content:"MY JEE MENTOR  |  PERSONAL GUIDANCE";position:absolute;z-index:2;right:3%;bottom:0;display:flex;width:49%;min-height:42px;align-items:center;justify-content:center;padding:0 12px;border:1px solid #ffcf9b;border-bottom:0;border-radius:15px 15px 0 0;background:linear-gradient(180deg,#ffab59,#ef671c);box-shadow:0 -7px 28px #f4772155;color:#fff;font-size:.61rem;font-weight:850;letter-spacing:.12em;text-align:center;text-shadow:0 1px 2px #7d2d0b66;}
+@media(max-width:900px){.hero-course-badges{top:36%;left:2%;width:46%;height:25%}}
+@media(max-width:640px){.hero-course-badges{top:36%;left:2%;width:48%;height:25%}.hero-course-badge{min-height:35px;padding:0 10px;border-radius:10px;font-size:.72rem}.badge-jee{left:61%}.badge-foundation{top:52%;left:27%}.hero-portrait-window:after{right:2%;width:48%;min-height:34px;padding:0 7px;font-size:.47rem;letter-spacing:.08em}}
+@media(max-width:380px){.hero-course-badge{min-height:32px;padding:0 8px;font-size:.67rem}.hero-portrait-window:after{font-size:.43rem;letter-spacing:.05em}}
+@media(prefers-reduced-motion:reduce){.hero-course-badge,.hero-course-badge:hover{transition:none;transform:none}}
+/* Home hero typography and feature grid refresh. */
+.hero-inner{text-align:left}
+.hero-inner>h2.hero-tagline{display:block;margin:0 0 24px;padding:0;border:0;text-decoration:none;color:#1a2238;font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12}
+.hero-inner>h2.hero-tagline:after{display:none;content:none}
+.hero-inner>h2.hero-tagline span{color:#1a2238}
+.hero-inner>h2.hero-tagline span+br+span{color:#d9540b}
+
+
+
+@media(max-width:640px){.hero-inner>h2.hero-tagline{margin-bottom:24px}}
+/* Hero live card keeps the added program point compact and readable. */
+.hero .stat-points{display:grid;gap:5px;margin:7px 0 0;padding:0;list-style:none}
+.hero .stat-points li{position:relative;padding-left:11px;color:#68717f;font-size:.72rem;line-height:1.35}
+.hero .stat-points li:before{position:absolute;top:.48em;left:0;width:5px;height:5px;border-radius:50%;background:#d9540b;content:""}
+@media(max-width:640px){.hero .stat-points li{font-size:.62rem}}
+html.dark-theme .hero .stat-points li{color:#c1cad6}
