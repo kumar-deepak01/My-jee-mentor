@@ -6,7 +6,7 @@ let darkMode=false;
 try{darkMode=localStorage.getItem(themeStorageKey)==='dark'}catch{}
 document.documentElement.classList.toggle('dark-theme',darkMode);
 const path=location.pathname.replace(/\/$/,'')||'/';
-const nav=[['Home','/'],['JEE','/jee.html'],['NEET','/neet.html'],['Foundation','/foundation.html'],['My Classroom','/myclassroom.html'],['Test','/test.html']];
+const nav=[['Home','/'],['JEE','/jee.html'],['NEET','/neet.html'],['Foundation','/foundation.html'],['My Classroom','https://myclassroom.myjeementor.com/'],['Test','/test.html']];
 const more=[['Results','/results.html'],['Our Faculty','/faculty.html'],['Why My JEE Mentor','/why-my-jee-mentor.html'],['Student Reviews','/reviews.html'],['Free Resources','/freeresource.html'],['Student Review','/studentreview.html'],['Faculty Login','/login.html'],['Career','/career.html'],['Contact Us','/contact.html']];
 const pages={
 '/jee.html':{title:'JEE Coaching for Class 11, 12 & Droppers',tag:'JEE PROGRAMS',heading:'Prepare with clarity. Perform with confidence.',intro:'Concept focused JEE preparation with live teaching, personal mentorship and a plan you can track.',cards:['Foundation Batch','Booster Batch','Premium Batch','Ranker Batch']},
