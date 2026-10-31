@@ -1,0 +1,147 @@
+<!-- ===== MY JEE MENTOR : HOME PAGE 3 CARDS (paste where old cards are) ===== -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  .mjm-cards{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:28px;
+    max-width:1560px; margin:0 auto; padding:24px 20px;
+    font-family:'Montserrat',system-ui,sans-serif;
+  }
+  .mjm-card{
+    --gold:#f9b934; --gold-soft:#fbd77a; --glow:rgba(190,140,60,.28);
+    position:relative; overflow:hidden; isolation:isolate;
+    min-height:300px; padding:26px 28px 24px;
+    display:flex; flex-direction:column;
+    border-radius:26px; color:#fff;
+    background:
+      radial-gradient(ellipse 60% 55% at 85% 70%, var(--glow), transparent 70%),
+      linear-gradient(145deg,#1b1812 0%,#14120e 100%);
+    border:1px solid rgba(249,185,52,.25);
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  .mjm-card::before{
+    content:""; position:absolute; inset:12px; border-radius:18px;
+    border:1px solid rgba(249,185,52,.28); pointer-events:none; z-index:-1;
+  }
+  .mjm-card.neet{ --glow:rgba(60,150,130,.30); }
+  .mjm-card.foundation{ --glow:rgba(200,110,50,.30); }
+
+  /* round badge (Foundation only) */
+  .mjm-orb{
+    position:absolute; top:22px; right:24px; width:86px; height:86px; border-radius:50%;
+    border:1px solid rgba(249,185,52,.7);
+    background:radial-gradient(circle at 35% 30%, rgba(249,185,52,.30), rgba(249,185,52,.04) 70%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  }
+  .mjm-orb b{font-size:24px; font-weight:900; color:var(--gold); line-height:1}
+  .mjm-orb small{font-size:9px; font-weight:700; letter-spacing:.12em; color:var(--gold-soft); margin-top:4px}
+
+  /* live class illustration (JEE + NEET) */
+  .mjm-art{position:absolute; top:16px; right:20px; width:132px; height:auto}
+
+  .mjm-tag{font-size:11px; font-weight:700; letter-spacing:.14em; color:var(--gold-soft); margin:0}
+  .mjm-title{
+    margin:8px 0 0; font-size:34px; font-weight:900; letter-spacing:.05em; line-height:1.1;
+    color:var(--gold); text-shadow:0 0 18px rgba(249,185,52,.35);
+    font-family:'Montserrat',system-ui,sans-serif;
+  }
+  .mjm-batch{
+    display:inline-flex; align-self:flex-start; margin:12px 0 0; padding:5px 12px;
+    font-size:11.5px; font-weight:700; color:#1b1812; background:var(--gold);
+    border-radius:999px; letter-spacing:.02em;
+  }
+  .mjm-desc{margin:12px 0 0; font-size:13.5px; line-height:1.5; color:rgba(255,255,255,.82); max-width:36ch}
+  .mjm-points{
+    margin:auto 0 0; padding-top:14px; display:flex; flex-wrap:wrap; gap:8px 18px;
+    font-size:11.5px; font-weight:700; letter-spacing:.04em; color:#fff;
+  }
+  .mjm-points span::before{content:"✔"; color:var(--gold); margin-right:6px}
+
+  /* smaller Explore Now button */
+  .mjm-btn{
+    margin-top:14px; align-self:flex-start; display:inline-flex; align-items:center; gap:12px;
+    padding:7px 8px 7px 16px; border-radius:12px; text-decoration:none;
+    font-size:12.5px; font-weight:800; color:#1b1812;
+    background:linear-gradient(90deg,#f9c04a,#d9831c);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .mjm-btn i{
+    width:24px; height:24px; border-radius:50%; background:#1b1812; color:var(--gold);
+    display:grid; place-items:center; font-style:normal; font-size:13px;
+  }
+  .mjm-btn:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(217,131,28,.35)}
+  .mjm-btn:focus-visible{outline:3px solid #fff; outline-offset:3px}
+
+  @media (max-width:1024px){ .mjm-cards{grid-template-columns:1fr; max-width:560px} }
+  @media (max-width:420px){ .mjm-title{font-size:28px} .mjm-art{width:104px} .mjm-orb{width:72px;height:72px} .mjm-orb b{font-size:20px} }
+</style>
+
+<!-- reusable SVG: student attending live class on laptop -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mjm-live" viewBox="0 0 132 104">
+    <!-- laptop -->
+    <rect x="48" y="30" width="76" height="48" rx="5" fill="#14120e" stroke="#f9b934" stroke-width="1.6"/>
+    <rect x="53" y="35" width="66" height="38" rx="3" fill="rgba(249,185,52,.10)"/>
+    <path d="M40 80h92l-6 8H46z" fill="#f9b934"/>
+    <!-- teacher on screen -->
+    <circle cx="86" cy="50" r="7" fill="#fbd77a"/>
+    <path d="M73 70q0-10 13-10t13 10z" fill="#fbd77a"/>
+    <path d="M104 47h11M104 53h11M104 59h8" stroke="#f9b934" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+    <!-- LIVE badge -->
+    <rect x="56" y="38" width="24" height="9" rx="4.5" fill="#e5484d"/>
+    <circle cx="61.5" cy="42.5" r="1.6" fill="#fff"/>
+    <text x="65" y="45.2" font-family="Montserrat,Arial" font-size="6" font-weight="800" fill="#fff">LIVE</text>
+    <!-- student -->
+    <path d="M8 98q0-24 20-24t20 24z" fill="#f9b934"/>
+    <circle cx="28" cy="56" r="12" fill="#fbd77a"/>
+    <path d="M15 56a13 13 0 0 1 26 0" fill="none" stroke="#14120e" stroke-width="3"/>
+    <rect x="11" y="53" width="5" height="10" rx="2.5" fill="#14120e" stroke="#f9b934" stroke-width="1.2"/>
+    <rect x="40" y="53" width="5" height="10" rx="2.5" fill="#14120e" stroke="#f9b934" stroke-width="1.2"/>
+  </symbol>
+</svg>
+
+<section class="mjm-cards">
+
+  <!-- 1. JEE -->
+  <article class="mjm-card jee">
+    <svg class="mjm-art" role="img" aria-label="Student attending live online class"><use href="#mjm-live"/></svg>
+    <p class="mjm-tag">FOCUS. PREPARE. ACHIEVE.</p>
+    <h3 class="mjm-title">JEE 2026-27</h3>
+    <span class="mjm-batch">Max 10 students only in one batch</span>
+    <p class="mjm-desc">Physics, Chemistry &amp; Math with a mentor who tracks every student.</p>
+    <div class="mjm-points">
+      <span>Personal Mentorship</span><span>Online Live Classes</span>
+      <span>Regular Tests</span><span>Daily DPP</span>
+    </div>
+    <a class="mjm-btn" href="/jee.html">Explore Now <i>→</i></a>
+  </article>
+
+  <!-- 2. NEET -->
+  <article class="mjm-card neet">
+    <svg class="mjm-art" role="img" aria-label="Student attending live online class"><use href="#mjm-live"/></svg>
+    <p class="mjm-tag">FOCUS. PREPARE. ACHIEVE.</p>
+    <h3 class="mjm-title">NEET 2026-27</h3>
+    <span class="mjm-batch">Max 10 students only in one batch</span>
+    <p class="mjm-desc">Physics, Chemistry &amp; Biology with a personal mentor for every doubt.</p>
+    <div class="mjm-points">
+      <span>Personal Mentorship</span><span>Online Live Classes</span>
+      <span>Regular Tests</span><span>Daily DPP</span>
+    </div>
+    <a class="mjm-btn" href="/neet.html">Explore Now <i>→</i></a>
+  </article>
+
+  <!-- 3. FOUNDATION -->
+  <article class="mjm-card foundation">
+    <div class="mjm-orb"><b>7–10</b><small>CLASS</small></div>
+    <p class="mjm-tag">FOCUS. PREPARE. ACHIEVE.</p>
+    <h3 class="mjm-title">FOUNDATION</h3>
+    <span class="mjm-batch">Max 10 students only in one batch</span>
+    <p class="mjm-desc">Strong basics in Science, Math, Social Science &amp; English, Class 7 to 10.</p>
+    <div class="mjm-points">
+      <span>Personal Mentorship</span><span>Online Live Classes</span>
+      <span>Regular Tests</span><span>Daily DPP</span>
+    </div>
+    <a class="mjm-btn" href="/foundation.html">Explore Now <i>→</i></a>
+  </article>
+
+</section>
