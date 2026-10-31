@@ -37,13 +37,14 @@
   .mjm-orb small{font-size:9px; font-weight:700; letter-spacing:.12em; color:var(--gold-soft); margin-top:4px}
 
   /* live class illustration (JEE + NEET) */
-  .mjm-art{position:absolute; top:16px; right:20px; width:132px; height:auto}
+  .mjm-art{position:absolute; top:8px; right:16px; left:auto; bottom:auto; width:120px; height:auto; aspect-ratio:132/104}
 
-  .mjm-tag{font-size:11px; font-weight:700; letter-spacing:.14em; color:var(--gold-soft); margin:0}
+  .mjm-tag{font-size:11px; font-weight:700; letter-spacing:.14em; color:var(--gold-soft); margin:0; padding-right:125px}
   .mjm-title{
     margin:8px 0 0; font-size:34px; font-weight:900; letter-spacing:.05em; line-height:1.1;
     color:var(--gold); text-shadow:0 0 18px rgba(249,185,52,.35);
     font-family:'Montserrat',system-ui,sans-serif;
+    padding-right:125px;
   }
   .mjm-batch{
     display:inline-flex; align-self:flex-start; margin:12px 0 0; padding:5px 12px;
@@ -75,16 +76,15 @@
   @media (max-width:1024px){ .mjm-cards{grid-template-columns:1fr; max-width:560px} }
   @media (max-width:640px){
     .mjm-card{padding:24px 22px 22px}
-    .mjm-art{width:104px; top:16px; right:18px}
-    .mjm-title{font-size:clamp(22px, 5.8vw, 28px); padding-right:110px}
-    .mjm-tag{padding-right:110px}
+    .mjm-title{font-size:clamp(22px, 5.8vw, 28px); padding-right:125px}
+    .mjm-tag{padding-right:125px}
     .mjm-orb{width:72px; height:72px; top:18px; right:18px}
     .mjm-orb b{font-size:20px}
   }
-  @media (max-width:380px){
-    .mjm-art{width:94px; top:14px; right:14px}
-    .mjm-title{font-size:22px; padding-right:98px}
-    .mjm-tag{padding-right:98px}
+  @media (max-width:420px){
+    .mjm-art{width:96px}
+    .mjm-title{font-size:22px; padding-right:102px}
+    .mjm-tag{padding-right:102px}
     .mjm-orb{width:66px; height:66px; top:14px; right:14px}
     .mjm-orb b{font-size:18px}
   }
@@ -92,7 +92,7 @@
 
 <!-- reusable SVG: student attending live class on laptop -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="mjm-live" viewBox="0 28 132 72">
+  <symbol id="mjm-live" viewBox="0 0 132 104">
     <!-- laptop -->
     <rect x="48" y="30" width="76" height="48" rx="5" fill="#14120e" stroke="#f9b934" stroke-width="1.6"/>
     <rect x="53" y="35" width="66" height="38" rx="3" fill="rgba(249,185,52,.10)"/>
@@ -118,7 +118,7 @@
 
   <!-- 1. JEE -->
   <article class="mjm-card jee">
-    <svg class="mjm-art" role="img" aria-label="Student attending live online class"><use href="#mjm-live"/></svg>
+    <svg class="mjm-art" viewBox="0 0 132 104" role="img" aria-label="Student attending live online class"><use href="#mjm-live"/></svg>
     <p class="mjm-tag">FOCUS. PREPARE. ACHIEVE.</p>
     <h3 class="mjm-title">JEE 2026-27</h3>
     <span class="mjm-batch">Max 10 students only in one batch</span>
@@ -132,7 +132,7 @@
 
   <!-- 2. NEET -->
   <article class="mjm-card neet">
-    <svg class="mjm-art" role="img" aria-label="Student attending live online class"><use href="#mjm-live"/></svg>
+    <svg class="mjm-art" viewBox="0 0 132 104" role="img" aria-label="Student attending live online class"><use href="#mjm-live"/></svg>
     <p class="mjm-tag">FOCUS. PREPARE. ACHIEVE.</p>
     <h3 class="mjm-title">NEET 2026-27</h3>
     <span class="mjm-batch">Max 10 students only in one batch</span>
