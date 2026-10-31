@@ -888,7 +888,32 @@ body.ollie-modal-active #ollie-panel {
   }
 }
 
-/* ---- Responsive & Mobile Styling ---- */
+/* ---- Tablet & Mobile-Bar Safe Positioning ---- */
+@media (max-width: 900px) {
+  #ollie-collapsed-bar {
+    right: 14px;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  }
+  #ollie-panel {
+    right: 14px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(100vh - 130px);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  #ollie-owl,
+  .ollie-owl {
+    width: 76px;
+    height: 86px;
+  }
+  #ollie-bub,
+  .ollie-bub {
+    width: min(310px, calc(100vw - 32px));
+  }
+}
+
+/* ---- Mobile Screen Specific Styling ---- */
 @media (max-width: 640px) {
   #ollie-owl,
   .ollie-owl {

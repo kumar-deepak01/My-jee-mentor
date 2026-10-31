@@ -403,6 +403,83 @@
       section: '.foundation-classes, .foundation-card-grid',
       target: '.foundation-card-cta',
       text: 'Max 10 students per batch with CBSE & ICSE board alignment and daily practice sheets.'
+    },
+    // Faculty page
+    {
+      id: 'faculty-hero',
+      page: '/faculty.html',
+      section: '.faculty-hero, .page-hero',
+      target: '.page-hero h1',
+      text: 'Learn from educators who make concepts click. NIT alumni, gold medalists & Olympiad trainers.'
+    },
+    {
+      id: 'faculty-grid-step',
+      page: '/faculty.html',
+      section: '.mjm-faculty-grid',
+      target: '.mjm-faculty-card:first-child',
+      text: 'Explore our mentors across Physics, Chemistry, Math & Biology. Tap any teacher for their experience.'
+    },
+    // Reviews & Student Reviews page
+    {
+      id: 'reviews-hero',
+      page: '/reviews.html',
+      section: '.page-hero, .mjm-reviews-header',
+      target: '.page-hero h1, .mjm-reviews-header h2',
+      text: 'Hear directly from our parents and students about how small 10-student batches transformed their scores.'
+    },
+    {
+      id: 'studentreview-hero',
+      page: '/studentreview.html',
+      section: '.page-hero, .mjm-reviews-header',
+      target: '.page-hero h1, .mjm-reviews-header h2',
+      text: 'Real student experiences and verified feedback. Ask me anything about our teaching methodology.'
+    },
+    // Free Resources page
+    {
+      id: 'freeresource-hero',
+      page: '/freeresource.html',
+      section: '.page-hero, .shared-resources-section',
+      target: '.page-hero h1, .shared-resources-section h2',
+      text: 'Free formula booklets, sample tests, and revision notes curated by faculty. Study anytime!'
+    },
+    {
+      id: 'resources-hero',
+      page: '/resources.html',
+      section: '.page-hero, .resource-grid',
+      target: '.page-hero h1',
+      text: 'Explore our library of free formula sheets, sample problem sets, and past examination papers.'
+    },
+    // Why Us page
+    {
+      id: 'why-hero',
+      page: '/why-my-jee-mentor.html',
+      section: '.page-hero',
+      target: '.page-hero h1',
+      text: 'What sets us apart? Max 10 students per batch, daily DPP solving, and a dedicated mentor for every student.'
+    },
+    // Results page
+    {
+      id: 'results-hero',
+      page: '/results.html',
+      section: '.page-hero',
+      target: '.page-hero h1',
+      text: 'Consistent progress turns hard work into ranks. Inquire to see how we track student growth.'
+    },
+    // Contact page
+    {
+      id: 'contact-hero',
+      page: '/contact.html',
+      section: '.page-hero, .split',
+      target: '.btn-primary, form button',
+      text: 'Need batch advice or fee details? You can call us, chat on WhatsApp, or book a free 1-on-1 demo.'
+    },
+    // Careers page
+    {
+      id: 'career-hero',
+      page: '/career.html',
+      section: '.page-hero',
+      target: '.page-hero h1',
+      text: 'Passionate about teaching? View our current mentor openings and apply to join our academic team.'
     }
   ];
 
@@ -618,11 +695,28 @@
       handleUserQuery(query);
     };
 
-    // Initial entrance position
+    // Initial entrance position - keep on screen in safe docked area
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const isMob = vw <= 640;
+    const owlW = isMob ? 68 : (vw <= 900 ? 76 : 84);
+    const owlH = isMob ? 78 : (vw <= 900 ? 86 : 96);
+    const hasMobileBar = vw <= 900;
+    const initOwlX = Math.round(vw - owlW - (isMob ? 14 : 24));
+    const initOwlY = Math.round(vh - owlH - (hasMobileBar ? 82 : 24));
+    const bubW = isMob ? Math.min(300, vw - 24) : 310;
+    const bubH = 108;
+    const initBubX = isMob ? 12 : Math.max(12, vw - bubW - 24);
+    const initBubY = Math.max(70, initOwlY - bubH - 12);
+
     owlEl.style.transition = 'none';
-    owlEl.style.transform = 'translate(' + (window.innerWidth + 40) + 'px, -120px)';
+    owlEl.style.transform = `translate(${initOwlX}px, ${initOwlY}px)`;
+    bubEl.style.transition = 'none';
+    bubEl.style.transform = `translate(${initBubX}px, ${initBubY}px)`;
     void owlEl.offsetWidth;
+    void bubEl.offsetWidth;
     owlEl.style.transition = '';
+    bubEl.style.transition = '';
 
     if (!isHidden) {
       if (isPanelOpen) {
@@ -2041,16 +2135,20 @@
     const topSafeLimit = headerBottom + 10;
 
     const mobileBarEl = document.querySelector('.mobile-bar');
-    const mobileBarVisible = mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none';
-    const mobileBarRect = mobileBarVisible ? mobileBarEl.getBoundingClientRect() : null;
+    const mobileBarVisible = (mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none') || (vw <= 900);
+    const mobileBarRect = (mobileBarEl && mobileBarVisible) ? mobileBarEl.getBoundingClientRect() : null;
 
     let bottomSafeLimit = vh - 12;
-    if (mobileBarRect && mobileBarRect.top > 0) {
-      bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
+    if (mobileBarVisible) {
+      if (mobileBarRect && mobileBarRect.top > 0) {
+        bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
+      } else {
+        bottomSafeLimit = Math.min(bottomSafeLimit, vh - 72);
+      }
     }
 
-    const owlW = isMobile ? 68 : 84;
-    const owlH = isMobile ? 78 : 96;
+    const owlW = isMobile ? 68 : (vw <= 900 ? 76 : 84);
+    const owlH = isMobile ? 78 : (vw <= 900 ? 86 : 96);
     const bubW = bubEl.offsetWidth || (isMobile ? Math.min(300, vw - 24) : 310);
     const bubH = bubEl.offsetHeight || 108;
 
@@ -2093,6 +2191,11 @@
       fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 4));
       fixedOwlX = 14;
       fixedOwlY = Math.round(fixedBubY - owlH + 18);
+    } else if (vw <= 900) {
+      fixedBubX = Math.round(Math.max(12, (vw - bubW) / 2));
+      fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 8));
+      fixedOwlX = Math.round(Math.max(8, fixedBubX - (owlW * 0.35)));
+      fixedOwlY = Math.round(fixedBubY - owlH + 14);
     } else {
       fixedBubX = Math.round(Math.max(12, (vw - bubW) / 2));
       fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 10));
@@ -2118,13 +2221,34 @@
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const isMobile = vw <= 640;
+    const owlW = isMobile ? 68 : (vw <= 900 ? 76 : 84);
+    const owlH = isMobile ? 78 : (vw <= 900 ? 86 : 96);
+    const bubW = bubEl.offsetWidth || (isMobile ? Math.min(300, vw - 24) : 310);
+    const bubH = bubEl.offsetHeight || 108;
+
+    const headerEl = document.querySelector('header.site-header, header');
+    const headerBottom = headerEl ? Math.max(0, headerEl.getBoundingClientRect().bottom) : 0;
+    const topSafeLimit = headerBottom + 10;
+
+    const mobileBarEl = document.querySelector('.mobile-bar');
+    const mobileBarVisible = (mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none') || (vw <= 900);
+    const mobileBarRect = (mobileBarEl && mobileBarVisible) ? mobileBarEl.getBoundingClientRect() : null;
+
+    let bottomSafeLimit = vh - 12;
+    if (mobileBarVisible) {
+      if (mobileBarRect && mobileBarRect.top > 0) {
+        bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
+      } else {
+        bottomSafeLimit = Math.min(bottomSafeLimit, vh - 72);
+      }
+    }
 
     let targetX, targetY, bubX, bubY;
 
     if (isHidden) {
       owlEl.classList.add('ollie-docked');
-      targetX = vw - 86;
-      targetY = isMobile ? vh - 146 : vh - 100;
+      targetX = Math.round(vw - owlW - (isMobile ? 12 : 20));
+      targetY = Math.round(bottomSafeLimit - owlH - (isMobile ? 8 : 12));
       bubEl.hidden = true;
     } else {
       owlEl.classList.remove('ollie-docked');
@@ -2143,16 +2267,22 @@
 
       if (!activeBlock) {
         if (userHasDraggedOllie && userCustomPos) {
-          targetX = userCustomPos.x;
-          targetY = userCustomPos.y;
-          const bubW = bubEl.offsetWidth || 300;
-          bubX = Math.max(12, Math.min(vw - bubW - 14, userCustomPos.x > vw / 2 ? userCustomPos.x - bubW - 14 : userCustomPos.x + 80));
-          bubY = Math.max(70, Math.min(vh - 120, userCustomPos.y));
+          targetX = Math.max(10, Math.min(vw - owlW - 10, userCustomPos.x));
+          targetY = Math.max(topSafeLimit + 10, Math.min(bottomSafeLimit - owlH - 10, userCustomPos.y));
+          bubX = Math.max(12, Math.min(vw - bubW - 14, targetX > vw / 2 ? targetX - bubW - 14 : targetX + owlW + 10));
+          bubY = Math.max(topSafeLimit + 10, Math.min(bottomSafeLimit - bubH - 10, targetY - bubH - 10));
         } else {
-          targetX = vw - 96;
-          targetY = vh - 120;
-          bubX = vw - 340;
-          bubY = vh - 220;
+          if (isMobile) {
+            targetX = Math.round(vw - owlW - 14);
+            targetY = Math.round(bottomSafeLimit - owlH - 10);
+            bubX = 12;
+            bubY = Math.round(Math.max(topSafeLimit + 10, targetY - bubH - 12));
+          } else {
+            targetX = Math.round(vw - owlW - 24);
+            targetY = Math.round(bottomSafeLimit - owlH - 16);
+            bubX = Math.round(Math.max(12, vw - bubW - 28));
+            bubY = Math.round(Math.max(topSafeLimit + 10, targetY - bubH - 12));
+          }
         }
       } else {
         // Auto-collapse check: If activeBlock would overlap the Ask panel, collapse it!
@@ -2171,6 +2301,12 @@
         bubX = coords.bubX;
         bubY = coords.bubY;
       }
+
+      // Hard viewport clamp: guaranteed to stay in screen
+      targetX = Math.max(8, Math.min(vw - owlW - 8, targetX));
+      targetY = Math.max(topSafeLimit - 4, Math.min(vh - owlH - 8, targetY));
+      bubX = Math.max(8, Math.min(vw - bubW - 8, bubX));
+      bubY = Math.max(topSafeLimit, Math.min(vh - bubH - 8, bubY));
 
       bubEl.style.transform = `translate(${bubX}px, ${bubY}px)`;
     }
@@ -2668,7 +2804,7 @@
     const resolved = [];
 
     PASSIVE_NUDGES.forEach(nudge => {
-      if (nudge.page !== '*' && nudge.page !== currentPath) return;
+      if (nudge.page !== '*' && normalizePath(nudge.page) !== normalizePath(currentPath)) return;
       const secEl = document.querySelector(nudge.section);
       if (!secEl) return;
       const targetEl = nudge.target ? (secEl.matches(nudge.target) ? secEl : secEl.querySelector(nudge.target)) : secEl;
@@ -2763,6 +2899,20 @@
     }, 200); // Debounced 200ms
   }
 
+  function setupVisualViewport() {
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      const handleVpChange = () => {
+        if (isPanelOpen) {
+          dockOwlOnPanel();
+        } else {
+          placeOllieAndBubble();
+        }
+      };
+      window.visualViewport.addEventListener('resize', handleVpChange, { passive: true });
+      window.visualViewport.addEventListener('scroll', handleVpChange, { passive: true });
+    }
+  }
+
   function initOllie() {
     createOllieUI();
     scanAndResolveSteps();
@@ -2803,7 +2953,11 @@
 
     setTimeout(() => {
       if (!isHidden && !isPanelOpen) {
-        activateStep(0);
+        if (activeSteps.length > 0) {
+          activateStep(0);
+        } else {
+          placeOllieAndBubble();
+        }
       }
     }, 600);
   }

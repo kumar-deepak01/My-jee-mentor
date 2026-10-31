@@ -166,7 +166,24 @@ const homeContent=`<section class="hero"><div class="container hero-layout"><div
   .mjm-btn:hover{transform:translateY(-2px); box-shadow:0 10px 24px rgba(217,78,2,.45)}
   .mjm-btn:focus-visible{outline:3px solid #ea580c; outline-offset:3px}
 
-  @media (max-width:1024px){ .mjm-cards{grid-template-columns:1fr; max-width:560px} }
+  @media (min-width:768px) and (max-width:1024px){
+    .mjm-cards{grid-template-columns:repeat(3,1fr); gap:16px; padding:20px 14px 32px}
+    .mjm-card{min-height:280px; padding:20px 16px 18px; border-radius:22px}
+    .mjm-title{font-size:clamp(20px, 2.3vw, 27px); padding-right:76px}
+    .mjm-tag{font-size:10px; padding-right:76px}
+    .mjm-art{width:76px; right:12px; top:10px}
+    .mjm-orb{width:64px; height:64px; top:12px; right:12px}
+    .mjm-orb b{font-size:19px}
+    .mjm-orb small{font-size:8px}
+    .mjm-desc{font-size:12.5px; line-height:1.5}
+    .mjm-points{gap:6px 12px; font-size:11px; padding-top:14px}
+    .mjm-points span::before{width:15px; height:15px; font-size:9px; margin-right:5px}
+    .mjm-batch{font-size:11px; padding:5px 11px; margin-top:10px}
+    .mjm-btn{font-size:12px; padding:7px 10px 7px 14px; margin-top:14px}
+  }
+  @media (max-width:767px){
+    .mjm-cards{grid-template-columns:1fr; max-width:560px}
+  }
   @media (max-width:640px){
     .mjm-card{padding:24px 22px 22px}
     .mjm-title{font-size:clamp(22px, 5.8vw, 28px); padding-right:125px}
