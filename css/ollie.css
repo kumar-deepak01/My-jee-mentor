@@ -702,7 +702,7 @@ body.ollie-modal-active #ollie-panel {
 .ollie-lead-actions {
   display: flex;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .ollie-lead-submit {
@@ -711,30 +711,41 @@ body.ollie-modal-active #ollie-panel {
   color: #fff;
   border: 0;
   border-radius: 8px;
-  padding: 8px;
-  font-size: 0.82rem;
+  padding: 10px 12px;
+  font-size: 0.85rem;
   font-weight: 750;
   cursor: pointer;
   box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3);
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.ollie-lead-submit:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
 }
 
 .ollie-lead-cancel {
-  background: none;
+  background: transparent;
   border: 1px solid var(--ollie-line);
   color: var(--ollie-mut);
   border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 0.78rem;
+  padding: 10px 14px;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
 }
 
+.ollie-lead-cancel:hover {
+  background: var(--ollie-paper);
+}
+
 .ollie-form-status {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 6px 8px;
-  border-radius: 6px;
-  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+  line-height: 1.4;
 }
 
 .ollie-form-status.error {
@@ -755,12 +766,54 @@ body.ollie-modal-active #ollie-panel {
   background: #25d366;
   color: #ffffff !important;
   font-weight: 700;
-  padding: 7px 12px;
+  padding: 9px 14px;
   border-radius: 8px;
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   margin-top: 6px;
   box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
+  cursor: pointer;
+}
+
+/* Typing Dots Animation */
+.ollie-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 14px;
+  background: var(--ollie-card);
+  border: 1px solid var(--ollie-line);
+  border-radius: 14px;
+  width: fit-content;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ollie-typing span {
+  width: 6px;
+  height: 6px;
+  background: var(--ollie-or);
+  border-radius: 50%;
+  animation: ollie-dot-bounce 1.3s infinite ease-in-out;
+}
+
+.ollie-typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ollie-typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes ollie-dot-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
 }
 
 /* ---- Responsive & Mobile Styling ---- */
@@ -785,13 +838,13 @@ body.ollie-modal-active #ollie-panel {
   }
 
   #ollie-panel {
-    right: 10px;
-    left: 10px;
+    right: 8px;
+    left: 8px;
     bottom: calc(64px + env(safe-area-inset-bottom, 0px));
     width: auto;
     max-width: none;
-    height: 460px;
-    max-height: calc(75vh - 50px);
+    height: 75vh;
+    max-height: min(80vh, 560px);
     border-radius: 18px;
   }
 

@@ -609,9 +609,11 @@
   }
 
   // ==========================================================================
-  // 6. PANEL INTERACTION & MESSAGING SYSTEM
+  // 6. PANEL INTERACTION, CHAT MEMORY & TYPING FLOW
   // ==========================================================================
-  function openAskPanel() {
+  let typingTimer = null;
+
+  function openAskPanel(fromPendingAction = false) {
     isPanelOpen = true;
     try {
       sessionStorage.setItem('ollie_panel_open', 'true');
@@ -625,11 +627,16 @@
     // Perch owl on panel
     dockOwlOnPanel();
 
-    // Trigger onboarding greeting once per session
-    checkFirstVisitGreeting();
+    // Ensure panel is never empty
+    if (!messagesListEl || messagesListEl.children.length === 0) {
+      const restored = restoreChatHistory();
+      if (!restored && !fromPendingAction) {
+        renderGreetingFlow();
+      }
+    }
 
     requestAnimationFrame(() => {
-      inputFieldEl.focus({ preventScroll: true });
+      inputFieldEl?.focus({ preventScroll: true });
     });
   }
 
@@ -664,25 +671,98 @@
     owlEl.style.transform = `translate(${targetX}px, ${targetY}px)`;
   }
 
-  function appendBotMessage(htmlContent, quickChips = []) {
-    if (!messagesListEl) return;
-    const msgEl = document.createElement('div');
-    msgEl.className = 'ollie-msg ollie-bot';
-    msgEl.innerHTML = htmlContent;
-    messagesListEl.appendChild(msgEl);
-    messagesListEl.scrollTop = messagesListEl.scrollHeight;
-
-    renderQuickChips(quickChips);
+  function saveChatHistory(item) {
+    try {
+      let history = [];
+      const raw = sessionStorage.getItem('ollie_chat_history');
+      if (raw) history = JSON.parse(raw);
+      if (!Array.isArray(history)) history = [];
+      history.push(item);
+      if (history.length > 35) history = history.slice(-35);
+      sessionStorage.setItem('ollie_chat_history', JSON.stringify(history));
+    } catch (e) {}
   }
 
-  function appendUserMessage(text) {
+  function restoreChatHistory() {
+    if (!messagesListEl) return false;
+    let stored = [];
+    try {
+      const raw = sessionStorage.getItem('ollie_chat_history');
+      if (raw) stored = JSON.parse(raw);
+    } catch (e) {}
+
+    if (Array.isArray(stored) && stored.length > 0) {
+      messagesListEl.innerHTML = '';
+      stored.forEach(item => {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'ollie-msg ' + (item.role === 'user' ? 'ollie-user' : 'ollie-bot');
+        msgEl.innerHTML = item.html;
+        messagesListEl.appendChild(msgEl);
+      });
+      const lastBot = [...stored].reverse().find(i => i.role === 'bot' && Array.isArray(i.chips) && i.chips.length > 0);
+      if (lastBot) {
+        renderQuickChips(lastBot.chips);
+      }
+      messagesListEl.scrollTop = messagesListEl.scrollHeight;
+      return true;
+    }
+    return false;
+  }
+
+  function botSay(htmlContent, quickChips = [], skipTyping = false) {
+    if (!messagesListEl) return;
+
+    if (skipTyping) {
+      const msgEl = document.createElement('div');
+      msgEl.className = 'ollie-msg ollie-bot';
+      msgEl.innerHTML = htmlContent;
+      messagesListEl.appendChild(msgEl);
+      messagesListEl.scrollTop = messagesListEl.scrollHeight;
+      renderQuickChips(quickChips);
+      saveChatHistory({ role: 'bot', html: htmlContent, chips: quickChips });
+      return;
+    }
+
+    const oldTyping = document.getElementById('ollie-typing-dots');
+    if (oldTyping) oldTyping.remove();
+
+    const typingEl = document.createElement('div');
+    typingEl.id = 'ollie-typing-dots';
+    typingEl.className = 'ollie-typing';
+    typingEl.innerHTML = '<span></span><span></span><span></span>';
+    messagesListEl.appendChild(typingEl);
+    messagesListEl.scrollTop = messagesListEl.scrollHeight;
+
+    if (chipsBarEl) chipsBarEl.style.display = 'none';
+
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      if (typingEl && typingEl.parentNode) typingEl.remove();
+
+      const msgEl = document.createElement('div');
+      msgEl.className = 'ollie-msg ollie-bot';
+      msgEl.innerHTML = htmlContent;
+      messagesListEl.appendChild(msgEl);
+      messagesListEl.scrollTop = messagesListEl.scrollHeight;
+
+      renderQuickChips(quickChips);
+      saveChatHistory({ role: 'bot', html: htmlContent, chips: quickChips });
+    }, 480);
+  }
+
+  function userSay(text) {
     if (!messagesListEl) return;
     const msgEl = document.createElement('div');
     msgEl.className = 'ollie-msg ollie-user';
     msgEl.textContent = text;
     messagesListEl.appendChild(msgEl);
     messagesListEl.scrollTop = messagesListEl.scrollHeight;
+
+    saveChatHistory({ role: 'user', html: text, chips: [] });
   }
+
+  const appendBotMessage = botSay;
+  const appendUserMessage = userSay;
 
   function renderQuickChips(chips = []) {
     if (!chipsBarEl) return;
@@ -701,103 +781,358 @@
         if (typeof chip.action === 'function') {
           chip.action();
         } else {
-          handleUserQuery(chip.query || chip.label || chip);
+          handleMenuChoice(chip.query || chip.label || chip);
         }
       };
       chipsBarEl.appendChild(btn);
     });
   }
 
-  // First Visit Onboarding
-  function checkFirstVisitGreeting() {
-    let greeted = false;
-    try {
-      greeted = sessionStorage.getItem('ollie_greeted') === 'true';
-    } catch (e) {}
-
-    if (!greeted) {
-      try {
-        sessionStorage.setItem('ollie_greeted', 'true');
-      } catch (e) {}
-
-      appendBotMessage(
-        "<strong>Namaste!</strong> I'm Ollie, your academic guide. What are you preparing for?",
-        [
-          {
-            label: 'JEE',
-            action: () => {
-              appendUserMessage('JEE');
-              try { sessionStorage.setItem('ollie_exam', 'JEE'); } catch (e) {}
-              appendBotMessage('Great choice! Which class are you in right now?', [
-                { label: 'Class 11', action: () => pickClass('11') },
-                { label: 'Class 12', action: () => pickClass('12') },
-                { label: 'Dropper', action: () => pickClass('Dropper') }
-              ]);
-            }
-          },
-          {
-            label: 'NEET',
-            action: () => {
-              appendUserMessage('NEET');
-              try { sessionStorage.setItem('ollie_exam', 'NEET'); } catch (e) {}
-              appendBotMessage('Excellent! Which class are you in right now?', [
-                { label: 'Class 11', action: () => pickClass('11') },
-                { label: 'Class 12', action: () => pickClass('12') },
-                { label: 'Dropper', action: () => pickClass('Dropper') }
-              ]);
-            }
-          },
-          {
-            label: 'Foundation (Class 7-10)',
-            action: () => {
-              appendUserMessage('Foundation (Class 7-10)');
-              try { sessionStorage.setItem('ollie_exam', 'Foundation'); } catch (e) {}
-              appendBotMessage('Awesome! Which class are you studying in?', [
-                { label: 'Class 7', action: () => pickClass('7') },
-                { label: 'Class 8', action: () => pickClass('8') },
-                { label: 'Class 9', action: () => pickClass('9') },
-                { label: 'Class 10', action: () => pickClass('10') }
-              ]);
-            }
-          },
-          {
-            label: 'Just looking',
-            action: () => {
-              appendUserMessage('Just looking');
-              appendBotMessage('Take your time! Ask me anytime about fees, batches, or teachers, or take a quick tour.', [
-                { label: 'Show me around', action: () => startPersonalizedTour() },
-                { label: 'JEE Courses', action: () => handleUserQuery('jee') },
-                { label: 'NEET Courses', action: () => handleUserQuery('neet') },
-                { label: 'Talk to Counselor', action: () => handleUserQuery('contact') }
-              ]);
-            }
-          }
-        ]
-      );
-    }
-  }
-
-  function pickClass(cls) {
-    appendUserMessage(`Class ${cls}`);
-    try { sessionStorage.setItem('ollie_class', cls); } catch (e) {}
-    const exam = sessionStorage.getItem('ollie_exam') || 'Course';
-    appendBotMessage(
-      `Understood! For <strong>${exam} (Class ${cls})</strong>, we provide strictly max 10 students per batch with personal mentorship. How can I help you next?`,
+  // Greeting Flow & Main Menu
+  function renderGreetingFlow() {
+    botSay(
+      "Namaste! 🙏 Welcome to My JEE Mentor. I'm Ollie, your guide. I can show you batches, fees, faculty and book a free demo for you. What are you preparing for?",
       [
-        { label: 'Show me around', action: () => startPersonalizedTour() },
-        { label: 'View Batches & Fees', action: () => handleUserQuery(`${exam} fee`) },
-        { label: 'Meet Faculty', action: () => handleUserQuery('teachers') },
-        { label: 'Book Free Demo', action: () => startLeadFlow() }
+        {
+          label: 'JEE',
+          action: () => {
+            userSay('JEE');
+            try { sessionStorage.setItem('ollie_exam', 'JEE'); } catch (e) {}
+            askClassForExam('JEE');
+          }
+        },
+        {
+          label: 'NEET',
+          action: () => {
+            userSay('NEET');
+            try { sessionStorage.setItem('ollie_exam', 'NEET'); } catch (e) {}
+            askClassForExam('NEET');
+          }
+        },
+        {
+          label: 'Foundation (Class 7–10)',
+          action: () => {
+            userSay('Foundation (Class 7–10)');
+            try { sessionStorage.setItem('ollie_exam', 'Foundation'); } catch (e) {}
+            askClassForFoundation();
+          }
+        },
+        {
+          label: 'Just exploring',
+          action: () => {
+            userSay('Just exploring');
+            try { sessionStorage.setItem('ollie_exam', 'General'); } catch (e) {}
+            showMainMenu();
+          }
+        }
       ]
     );
   }
 
+  function askClassForExam(exam) {
+    botSay(
+      `Great! Which class are you in for <strong>${exam}</strong>?`,
+      [
+        {
+          label: 'Class 11',
+          action: () => {
+            userSay('Class 11');
+            try { sessionStorage.setItem('ollie_class', '11'); } catch (e) {}
+            showMainMenu();
+          }
+        },
+        {
+          label: 'Class 12',
+          action: () => {
+            userSay('Class 12');
+            try { sessionStorage.setItem('ollie_class', '12'); } catch (e) {}
+            showMainMenu();
+          }
+        },
+        {
+          label: 'Dropper',
+          action: () => {
+            userSay('Dropper');
+            try { sessionStorage.setItem('ollie_class', 'Dropper'); } catch (e) {}
+            showMainMenu();
+          }
+        }
+      ]
+    );
+  }
+
+  function askClassForFoundation() {
+    botSay(
+      `Great! Which class is the student entering?`,
+      [
+        {
+          label: 'Class 7',
+          action: () => {
+            userSay('Class 7');
+            try { sessionStorage.setItem('ollie_class', '7'); } catch (e) {}
+            showMainMenu();
+          }
+        },
+        {
+          label: 'Class 8',
+          action: () => {
+            userSay('Class 8');
+            try { sessionStorage.setItem('ollie_class', '8'); } catch (e) {}
+            showMainMenu();
+          }
+        },
+        {
+          label: 'Class 9',
+          action: () => {
+            userSay('Class 9');
+            try { sessionStorage.setItem('ollie_class', '9'); } catch (e) {}
+            showMainMenu();
+          }
+        },
+        {
+          label: 'Class 10',
+          action: () => {
+            userSay('Class 10');
+            try { sessionStorage.setItem('ollie_class', '10'); } catch (e) {}
+            showMainMenu();
+          }
+        }
+      ]
+    );
+  }
+
+  function showMainMenu(skipTyping = false) {
+    const savedExam = getSavedExam();
+    const examLabel = savedExam && savedExam !== 'General' ? ` (${savedExam})` : '';
+    botSay(
+      `<strong>What would you like to know${examLabel}?</strong> Tap an option below or type your question:`,
+      [
+        { label: 'Batches & fees', action: () => handleMenuChoice('Batches & fees') },
+        { label: 'Meet our faculty', action: () => handleMenuChoice('Meet our faculty') },
+        { label: 'Book a free demo', action: () => handleMenuChoice('Book a free demo') },
+        { label: 'Why My JEE Mentor', action: () => handleMenuChoice('Why My JEE Mentor') },
+        { label: 'Student reviews', action: () => handleMenuChoice('Student reviews') },
+        { label: 'Free study resources', action: () => handleMenuChoice('Free study resources') },
+        { label: 'Talk to a counselor', action: () => handleMenuChoice('Talk to a counselor') }
+      ],
+      skipTyping
+    );
+  }
+
+  function handleMenuChoice(choice) {
+    userSay(choice);
+    switch (choice) {
+      case 'Batches & fees': {
+        const savedExam = getSavedExam();
+        if (savedExam === 'NEET') showExamBatchesAndFees('NEET');
+        else if (savedExam === 'Foundation') showFoundationInfo(getSavedClass());
+        else if (savedExam === 'JEE') showExamBatchesAndFees('JEE');
+        else {
+          botSay('Which program batches would you like to see?', [
+            { label: 'JEE Batches', action: () => showExamBatchesAndFees('JEE') },
+            { label: 'NEET Batches', action: () => showExamBatchesAndFees('NEET') },
+            { label: 'Foundation Classes', action: () => showFoundationInfo() }
+          ]);
+        }
+        break;
+      }
+      case 'Meet our faculty':
+        showFacultyInfo('faculty');
+        break;
+      case 'Book a free demo':
+        startLeadFlow();
+        break;
+      case 'Why My JEE Mentor':
+        showWhyUs();
+        break;
+      case 'Student reviews':
+        showReviews();
+        break;
+      case 'Free study resources':
+        showResources();
+        break;
+      case 'Talk to a counselor':
+        showContact();
+        break;
+      default:
+        handleUserQuery(choice);
+    }
+  }
+
+  function getSavedExam() {
+    try {
+      const e = sessionStorage.getItem('ollie_exam');
+      if (e) return e;
+    } catch (err) {}
+    const p = normalizePath(location.pathname);
+    if (p === '/jee') return 'JEE';
+    if (p === '/neet') return 'NEET';
+    if (p === '/foundation') return 'Foundation';
+    return '';
+  }
+
+  function getSavedClass() {
+    try {
+      const c = sessionStorage.getItem('ollie_class');
+      if (c) return c;
+    } catch (err) {}
+    return '';
+  }
+
   // ==========================================================================
-  // 7. QUERY PROCESSOR & ACTIONS (Understands typed queries)
+  // 7. QUERY PROCESSOR & ACTIONS
   // ==========================================================================
+  let lastViewedBatch = 'Not selected yet';
+
+  function getSiteWhatsAppNumber() {
+    try {
+      const link = document.querySelector('a[href*="wa.me/"]');
+      if (link && link.href) {
+        const match = link.href.match(/wa\.me\/(\d+)/);
+        if (match && match[1]) return match[1];
+      }
+    } catch (e) {}
+    return '917304256203';
+  }
+
+  function getISTDateTime() {
+    try {
+      return new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(new Date());
+    } catch (e) {
+      return new Date().toLocaleString('en-IN');
+    }
+  }
+
+  function buildWhatsAppMessage({ name, phone, className, exam, interestedIn }) {
+    const cleanName = String(name || '').replace(/[\r\n\t]/g, ' ').replace(/[<>{}[\]]/g, '').trim();
+    const cleanPhone = String(phone || '').replace(/[^0-9]/g, '');
+    const cleanClass = String(className || '').replace(/[\r\n\t]/g, ' ').trim();
+    const cleanCourse = String(exam || '').replace(/[\r\n\t]/g, ' ').trim();
+    const cleanInterested = String(interestedIn || lastViewedBatch || 'Not selected yet').replace(/[\r\n\t]/g, ' ').trim();
+    const pageUrl = window.location.href;
+    const istTime = getISTDateTime();
+
+    return `*🎓 Free Demo Request – My JEE Mentor*
+━━━━━━━━━━━━━━
+*Student Name:* ${cleanName}
+*Phone:* ${cleanPhone}
+*Class:* ${cleanClass}
+*Course:* ${cleanCourse}
+*Interested in:* ${cleanInterested}
+*Page:* ${pageUrl}
+*Time:* ${istTime}
+━━━━━━━━━━━━━━
+✅ I agree to be contacted by My JEE Mentor about this free demo.`;
+  }
+
+  // Path Normalisation: strips origin, query, hash, trailing slash, .html suffix, lowercase
+  function normalizePath(raw) {
+    if (!raw) return '/';
+    let p = String(raw).trim();
+    try {
+      if (p.startsWith('http://') || p.startsWith('https://')) {
+        p = new URL(p).pathname;
+      }
+    } catch (e) {}
+    p = p.split('#')[0].split('?')[0].toLowerCase();
+    if (p.length > 1 && p.endsWith('/')) {
+      p = p.slice(0, -1);
+    }
+    if (p.endsWith('.html')) {
+      p = p.slice(0, -5);
+    }
+    if (p === '/index') p = '/';
+    return p || '/';
+  }
+
+  // Hard loop guard: at most 1 programmatic navigation per user action, at most 3 per minute
+  function checkNavRateLimit() {
+    let list = [];
+    try {
+      const stored = sessionStorage.getItem('ollie_nav_guard');
+      if (stored) list = JSON.parse(stored);
+    } catch (e) {}
+    const now = Date.now();
+    list = (Array.isArray(list) ? list : []).filter(ts => typeof ts === 'number' && now - ts < 60000);
+    if (list.length >= 3) return false;
+    list.push(now);
+    try {
+      sessionStorage.setItem('ollie_nav_guard', JSON.stringify(list));
+    } catch (e) {}
+    return true;
+  }
+
+  function setPendingAction(actionData) {
+    try {
+      sessionStorage.setItem('ollie_pending_action', JSON.stringify({
+        id: 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        intent: actionData.intent || '',
+        exam: actionData.exam || '',
+        cls: actionData.cls || '',
+        target: actionData.target || '',
+        createdAt: Date.now(),
+        attempts: 1
+      }));
+    } catch (e) {}
+  }
+
+  function pollAndScroll(selector, onFound, onTimeout) {
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const el = document.querySelector(selector);
+      if (el) {
+        clearInterval(interval);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        pulseElement(el);
+        if (typeof onFound === 'function') onFound(el);
+        return;
+      }
+      if (Date.now() - start >= 5000) {
+        clearInterval(interval);
+        if (typeof onTimeout === 'function') onTimeout();
+      }
+    }, 100);
+  }
+
+  function safeNavigate(targetUrl, pendingData, pageTitle = 'Page') {
+    const currentNorm = normalizePath(location.pathname);
+    const targetNorm = normalizePath(targetUrl);
+
+    if (currentNorm === targetNorm) {
+      executeActionLocally(pendingData);
+      return;
+    }
+
+    if (!checkNavRateLimit()) {
+      if (isDebug) {
+        console.warn('⚠️ [Ollie Navigation Guard]: Blocked programmatic navigation to', targetUrl, '- rate limit exceeded (max 3/min).');
+      }
+      botSay(
+        `Please tap the link below to continue to <strong>${pageTitle}</strong>:`,
+        [
+          {
+            label: `Go to ${pageTitle} →`,
+            action: () => location.assign(targetUrl)
+          }
+        ]
+      );
+      return;
+    }
+
+    setPendingAction({ ...pendingData, target: targetUrl });
+    botSay(`Taking you to our <strong>${pageTitle}</strong> page...`, [], true);
+    setTimeout(() => {
+      location.assign(targetUrl);
+    }, 200);
+  }
+
   function handleUserQuery(query) {
     if (!query) return;
-    appendUserMessage(query);
+    userSay(query);
 
     const { intent, cls } = detectQueryIntent(query);
     if (isDebug) {
@@ -823,7 +1158,7 @@
         break;
 
       case 'fees_general': {
-        const curExam = sessionStorage.getItem('ollie_exam');
+        const curExam = getSavedExam();
         if (location.pathname.includes('jee') || curExam === 'JEE') {
           showExamBatchesAndFees('JEE');
         } else if (location.pathname.includes('neet') || curExam === 'NEET') {
@@ -831,7 +1166,7 @@
         } else if (location.pathname.includes('foundation') || curExam === 'Foundation') {
           showFoundationInfo(cls);
         } else {
-          appendBotMessage('Which course fees would you like to see?', [
+          botSay('Which course fees would you like to see?', [
             { label: 'JEE Fees', action: () => showExamBatchesAndFees('JEE') },
             { label: 'NEET Fees', action: () => showExamBatchesAndFees('NEET') },
             { label: 'Foundation Fees', action: () => showFoundationInfo() }
@@ -890,23 +1225,22 @@
         triggerConfusedReaction();
 
         if (consecutiveMisses >= 2) {
-          appendBotMessage(
+          botSay(
             `I'm still learning! Would you like to speak directly with our academic team in Navi Mumbai?`,
             [
-              { label: '📞 Call Counselor', action: () => location.href = 'tel:+917304256203' },
-              { label: '💬 WhatsApp Us', action: () => window.open(`https://wa.me/${WA_NUMBER}`, '_blank') },
-              { label: 'Book Free Demo', action: () => startLeadFlow() }
+              { label: '📞 Call Counselor', action: () => location.assign('tel:+917304256203') },
+              { label: '💬 WhatsApp Us', action: () => window.open(`https://wa.me/${getSiteWhatsAppNumber()}`, '_blank') },
+              { label: 'Book a free demo', action: () => startLeadFlow() }
             ]
           );
         } else {
-          appendBotMessage(
+          botSay(
             `Hmm, I didn’t quite get that. Try asking one of these:`,
             [
-              { label: 'JEE Batches & Fees', action: () => showExamBatchesAndFees('JEE') },
-              { label: 'NEET Batches & Fees', action: () => showExamBatchesAndFees('NEET') },
-              { label: 'Foundation Classes', action: () => showFoundationInfo() },
-              { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') },
-              { label: 'Book Free Demo', action: () => startLeadFlow() }
+              { label: 'Batches & fees', action: () => handleMenuChoice('Batches & fees') },
+              { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') },
+              { label: 'Book a free demo', action: () => startLeadFlow() },
+              { label: 'Talk to a counselor', action: () => showContact() }
             ]
           );
         }
@@ -914,7 +1248,6 @@
       }
     }
 
-    // Natural lead nudge after 2 helpful answers (offered once)
     checkNaturalLeadOffer();
   }
 
@@ -932,118 +1265,50 @@
     if (!offered && answeredCount >= 2) {
       try { sessionStorage.setItem('ollie_demo_offered', 'true'); } catch (e) {}
       setTimeout(() => {
-        appendBotMessage(
-          '💡 <em>Tip: You can experience our teaching first-hand with a 1-on-1 trial class.</em>',
+        if (!isPanelOpen) return;
+        botSay(
+          `Tip: You can experience our teaching first-hand with a <strong>Free 1-on-1 Demo Session</strong>. Would you like to book one?`,
           [
-            { label: 'Book Free Demo Session', action: () => startLeadFlow() },
-            { label: 'Not now', action: () => {} }
+            { label: 'Book a free demo', action: () => startLeadFlow() },
+            { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') }
           ]
         );
       }, 1500);
     }
   }
 
-  // Cross-Page Navigation Helper
-  function navigateWithPendingAction(targetPath, actionData) {
-    try {
-      sessionStorage.setItem('ollie_pending_action', JSON.stringify({
-        ...actionData,
-        timestamp: Date.now()
-      }));
-    } catch (e) {}
-    location.href = targetPath;
-  }
-
-  // Exam Batches & Fees
+  // Feature Actions
   function showExamBatchesAndFees(exam) {
-    const isJee = exam.toUpperCase() === 'JEE';
+    const isJee = (exam || '').toUpperCase() === 'JEE';
     const targetUrl = isJee ? '/jee.html' : '/neet.html';
+    const targetNorm = normalizePath(targetUrl);
+    const currentNorm = normalizePath(location.pathname);
 
-    if (!location.pathname.includes(isJee ? 'jee' : 'neet')) {
-      appendBotMessage(`Taking you to our <strong>${exam} Programs</strong> page now...`);
-      navigateWithPendingAction(targetUrl, { intent: isJee ? 'jee_fees' : 'neet_fees', exam });
+    lastViewedBatch = `${exam} Mentorship Batch`;
+
+    if (currentNorm === targetNorm) {
+      executeActionLocally({ intent: isJee ? 'jee_fees' : 'neet_fees', exam });
       return;
     }
 
-    const liveBatches = getLiveBatches(exam);
-    if (liveBatches.length > 0) {
-      let html = `<strong>${exam} Batches & Live Fees:</strong><div class="ollie-batch-list">`;
-      liveBatches.forEach(b => {
-        const feeLine = b.fee ? `<span class="ollie-batch-fee-badge">${b.fee}</span>` : '';
-        const descLine = b.details.slice(0, 2).join(' • ');
-        html += `
-          <div class="ollie-batch-item">
-            <div class="ollie-batch-name-row">
-              <span class="ollie-batch-name">${b.name}</span>
-              ${feeLine}
-            </div>
-            ${descLine ? `<span class="ollie-batch-desc">${descLine}</span>` : ''}
-          </div>
-        `;
-      });
-      html += `</div>`;
-      appendBotMessage(html, [
-        { label: 'Book Free Demo', action: () => startLeadFlow() },
-        { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') },
-        { label: 'Talk to Counselor', action: () => showContact() }
-      ]);
-
-      // Scroll to batches section & pulse target
-      const targetSec = document.querySelector('.resource-grid, .program-card');
-      if (targetSec) {
-        targetSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const ctaBtn = targetSec.querySelector('.program-cta, .btn-primary');
-        if (ctaBtn) pulseElement(ctaBtn);
-      }
-    } else {
-      appendBotMessage(`Fee details and batch schedules are confirmed with our counseling team.`, [
-        { label: 'Talk to Counselor', action: () => showContact() },
-        { label: 'Book Free Demo', action: () => startLeadFlow() }
-      ]);
-    }
+    safeNavigate(targetUrl, { intent: isJee ? 'jee_fees' : 'neet_fees', exam }, `${exam} Coaching`);
   }
 
-  // Foundation Classes
   function showFoundationInfo(specificClass = null) {
-    if (!location.pathname.includes('foundation')) {
-      appendBotMessage(`Taking you to our <strong>Foundation (Classes 7–10)</strong> page...`);
-      navigateWithPendingAction('/foundation.html', { intent: 'foundation_info', cls: specificClass });
+    const targetUrl = '/foundation.html';
+    const targetNorm = normalizePath(targetUrl);
+    const currentNorm = normalizePath(location.pathname);
+
+    lastViewedBatch = specificClass ? `Foundation Class ${specificClass}` : 'Foundation Batch';
+
+    if (currentNorm === targetNorm) {
+      executeActionLocally({ intent: 'foundation_info', cls: specificClass });
       return;
     }
 
-    const liveBatches = getLiveBatches('Foundation');
-    let html = `<strong>Foundation Courses (Classes 7–10):</strong><div class="ollie-batch-list">`;
-    liveBatches.forEach(b => {
-      const feeLine = b.fee ? `<span class="ollie-batch-fee-badge">${b.fee}</span>` : '';
-      const descLine = b.details.slice(0, 2).join(' • ');
-      html += `
-        <div class="ollie-batch-item">
-          <div class="ollie-batch-name-row">
-            <span class="ollie-batch-name">${b.name}</span>
-            ${feeLine}
-          </div>
-          ${descLine ? `<span class="ollie-batch-desc">${descLine}</span>` : ''}
-        </div>
-      `;
-    });
-    html += `</div>`;
-    appendBotMessage(html, [
-      { label: 'Book Free Demo', action: () => startLeadFlow() },
-      { label: 'Meet Foundation Faculty', action: () => showFacultyInfo('faculty') },
-      { label: 'Why Foundation?', action: () => showWhyUs() }
-    ]);
-
-    const targetEl = specificClass
-      ? document.querySelector(`.foundation-card-${specificClass}`)
-      : document.querySelector('.foundation-card-grid, .foundation-card');
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const cta = targetEl.querySelector('.foundation-card-cta, .btn-primary');
-      if (cta) pulseElement(cta);
-    }
+    safeNavigate(targetUrl, { intent: 'foundation_info', cls: specificClass }, 'Foundation Program');
   }
 
-  // Specific Batch Details
   function showSpecificBatch(intent) {
     const slugMap = {
       batch_booster: { name: 'Booster Batch', selector: '.program-mentorship, .program-booster' },
@@ -1055,146 +1320,289 @@
     const info = slugMap[intent];
     if (!info) return;
 
+    lastViewedBatch = info.name;
     const el = document.querySelector(info.selector);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pulseElement(el);
       const feeMatch = el.textContent.match(/₹\s*[\d,]+(?:\s*\/\s*(?:month|mo))?/i);
       const fee = feeMatch ? feeMatch[0] : 'Talk to counselor';
-      appendBotMessage(`Here is the <strong>${info.name}</strong> (Fee: ${fee}). We offer personal 1:1 guidance in small batches of max 10.`, [
-        { label: 'Book Demo for this Batch', action: () => startLeadFlow() },
-        { label: 'View All Batches', action: () => showExamBatchesAndFees('JEE') }
+      botSay(`Here is the <strong>${info.name}</strong> (Fee: ${fee}). We offer personal 1:1 guidance in small batches of max 10.`, [
+        { label: 'Book a free demo', action: () => startLeadFlow() },
+        { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') },
+        { label: 'Batches & fees', action: () => showExamBatchesAndFees('JEE') }
       ]);
-      const cta = el.querySelector('.program-cta, .btn');
-      if (cta) pulseElement(cta);
     } else {
-      appendBotMessage(`Taking you to our courses to view the <strong>${info.name}</strong>...`);
-      navigateWithPendingAction('/jee.html', { intent });
+      safeNavigate('/jee.html', { intent }, info.name);
     }
   }
 
-  // Faculty Section
   function showFacultyInfo(intent) {
-    // Current page faculty section
-    const facultySection = document.querySelector('.mjm-faculty-section, .mjm-faculty-header, #foundation-faculty-mount');
-    const liveFaculty = getLiveFaculty();
+    lastViewedBatch = 'Our Faculty';
+    const targetUrl = '/faculty.html';
+    const currentNorm = normalizePath(location.pathname);
+    const targetNorm = normalizePath(targetUrl);
 
-    if (liveFaculty.length > 0 && facultySection) {
-      facultySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-      // Target specific teacher if requested
-      const teacherMap = {
-        teacher_ayushi: 'ayushi',
-        teacher_anil: 'anil',
-        teacher_lokesh: 'lokesh',
-        teacher_soujanya: 'soujanya',
-        teacher_shubham: 'shubham'
-      };
-      const tKey = teacherMap[intent];
-      if (tKey) {
-        const card = document.querySelector(`.faculty-card[data-faculty-id="${tKey}"]`);
-        if (card) {
-          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          pulseElement(card);
-        }
-      }
-
-      let html = `<strong>Meet Our Faculty Mentors:</strong><div class="ollie-batch-list">`;
-      liveFaculty.forEach(f => {
-        html += `
-          <div class="ollie-batch-item">
-            <div class="ollie-batch-name-row">
-              <span class="ollie-batch-name">${f.name}</span>
-              <span class="ollie-batch-fee-badge" style="background:rgba(20,33,61,0.08);color:var(--ollie-ink);">${f.tag || 'Mentor'}</span>
-            </div>
-            ${f.degree ? `<span class="ollie-batch-desc">${f.degree}</span>` : ''}
-          </div>
-        `;
-      });
-      html += `</div>`;
-      appendBotMessage(html, [
-        { label: 'Book Demo with Faculty', action: () => startLeadFlow() },
-        { label: 'View Course Batches', action: () => showExamBatchesAndFees('JEE') }
-      ]);
-    } else {
-      appendBotMessage('Taking you to our full Faculty page...', []);
-      navigateWithPendingAction('/faculty.html', { intent: 'faculty' });
+    const existingSection = document.querySelector('.mjm-faculty-section, #faculty-section, #foundation-faculty-mount');
+    if (currentNorm === targetNorm || existingSection) {
+      executeActionLocally({ intent: 'faculty', teacher: intent });
+      return;
     }
+
+    safeNavigate(targetUrl, { intent: 'faculty', teacher: intent }, 'Our Faculty');
   }
 
-  // Reviews & Feedback
   function showReviews() {
+    const targetUrl = '/reviews.html';
+    const currentNorm = normalizePath(location.pathname);
+    const targetNorm = normalizePath(targetUrl);
+
     const revSec = document.querySelector('.mjm-reviews-section, .mjm-reviews-header');
-    if (revSec) {
-      revSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      appendBotMessage('Here is what parents & students say about our small batches and daily mentor guidance:', [
-        { label: 'Book Free Demo', action: () => startLeadFlow() },
-        { label: 'Check Batches & Fees', action: () => showExamBatchesAndFees('JEE') }
-      ]);
-    } else {
-      appendBotMessage('Opening Student Reviews...', []);
-      navigateWithPendingAction('/reviews.html', { intent: 'reviews' });
+    if (currentNorm === targetNorm || currentNorm === '/studentreview' || revSec) {
+      executeActionLocally({ intent: 'reviews' });
+      return;
     }
+
+    safeNavigate(targetUrl, { intent: 'reviews' }, 'Student Reviews');
   }
 
-  // Free Study Resources
   function showResources() {
-    appendBotMessage('Opening our Free Study Resources library (PDF notes, formula sheets & DPPs)...', []);
-    navigateWithPendingAction('/freeresource.html', { intent: 'resources' });
+    const targetUrl = '/freeresource.html';
+    const currentNorm = normalizePath(location.pathname);
+    const targetNorm = normalizePath(targetUrl);
+
+    if (currentNorm === targetNorm || currentNorm === '/resources') {
+      executeActionLocally({ intent: 'resources' });
+      return;
+    }
+
+    safeNavigate(targetUrl, { intent: 'resources' }, 'Free Study Resources');
   }
 
-  // Contact Information
   function showContact() {
-    appendBotMessage(
+    const wa = getSiteWhatsAppNumber();
+    botSay(
       `<strong>Contact My JEE Mentor</strong><br>
        📍 Location: Navi Mumbai, India<br>
        📞 Phone: <a href="tel:+917304256203">${PHONE_NUMBER}</a><br>
-       💬 WhatsApp: <a href="https://wa.me/${WA_NUMBER}" target="_blank">+91 73042 56203</a><br>
+       💬 WhatsApp: <a href="https://wa.me/${wa}" target="_blank">+91 73042 56203</a><br>
        Our counseling team is available Monday to Sunday.`,
       [
-        { label: '📞 Call Counselor Now', action: () => location.href = 'tel:+917304256203' },
-        { label: '💬 Chat on WhatsApp', action: () => window.open(`https://wa.me/${WA_NUMBER}?text=Hi%2C%20I%20have%20an%20enquiry%20about%20My%20JEE%20Mentor.`, '_blank') },
-        { label: 'Book Free Demo', action: () => startLeadFlow() }
+        { label: 'Book a free demo', action: () => startLeadFlow() },
+        { label: 'Batches & fees', action: () => showExamBatchesAndFees('JEE') },
+        { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') }
       ]
     );
   }
 
-  // Why Choose Us
   function showWhyUs() {
-    appendBotMessage(
+    botSay(
       `<strong>Why My JEE Mentor?</strong><br>
        1. Strictly max 10 students per batch.<br>
        2. Dedicated personal mentor assigned from day one.<br>
        3. Daily DPPs, 24/7 doubt resolution, and weekly progress check-ins.<br>
        4. Highly affordable subject-wise learning.`,
       [
-        { label: 'Book Free Demo Class', action: () => startLeadFlow() },
-        { label: 'View All Batches', action: () => showExamBatchesAndFees('JEE') }
+        { label: 'Batches & fees', action: () => showExamBatchesAndFees('JEE') },
+        { label: 'Book a free demo', action: () => startLeadFlow() },
+        { label: 'Talk to a counselor', action: () => showContact() }
       ]
     );
   }
 
-  // Careers & Portals
   function showCareers() {
-    appendBotMessage('We are looking for passionate teachers! Opening our Careers page...', []);
-    navigateWithPendingAction('/career.html', { intent: 'careers' });
+    const targetUrl = '/career.html';
+    const currentNorm = normalizePath(location.pathname);
+    const targetNorm = normalizePath(targetUrl);
+
+    if (currentNorm === targetNorm) {
+      executeActionLocally({ intent: 'careers' });
+      return;
+    }
+
+    safeNavigate(targetUrl, { intent: 'careers' }, 'Careers');
   }
 
   function showPortals() {
-    appendBotMessage(
+    botSay(
       `Existing students can sign in directly to their classroom or test portal:`,
       [
         { label: 'Open My Classroom ↗', action: () => window.open('https://myclassroom.myjeementor.com/', '_blank') },
-        { label: 'Open Test Portal ↗', action: () => location.href = '/test.html' }
+        { label: 'Open Test Portal ↗', action: () => location.assign('/test.html') }
       ]
     );
   }
 
+  // Local Action Executor: NEVER NAVIGATES. Only scrolls, pulses, and outputs live DOM data.
+  function executeActionLocally(action) {
+    if (!action || !action.intent) return;
+
+    switch (action.intent) {
+      case 'faculty': {
+        const selector = '.mjm-faculty-section, #faculty-section, .faculty-grid, .page-hero';
+        pollAndScroll(selector, () => {
+          const liveFaculty = getLiveFaculty();
+          if (liveFaculty.length > 0) {
+            let html = `<strong>Meet Our Faculty Mentors:</strong><div class="ollie-batch-list">`;
+            liveFaculty.forEach(f => {
+              html += `
+                <div class="ollie-batch-item">
+                  <div class="ollie-batch-name-row">
+                    <span class="ollie-batch-name">${f.name}</span>
+                    <span class="ollie-batch-fee-badge" style="background:rgba(20,33,61,0.08);color:var(--ollie-ink);">${f.tag || 'Mentor'}</span>
+                  </div>
+                  ${f.degree ? `<span class="ollie-batch-desc">${f.degree}</span>` : ''}
+                </div>
+              `;
+            });
+            html += `</div>`;
+            botSay(html, [
+              { label: 'Book a free demo', action: () => startLeadFlow() },
+              { label: 'Batches & fees', action: () => showExamBatchesAndFees('JEE') },
+              { label: 'Student reviews', action: () => showReviews() }
+            ]);
+          } else {
+            botSay('Here is our verified faculty team. Each mentor conducts small batches of max 10 students.', [
+              { label: 'Book a free demo', action: () => startLeadFlow() },
+              { label: 'Batches & fees', action: () => showExamBatchesAndFees('JEE') }
+            ]);
+          }
+        }, () => {
+          botSay('Our faculty section is available on our Faculty page:', [
+            { label: 'Open Faculty Page →', action: () => location.assign('/faculty.html') },
+            { label: 'Book a free demo', action: () => startLeadFlow() }
+          ]);
+        });
+        break;
+      }
+
+      case 'jee_fees':
+      case 'neet_fees': {
+        const exam = action.exam || (action.intent === 'jee_fees' ? 'JEE' : 'NEET');
+        const selector = '.resource-grid, .program-card, .mjm-cards, .page-hero';
+        pollAndScroll(selector, () => {
+          const liveBatches = getLiveBatches(exam);
+          if (liveBatches.length > 0) {
+            let html = `<strong>${exam} Batches & Live Fees:</strong><div class="ollie-batch-list">`;
+            liveBatches.forEach(b => {
+              const feeLine = b.fee ? `<span class="ollie-batch-fee-badge">${b.fee}</span>` : '';
+              const descLine = b.details.slice(0, 2).join(' • ');
+              html += `
+                <div class="ollie-batch-item">
+                  <div class="ollie-batch-name-row">
+                    <span class="ollie-batch-name">${b.name}</span>
+                    ${feeLine}
+                  </div>
+                  ${descLine ? `<span class="ollie-batch-desc">${descLine}</span>` : ''}
+                </div>
+              `;
+            });
+            html += `</div>`;
+            botSay(html, [
+              { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') },
+              { label: 'Book a free demo', action: () => startLeadFlow() },
+              { label: 'See another course', action: () => showMainMenu() }
+            ]);
+          } else {
+            botSay(`All ${exam} programs feature max 10 students per batch and personalized 1:1 guidance.`, [
+              { label: 'Book a free demo', action: () => startLeadFlow() },
+              { label: 'Talk to a counselor', action: () => showContact() }
+            ]);
+          }
+        }, () => {
+          botSay(`Explore our full ${exam} batch lineup:`, [
+            { label: `Open ${exam} Page →`, action: () => location.assign(exam === 'JEE' ? '/jee.html' : '/neet.html') },
+            { label: 'Book a free demo', action: () => startLeadFlow() }
+          ]);
+        });
+        break;
+      }
+
+      case 'foundation_info': {
+        const selector = action.cls ? `.foundation-card-${action.cls}` : '.foundation-card-grid, .foundation-card, .page-hero';
+        pollAndScroll(selector, () => {
+          const liveBatches = getLiveBatches('Foundation');
+          let html = `<strong>Foundation Courses (Classes 7–10):</strong><div class="ollie-batch-list">`;
+          liveBatches.forEach(b => {
+            const feeLine = b.fee ? `<span class="ollie-batch-fee-badge">${b.fee}</span>` : '';
+            const descLine = b.details.slice(0, 2).join(' • ');
+            html += `
+              <div class="ollie-batch-item">
+                <div class="ollie-batch-name-row">
+                  <span class="ollie-batch-name">${b.name}</span>
+                  ${feeLine}
+                </div>
+                ${descLine ? `<span class="ollie-batch-desc">${descLine}</span>` : ''}
+              </div>
+            `;
+          });
+          html += `</div>`;
+          botSay(html, [
+            { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') },
+            { label: 'Book a free demo', action: () => startLeadFlow() },
+            { label: 'See another course', action: () => showMainMenu() }
+          ]);
+        }, () => {
+          botSay('Explore Foundation programs for Classes 7 to 10:', [
+            { label: 'Open Foundation Page →', action: () => location.assign('/foundation.html') },
+            { label: 'Book a free demo', action: () => startLeadFlow() }
+          ]);
+        });
+        break;
+      }
+
+      case 'reviews': {
+        const selector = '.mjm-reviews-section, .mjm-reviews-header, .page-hero';
+        pollAndScroll(selector, () => {
+          botSay('Here is what parents & students say about our small batches and real mentor attention:', [
+            { label: 'Book a free demo', action: () => startLeadFlow() },
+            { label: 'Batches & fees', action: () => showExamBatchesAndFees('JEE') },
+            { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') }
+          ]);
+        }, () => {
+          botSay('Explore our student & parent reviews:', [
+            { label: 'Open Reviews Page →', action: () => location.assign('/reviews.html') },
+            { label: 'Book a free demo', action: () => startLeadFlow() }
+          ]);
+        });
+        break;
+      }
+
+      case 'resources': {
+        const selector = '.container, .page-hero, h1';
+        pollAndScroll(selector, () => {
+          botSay('Welcome to our Free Learning Library! Access notes, formula sheets, and DPPs.', [
+            { label: 'Batches & fees', action: () => showExamBatchesAndFees('JEE') },
+            { label: 'Book a free demo', action: () => startLeadFlow() },
+            { label: 'Talk to a counselor', action: () => showContact() }
+          ]);
+        }, () => {
+          botSay('Free Resources library:', [
+            { label: 'Open Free Resources →', action: () => location.assign('/freeresource.html') }
+          ]);
+        });
+        break;
+      }
+
+      case 'careers': {
+        botSay('We are always looking for passionate teachers and mentors. Check our open positions:', [
+          { label: 'Open Careers Page →', action: () => location.assign('/career.html') }
+        ]);
+        break;
+      }
+
+      default: {
+        showMainMenu(true);
+      }
+    }
+  }
+
   // ==========================================================================
-  // 8. IN-PANEL LEAD GENERATION FLOW (Reuses /api/leads, no new backend)
+  // 8. IN-PANEL LEAD GENERATION FLOW (WhatsApp Direct + Background /api/leads)
   // ==========================================================================
   function startLeadFlow() {
-    const savedExam = sessionStorage.getItem('ollie_exam') || (location.pathname.includes('neet') ? 'NEET' : location.pathname.includes('foundation') ? 'Foundation' : 'JEE');
-    const savedClass = sessionStorage.getItem('ollie_class') || (savedExam === 'Foundation' ? '9' : '11');
+    const savedExam = getSavedExam() || 'JEE';
+    const savedClass = getSavedClass() || (savedExam === 'Foundation' ? '9' : '11');
 
     const formHtml = `
       <div class="ollie-lead-box">
@@ -1213,7 +1621,7 @@
             <div class="ollie-field">
               <label>Class *</label>
               <select name="className" required>
-                ${['7', '8', '9', '10', '11', '12', 'Dropper'].map(c => `<option value="${c}" ${c === savedClass ? 'selected' : ''}>Class ${c}</option>`).join('')}
+                ${['7', '8', '9', '10', '11', '12', 'Dropper'].map(c => `<option value="${c}" ${c === String(savedClass) ? 'selected' : ''}>Class ${c}</option>`).join('')}
               </select>
             </div>
             <div class="ollie-field">
@@ -1229,7 +1637,7 @@
           </div>
           <input type="text" name="website" style="display:none;" tabindex="-1" autocomplete="off">
           <div class="ollie-lead-actions">
-            <button type="submit" class="ollie-lead-submit" id="ollie-lead-submit-btn">Submit & Book Demo</button>
+            <button type="submit" class="ollie-lead-submit" id="ollie-lead-submit-btn">Book Demo & WhatsApp</button>
             <button type="button" class="ollie-lead-cancel" id="ollie-lead-cancel-btn">Not now</button>
           </div>
           <div class="ollie-form-status" id="ollie-lead-status" hidden></div>
@@ -1237,27 +1645,27 @@
       </div>
     `;
 
-    appendBotMessage(formHtml, []);
+    botSay(formHtml, [], true);
 
-    // Bind Mini Form
     const form = document.getElementById('ollie-lead-form');
     if (!form) return;
 
     document.getElementById('ollie-lead-cancel-btn').onclick = function () {
-      form.closest('.ollie-msg').remove();
-      appendBotMessage('No problem! Feel free to ask anytime.', [
-        { label: 'View Batches & Fees', action: () => showExamBatchesAndFees('JEE') },
-        { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') }
+      form.closest('.ollie-msg')?.remove();
+      botSay('No problem! Feel free to ask anytime.', [
+        { label: 'Batches & fees', action: () => handleMenuChoice('Batches & fees') },
+        { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') },
+        { label: 'Free study resources', action: () => showResources() }
       ]);
     };
 
-    form.onsubmit = async function (e) {
+    form.onsubmit = function (e) {
       e.preventDefault();
       const statusEl = document.getElementById('ollie-lead-status');
       const submitBtn = document.getElementById('ollie-lead-submit-btn');
 
       // 1. Validation
-      const studentName = form.studentName.value.trim();
+      const studentName = form.studentName.value.trim().replace(/[\r\n\t]/g, ' ');
       let mobile = form.mobile.value.replace(/[^0-9]/g, '');
       if (mobile.length === 12 && mobile.startsWith('91')) mobile = mobile.slice(2);
       const className = form.className.value;
@@ -1265,10 +1673,10 @@
       const consent = form.consent.checked;
       const honeypot = form.website.value.trim();
 
-      if (honeypot) return; // bot detected silently
+      if (honeypot) return;
 
       if (studentName.length < 2) {
-        showStatus('Please enter a valid student name (at least 2 letters).', true);
+        showStatus('Please enter student name (at least 2 letters).', true);
         return;
       }
       if (!/^[6-9]\d{9}$/.test(mobile)) {
@@ -1280,21 +1688,68 @@
         return;
       }
 
-      // 2. 30-Second Rate Limit Check
+      // 30-Second Rate Limit Check
       let lastSubmit = 0;
       try { lastSubmit = Number(sessionStorage.getItem('ollie_last_submit')) || 0; } catch (err) {}
       if (Date.now() - lastSubmit < 30000) {
-        showStatus('Please wait 30 seconds before submitting another enquiry.', true);
+        showStatus('Please wait 30 seconds before submitting another request.', true);
         return;
       }
 
       function showStatus(text, isError) {
+        if (!statusEl) return;
         statusEl.hidden = false;
         statusEl.className = 'ollie-form-status ' + (isError ? 'error' : 'success');
         statusEl.textContent = text;
       }
 
-      // Payload matching backend contract (reusing /api/leads schema)
+      try { sessionStorage.setItem('ollie_last_submit', String(Date.now())); } catch (err) {}
+
+      const waNumber = getSiteWhatsAppNumber();
+      const waMessage = buildWhatsAppMessage({
+        name: studentName,
+        phone: mobile,
+        className,
+        exam,
+        interestedIn: lastViewedBatch
+      });
+      const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
+
+      // 3. Dry-Run Mode (?ollie-test=1)
+      if (isTestMode) {
+        console.log('🦉 [Ollie Test Dry-Run Lead Payload]:', {
+          studentName,
+          mobile,
+          className,
+          exam,
+          interestedIn: lastViewedBatch,
+          page: location.href
+        });
+        console.log('🦉 [Ollie Test Dry-Run WhatsApp Message]:\n' + waMessage);
+        finishLeadSuccess({ name: studentName, mobile, exam, cls: className, waUrl, isDryRun: true, apiSucceeded: true });
+        return;
+      }
+
+      // 4. Synchronous WhatsApp Opening in Click Handler
+      let popupOpened = false;
+      try {
+        const popup = window.open(waUrl, '_blank');
+        if (popup && !popup.closed && typeof popup.closed !== 'undefined') {
+          popupOpened = true;
+        }
+      } catch (err) {}
+
+      if (!popupOpened && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        setTimeout(() => {
+          location.assign(waUrl);
+        }, 150);
+      }
+
+      // 5. In parallel, dispatch lead to backend
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Opening WhatsApp...';
+      showStatus('Opening WhatsApp with your demo request...', false);
+
       const cleanName = studentName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'student';
       const payload = {
         studentName: studentName,
@@ -1305,77 +1760,75 @@
         className: className,
         exam: exam,
         city: 'Online Enquiry',
-        message: `Free Demo Enquiry via Ollie Interactive Guide. Exam: ${exam}, Class: ${className}. Page: ${location.pathname}`
+        message: `Free Demo Enquiry via Ollie. Interested in: ${lastViewedBatch}. Page: ${location.pathname}`
       };
 
-      // 3. Dry-Run Check (?ollie-test=1)
-      if (isTestMode) {
-        console.log('🦉 [Ollie Test Dry-Run Lead Payload]:', payload);
-        try { sessionStorage.setItem('ollie_last_submit', String(Date.now())); } catch (err) {}
-        finishLeadSuccess(studentName, mobile, exam, className);
-        return;
-      }
-
-      // 4. Production Submission
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Submitting...';
-      showStatus('Submitting your demo request...', false);
-
-      try {
-        const csrfRes = await fetch('/api/csrf', { credentials: 'same-origin', cache: 'no-store' });
-        const csrfData = await csrfRes.json().catch(() => ({}));
-        if (!csrfRes.ok || !csrfData.token) {
-          throw new Error('Form security session could not be verified. Please retry.');
-        }
-
-        const res = await fetch('/api/leads', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: {
-            'content-type': 'application/json',
-            'x-csrf-token': csrfData.token
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const resData = await res.json().catch(() => ({}));
-        if (!res.ok || !resData.ok) {
-          throw new Error(resData.message || 'Unable to submit enquiry right now.');
-        }
-
-        try { sessionStorage.setItem('ollie_last_submit', String(Date.now())); } catch (err) {}
-        finishLeadSuccess(studentName, mobile, exam, className);
-      } catch (err) {
-        showStatus('Could not send online right now. You can WhatsApp us directly:', true);
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Retry Submission';
-        appendBotMessage(
-          `Our direct WhatsApp line is available for instant booking:`,
-          [
-            {
-              label: '💬 Book via WhatsApp Now',
-              action: () => {
-                const msg = `Hi, I want to book a free demo for ${exam} Class ${className}. Student: ${studentName}.`;
-                window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-              }
+      (async () => {
+        let apiSucceeded = false;
+        try {
+          const csrfRes = await fetch('/api/csrf', { credentials: 'same-origin', cache: 'no-store' });
+          const csrfData = await csrfRes.json().catch(() => ({}));
+          if (csrfRes.ok && csrfData.token) {
+            const res = await fetch('/api/leads', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: {
+                'content-type': 'application/json',
+                'x-csrf-token': csrfData.token
+              },
+              body: JSON.stringify(payload)
+            });
+            const resData = await res.json().catch(() => ({}));
+            if (res.ok && resData.ok) {
+              apiSucceeded = true;
             }
-          ]
-        );
-      }
+          }
+        } catch (e) {
+          apiSucceeded = false;
+        }
+
+        finishLeadSuccess({
+          name: studentName,
+          mobile,
+          exam,
+          cls: className,
+          waUrl,
+          isDryRun: false,
+          apiSucceeded
+        });
+      })();
     };
   }
 
-  function finishLeadSuccess(name, mobile, exam, cls) {
-    appendBotMessage(
-      `<strong>Done!</strong> Thank you ${name}. Our academic counselor will call you shortly to confirm your free 1-on-1 demo session for <strong>${exam} (Class ${cls})</strong>.<br>
-       <a class="ollie-wa-btn" href="https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hi, I just booked a free demo for ${exam} Class ${cls} on your website. My name is ${name}.`)}" target="_blank">
-         💬 Message Counselor on WhatsApp
-       </a>`,
-      [
-        { label: 'View Study Resources', action: () => showResources() },
-        { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') }
-      ]
-    );
+  function finishLeadSuccess({ name, mobile, exam, cls, waUrl, isDryRun, apiSucceeded }) {
+    const formBox = document.getElementById('ollie-lead-form');
+    if (formBox) {
+      const msgParent = formBox.closest('.ollie-msg');
+      if (msgParent) msgParent.remove();
+    }
+
+    let successHtml = '';
+    if (isDryRun) {
+      successHtml = `<strong>[Test Mode] Demo Request Preview:</strong><br>
+        Thank you <strong>${name}</strong>! Your demo request for <strong>${exam} (Class ${cls})</strong> is previewed.<br>
+        WhatsApp message was logged to the console.<br>
+        <a class="ollie-wa-btn" href="${waUrl}" target="_blank">💬 Open WhatsApp Preview</a>`;
+    } else if (apiSucceeded) {
+      successHtml = `<strong>Almost done!</strong> Thank you <strong>${name}</strong>.<br>
+        Press <strong>Send</strong> in WhatsApp and our counselor will confirm your free 1-on-1 demo for <strong>${exam} (Class ${cls})</strong>.<br>
+        <a class="ollie-wa-btn" href="${waUrl}" target="_blank">💬 Open WhatsApp Again</a>`;
+    } else {
+      successHtml = `<strong>Almost done!</strong><br>
+        Opened WhatsApp - please press <strong>Send</strong> to complete your request for <strong>${exam} (Class ${cls})</strong>.<br>
+        <a class="ollie-wa-btn" href="${waUrl}" target="_blank">💬 Open WhatsApp Again</a>
+        <a class="ollie-chip-btn" href="tel:+917304256203" style="display:inline-flex;margin-top:6px;">📞 Call Counselor</a>`;
+    }
+
+    botSay(successHtml, [
+      { label: 'Batches & fees', action: () => handleMenuChoice('Batches & fees') },
+      { label: 'Meet our faculty', action: () => showFacultyInfo('faculty') },
+      { label: 'Free study resources', action: () => showResources() }
+    ]);
   }
 
   // ==========================================================================
@@ -1718,9 +2171,6 @@
     activeSteps = resolved;
     bindCardInteractions();
 
-    // Check for pending cross-page actions
-    handlePendingCrossPageAction();
-
     // Debugging summary
     if (isDebug) {
       console.group('🦉 [Ollie Debugger - Live Extraction & State]');
@@ -1738,26 +2188,37 @@
     }
   }
 
+  // Cross-page action consumer: consumed BEFORE any execution, 20s expiration, single-attempt guard
   function handlePendingCrossPageAction() {
     let pending = null;
     try {
       const stored = sessionStorage.getItem('ollie_pending_action');
       if (stored) {
-        pending = JSON.parse(stored);
+        // CONSUME IMMEDIATELY BEFORE ANY OTHER LOGIC
         sessionStorage.removeItem('ollie_pending_action');
+        pending = JSON.parse(stored);
       }
     } catch (e) {}
 
-    if (pending && Date.now() - (pending.timestamp || 0) < 30000) {
-      openAskPanel();
-      setTimeout(() => {
-        if (pending.intent === 'jee_fees') showExamBatchesAndFees('JEE');
-        else if (pending.intent === 'neet_fees') showExamBatchesAndFees('NEET');
-        else if (pending.intent === 'foundation_info') showFoundationInfo(pending.cls);
-        else if (pending.intent === 'faculty') showFacultyInfo('faculty');
-        else if (pending.intent) showSpecificBatch(pending.intent);
-      }, 350);
+    if (!pending) return;
+
+    // Expire after 20 seconds
+    const createdAt = pending.createdAt || pending.timestamp || 0;
+    if (Date.now() - createdAt > 20000) {
+      if (isDebug) console.warn('⚠️ [Ollie Pending Action]: Discarded expired action', pending);
+      return;
     }
+
+    // Hard single-attempt guard: only use once
+    if (pending.attempts > 1) return;
+
+    // Open panel (without repeating greeting)
+    openAskPanel(true);
+
+    // Execute locally on this page (never re-navigates)
+    setTimeout(() => {
+      executeActionLocally(pending);
+    }, 250);
   }
 
   function hideGuide() {
@@ -1786,12 +2247,14 @@
     clearTimeout(rescanDebounce);
     rescanDebounce = setTimeout(() => {
       scanAndResolveSteps();
-    }, 120);
+      placeOllieAndBubble();
+    }, 200); // Debounced 200ms
   }
 
   function initOllie() {
     createOllieUI();
     scanAndResolveSteps();
+    setupVisualViewport();
 
     window.addEventListener('scroll', onScrollHandler, { passive: true });
     window.addEventListener('resize', () => placeOllieAndBubble(), { passive: true });
@@ -1802,9 +2265,13 @@
       }, { passive: true });
     });
 
+    // MutationObserver only rescans steps and repositions owl; NEVER navigates
     const observer = new MutationObserver(mutations => {
       for (const m of mutations) {
-        if (m.target && (m.target.id === 'ollie-owl' || m.target.id === 'ollie-bub' || m.target.id === 'ollie-panel')) continue;
+        const t = m.target;
+        if (!t) continue;
+        if (t.id === 'ollie-owl' || t.id === 'ollie-bub' || t.id === 'ollie-panel' || t.id === 'ollie-collapsed-bar') continue;
+        if (t.closest && t.closest('#ollie-panel, #ollie-owl, #ollie-bub, #ollie-collapsed-bar, .ollie-hover-chip')) continue;
         triggerRescan();
         break;
       }
@@ -1812,6 +2279,11 @@
 
     const rootTarget = document.getElementById('app') || document.body;
     observer.observe(rootTarget, { childList: true, subtree: true });
+
+    // Consume pending action once upon page load
+    setTimeout(() => {
+      handlePendingCrossPageAction();
+    }, 180);
 
     setTimeout(() => {
       if (!isHidden && !isPanelOpen) {
