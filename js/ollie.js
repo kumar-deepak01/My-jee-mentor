@@ -3,15 +3,15 @@
  * Ollie the Owl - Interactive Website Guide
  * My JEE Mentor (JEE, NEET & Foundation)
  *
- * Requirements:
+ * Core Features & Behaviors:
  * 1. Exact SVG, flying / wing-flap / bob / jump animations, and tour behavior.
- * 2. Debounced MutationObserver for dynamic SPA renders from main.js.
- * 3. Complete exclusion on portal / admin / exam routes.
- * 4. Separate steps for each faculty member with real qualifications.
- * 5. Strict adherence to site facts, batch sizes, and phone/WhatsApp numbers.
- * 6. Dynamic booking modal handling and mobile-bar safe docking.
- * 7. Steps ordered strictly according to DOM document order.
- * 8. Robust auto-explainer fallback and ?ollie-debug=1 console logger.
+ * 2. CARD_DATA config: maps real card data (name, fee, details, cta) with natural speech.
+ * 3. Responsive interaction modes (via matchMedia '(hover: hover) and (pointer: fine)'):
+ *    - Desktop: Hover is king with 150ms debounce, immediate jump, and 10s auto-hop pause.
+ *    - Mobile/Touch: Scroll-driven (45% viewport line) and tap-driven with 10s pause.
+ * 4. Precise 3-tier placement: ABOVE block -> BELOW block -> FIXED BOTTOM-CENTER.
+ *    - Zero overlap with card contents, sticky header, or .mobile-bar.
+ * 5. Dynamic MutationObserver and route exclusion on fees, login, test, classroom.
  * ============================================================================
  */
 
@@ -20,25 +20,338 @@
 
   // 1. ROUTE EXCLUSION GUARD
   // Exclude Ollie completely on fees, login, test, and classroom routes.
-  const path = (location.pathname || '').toLowerCase();
+  const routePath = (location.pathname || '').toLowerCase();
   if (
-    path.includes('fees') ||
-    path.includes('login') ||
-    path.includes('test') ||
-    path.includes('classroom') ||
-    path.includes('student-login')
+    routePath.includes('fees') ||
+    routePath.includes('login') ||
+    routePath.includes('test') ||
+    routePath.includes('classroom') ||
+    routePath.includes('student-login')
   ) {
     return;
   }
 
-  // Official contact information
-  const WA_NUMBER = '917304256203';
-  const PHONE_NUMBER = '+91 73042 56203';
   const isDebug = new URLSearchParams(location.search).get('ollie-debug') === '1';
 
   // ==========================================================================
+  // CONFIGURATION: CARD_DATA
+  // Real site information: verified names, course details, real fees, & CTAs.
+  // ==========================================================================
+  const CARD_DATA = [
+    // --- HOME COURSE CARDS ---
+    {
+      selector: '.mjm-card.jee',
+      name: 'JEE 2026-27',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Max 10 students only in one batch',
+        'Physics, Chemistry & Math with a mentor who tracks every student',
+        'Personal mentorship, online live classes, regular tests and daily DPP'
+      ],
+      cta: '.mjm-card.jee .mjm-btn'
+    },
+    {
+      selector: '.mjm-card.neet',
+      name: 'NEET 2026-27',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Max 10 students only in one batch',
+        'Physics, Chemistry & Biology with dedicated personal mentorship for every doubt',
+        'Online live classes, regular tests and daily DPP'
+      ],
+      cta: '.mjm-card.neet .mjm-btn'
+    },
+    {
+      selector: '.mjm-card.foundation',
+      name: 'Foundation Program',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Class 7 to 10 with max 10 students only in one batch',
+        'Strong basics in Science, Math, Social Science & English',
+        'Online live classes, regular tests and daily DPP'
+      ],
+      cta: '.mjm-card.foundation .mjm-btn'
+    },
+
+    // --- JEE BATCHES (/jee.html) ---
+    {
+      selector: '.program-card.program-foundation:not(.neet-program-card), .resource-grid .resource-card:nth-child(1) .program-card',
+      name: 'JEE Foundation Batch',
+      fee: '₹3000/month',
+      details: [
+        'Build strong fundamentals, clear concepts and develop a solid JEE base',
+        'Max 10 students per batch with personal mentorship',
+        'Live classes, DPPs, homework, PYQs and regular tests'
+      ],
+      cta: '.program-card.program-foundation .program-cta, .resource-grid .resource-card:nth-child(1) .program-cta'
+    },
+    {
+      selector: '.program-card.program-mentorship:not(.neet-program-card), .resource-grid .resource-card:nth-child(2) .program-card:not(.neet-program-card)',
+      name: 'JEE Booster Batch',
+      fee: '₹4000/month',
+      details: [
+        'Strengthen existing preparation and fix weak areas',
+        'Improve problem-solving speed and boost performance',
+        'Intensive practice, PYQs and targeted doubt clearing'
+      ],
+      cta: '.program-card.program-mentorship .program-cta, .resource-grid .resource-card:nth-child(2) .program-cta'
+    },
+    {
+      selector: '.program-card.program-ranker:not(.neet-program-card), .resource-grid .resource-card:nth-child(3) .program-card:not(.neet-program-card)',
+      name: 'JEE Ranker Batch',
+      fee: '₹5000/month',
+      details: [
+        'Advanced problem-solving and intensive practice for top percentile',
+        'Comprehensive PYQs and regular performance analysis',
+        'Direct teacher support with maximum 10 students'
+      ],
+      cta: '.program-card.program-ranker .program-cta, .resource-grid .resource-card:nth-child(3) .program-cta'
+    },
+    {
+      selector: '.program-card.program-one-to-one:not(.neet-program-card), .resource-grid .resource-card:nth-child(4) .program-card:not(.neet-program-card)',
+      name: 'JEE Premium Batch',
+      fee: '₹6000/month',
+      details: [
+        'Focused learning and 1-on-1 personalized guidance',
+        'Structured preparation, regular practice and academic monitoring',
+        'Continuous mentor check-ins and performance tracking'
+      ],
+      cta: '.program-card.program-one-to-one .program-cta, .resource-grid .resource-card:nth-child(4) .program-cta'
+    },
+
+    // --- NEET BATCHES (/neet.html) ---
+    {
+      selector: '.neet-program-card.program-foundation, .neet-program-card:nth-of-type(1)',
+      name: 'NEET Foundation Batch',
+      fee: '₹3000/month',
+      details: [
+        'Strong NCERT foundation and clear basic concepts',
+        'Right approach for NEET preparation from ground up',
+        'Max 10 students per batch with personal mentorship'
+      ],
+      cta: '.neet-program-card.program-foundation .program-cta, .neet-program-card:nth-of-type(1) .program-cta'
+    },
+    {
+      selector: '.neet-program-card.program-mentorship, .neet-program-card:nth-of-type(2)',
+      name: 'NEET Booster / Personal Mentorship Batch',
+      fee: '₹4000/month',
+      details: [
+        'Strengthen concepts and improve weak areas in Physics, Chemistry & Biology',
+        'Revise high-weightage topics and boost overall performance',
+        'Priority doubt solving and regular test analysis'
+      ],
+      cta: '.neet-program-card.program-mentorship .program-cta, .neet-program-card:nth-of-type(2) .program-cta'
+    },
+    {
+      selector: '.neet-personal-mentorship, .program-card.program-mentorship[data-slug="mentorship"]',
+      name: 'NEET Personal Mentorship Batch',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Strictly limited to max 5 students per batch',
+        '1:1 personal mentoring and direct teacher support',
+        'Priority doubt solving and weekly performance review'
+      ],
+      cta: '.program-card.program-mentorship .program-cta'
+    },
+    {
+      selector: '.neet-program-card.program-ranker, .neet-program-card:nth-of-type(3)',
+      name: 'NEET Ranker Batch',
+      fee: '₹5000/month',
+      details: [
+        'Intensive revision and NCERT-focused practice & PYQs',
+        'Mock tests and regular performance analysis for top medical aspirants',
+        'Small batches with dedicated medical entrance mentors'
+      ],
+      cta: '.neet-program-card.program-ranker .program-cta, .neet-program-card:nth-of-type(3) .program-cta'
+    },
+    {
+      selector: '.neet-program-card.program-one-to-one, .neet-program-card:nth-of-type(4)',
+      name: 'NEET Premium / One to One Program',
+      fee: '₹6000/month',
+      details: [
+        'Personalised attention, structured preparation and custom study plan',
+        'Regular practice, doubt support and continuous academic monitoring',
+        '100% focused one-to-one mentor tracking'
+      ],
+      cta: '.neet-program-card.program-one-to-one .program-cta, .neet-program-card:nth-of-type(4) .program-cta'
+    },
+    {
+      selector: '.neet-one-to-one, .program-card.program-one-to-one[data-slug="one-to-one"]',
+      name: 'NEET One to One Program',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        '100% personalized learning with a dedicated medical entrance mentor',
+        'Custom study plan aligned with your syllabus pace and targets',
+        'Regular performance tracking and direct mentor access'
+      ],
+      cta: '.program-card.program-one-to-one .program-cta'
+    },
+
+    // --- FOUNDATION CLASSES (/foundation.html) ---
+    {
+      selector: '.foundation-card-7',
+      name: 'Class 7 Foundation',
+      fee: '₹2500/month',
+      details: [
+        'Max 10 students per batch for real individual attention',
+        'Science, Math, English, Spoken English & Social Science',
+        'CBSE & ICSE board aligned with daily practice papers'
+      ],
+      cta: '.foundation-card-7 .foundation-card-cta'
+    },
+    {
+      selector: '.foundation-card-8',
+      name: 'Class 8 Foundation',
+      fee: '₹2500/month',
+      details: [
+        'Max 10 students per batch building fundamental concepts',
+        'Science, Math, English, Spoken English and SST coverage',
+        'Regular practice, tests and early Olympiad foundation'
+      ],
+      cta: '.foundation-card-8 .foundation-card-cta'
+    },
+    {
+      selector: '.foundation-card-9',
+      name: 'Class 9 Foundation',
+      fee: '₹3000/month',
+      details: [
+        'Max 10 students per batch bridging high school concepts',
+        'In-depth Science & Math curriculum for CBSE and ICSE',
+        'Daily DPPs and early base for JEE and NEET competitive exams'
+      ],
+      cta: '.foundation-card-9 .foundation-card-cta'
+    },
+    {
+      selector: '.foundation-card-10',
+      name: 'Class 10 Foundation',
+      fee: '₹3000/month',
+      details: [
+        'Max 10 students per batch with board exam focus',
+        'Comprehensive syllabus coverage, daily DPPs and regular mock exams',
+        'Strong conceptual bridge for Class 11 JEE and NEET'
+      ],
+      cta: '.foundation-card-10 .foundation-card-cta'
+    },
+
+    // --- FACULTY CARDS ---
+    {
+      selector: '.faculty-card[data-faculty-id="ayushi"], .faculty-card:nth-child(1)',
+      name: 'Dr. Ayushi Aggarwal',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Chemistry & Biology faculty for JEE & NEET',
+        'Ph.D., M.Sc. Gold Medalist with 8+ years premier coaching experience',
+        'Known for step-by-step conceptual clarity and interactive doubt solving'
+      ],
+      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
+    },
+    {
+      selector: '.faculty-card[data-faculty-id="anil"], .faculty-card:nth-child(2)',
+      name: 'Anil Kumar Singh',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Mathematics faculty for JEE Main & Advanced',
+        'Senior Mathematics Faculty with 9+ years experience',
+        'Specializes in Calculus, Algebra, and Coordinate Geometry for 99+ percentile scores'
+      ],
+      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
+    },
+    {
+      selector: '.faculty-card[data-faculty-id="lokesh"], .faculty-card:nth-child(3)',
+      name: 'Lokesh Gupta',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Physics faculty for JEE & NEET',
+        '7+ years experience training JEE & NEET aspirants across leading coaching centers',
+        'Specializes in Mechanics, Electrodynamics, and systematic numerical breakdown'
+      ],
+      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
+    },
+    {
+      selector: '.faculty-card[data-faculty-id="soujanya"], .faculty-card:nth-child(4)',
+      name: 'Soujanya Mondal',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Chemistry faculty for JEE & NEET',
+        'M.Sc. Chemistry NIT Warangal, IIT JAM qualified 2023',
+        'Senior Faculty at Unacademy and Allen Chennai, known for making chemistry intuitive'
+      ],
+      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
+    },
+    {
+      selector: '.faculty-card[data-faculty-id="shubham"], .faculty-card:nth-child(5)',
+      name: 'Shubham Kumar',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Foundation faculty for Class 7 to 10',
+        'B.Sc. & Academic Pedagogy Training with 6+ years experience in Science & Math',
+        'Known for friendly mentoring, patient doubt resolution and Olympiad base building'
+      ],
+      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
+    },
+
+    // --- OTHER PUBLIC BATCH / PROGRAM CARDS ---
+    {
+      selector: '.courses-jee-booster .split, main:has(.split) .split',
+      name: 'JEE Booster Program',
+      fee: 'Fee: talk to our counselor',
+      details: [
+        'Focused concept recovery and weakness fixing for Class 11-12 & droppers',
+        'Live classes, DPPs, homework, PYQs, regular tests and doubt support',
+        'Personal mentorship and performance tracking with counseling'
+      ],
+      cta: '.split a[href="#book-demo"], .split a.btn-primary, .site-header .btn.talk'
+    }
+  ];
+
+  // Helper to format natural speech from CARD_DATA
+  function formatCardSpeech(entry, ctaEl) {
+    const rawCta = ctaEl ? ctaEl.textContent.trim().replace(/\s+/g, ' ').replace(/[→›»]/g, '').trim() : '';
+    const ctaLabel = rawCta || 'Explore Now';
+    const details = Array.isArray(entry.details)
+      ? entry.details.map(d => d.replace(/\.+$/, '')).join('. ') + '.'
+      : entry.details;
+    const feeText = entry.fee.startsWith('Fee:') ? entry.fee : `Fee: ${entry.fee}`;
+
+    let action = 'see full details';
+    if (/book|demo/i.test(ctaLabel)) {
+      action = 'reserve your free demo class';
+    } else if (/talk|call/i.test(ctaLabel)) {
+      action = 'speak with our academic counselor';
+    } else if (/enquire/i.test(ctaLabel)) {
+      action = 'enquire about this program';
+    } else if (/explore/i.test(ctaLabel)) {
+      action = 'see full details';
+    }
+
+    return `This is ${entry.name}. ${details} ${feeText}. Click ${ctaLabel} to ${action}.`;
+  }
+
+  // Helper to match an element to CARD_DATA
+  function findCardDataForElement(el) {
+    if (!el) return null;
+    for (const card of CARD_DATA) {
+      try {
+        if (el.matches(card.selector) || el.closest(card.selector)) {
+          return card;
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  // Device capability detector: true for mouse/desktop, false for touch
+  function isDesktopDevice() {
+    try {
+      return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    } catch (e) {
+      return window.innerWidth > 900;
+    }
+  }
+
+  // ==========================================================================
   // CONFIGURATION: CUSTOM_STEPS
-  // Real site information only: verified names, course details, faculty, & batches.
+  // Ordered strictly according to DOM document order.
   // ==========================================================================
   const CUSTOM_STEPS = [
     // --- GLOBAL MODAL ---
@@ -68,87 +381,172 @@
       title: 'Hero Banner',
       text: 'Namaste! I’m Ollie, your guide to My JEE Mentor. We offer personalized online coaching for JEE, NEET and Foundation with max 10 students per batch. Click Book Free Demo to get started.'
     },
+    // Home Program Section Heading (Spoken once before cards start)
+    {
+      id: 'home-programs-head',
+      page: '/',
+      section: 'section.program-section .section-head',
+      target: '.mjm-card.jee .mjm-btn',
+      title: 'Choose How You Want to Learn',
+      text: 'This is Personal Mentorship Programs. Choose how you want to learn with focused support and a plan built around your goal. Explore our JEE, NEET and Foundation courses below.'
+    },
+    // Home Course Cards Group (Side-by-side group auto-hopping)
     {
       id: 'home-card-jee',
       page: '/',
+      group: 'home-courses',
       section: '.mjm-card.jee',
       target: '.mjm-card.jee .mjm-btn',
       title: 'JEE 2026-27 Card',
-      text: 'This is our JEE 2026-27 program with max 10 students per batch. You get Physics, Chemistry and Math live classes, personal mentor tracking, regular tests and daily DPPs. Click Explore Now for full details.'
+      text: formatCardSpeech(CARD_DATA[0], { textContent: 'Explore Now' })
     },
     {
       id: 'home-card-neet',
       page: '/',
+      group: 'home-courses',
       section: '.mjm-card.neet',
       target: '.mjm-card.neet .mjm-btn',
       title: 'NEET 2026-27 Card',
-      text: 'This is our NEET 2026-27 program for medical aspirants. Learn Physics, Chemistry and Biology with dedicated personal mentorship for every doubt and NCERT practice. Click Explore Now to see details.'
+      text: formatCardSpeech(CARD_DATA[1], { textContent: 'Explore Now' })
     },
     {
       id: 'home-card-foundation',
       page: '/',
+      group: 'home-courses',
       section: '.mjm-card.foundation',
       target: '.mjm-card.foundation .mjm-btn',
       title: 'Foundation Card',
-      text: 'This is our Foundation program for Classes 7 to 10. We build rock-solid concepts in Science, Maths, Social Science and English with max 10 students per batch. Click Explore Now to view courses.'
+      text: formatCardSpeech(CARD_DATA[2], { textContent: 'Explore Now' })
+    },
+
+    // Reviews Heading & Cards
+    {
+      id: 'reviews-section-head',
+      page: '*',
+      section: '.mjm-reviews-header',
+      target: '.mjm-review-card:first-child',
+      title: 'Reviews Heading',
+      text: 'What Parents & Students Say: Small batches, personal mentors, and real attention. Read what families say before you decide.'
     },
     {
-      id: 'home-reviews',
-      page: '/',
-      section: 'section.mjm-reviews-section',
-      target: '.mjm-review-card:first-child',
-      title: 'Parents & Students Reviews',
-      text: 'Read genuine reviews from parents and students who experienced our small 10-student batches, daily DPPs, and fast doubt resolution. Click any card to read their stories.'
+      id: 'home-reviews-card-1',
+      page: '*',
+      group: 'reviews-group',
+      section: '.mjm-review-card:nth-child(1)',
+      target: '.mjm-review-card:nth-child(1)',
+      title: 'Review: Dirasantham Adithya',
+      text: 'With only 10 students in a batch, mentors know exactly where students are weak and resolve doubts the same day, one-on-one.'
     },
-    // Faculty individual cards on Home
+    {
+      id: 'home-reviews-card-2',
+      page: '*',
+      group: 'reviews-group',
+      section: '.mjm-review-card:nth-child(2)',
+      target: '.mjm-review-card:nth-child(2)',
+      title: 'Review: K. Ramachandran',
+      text: 'Parents appreciate personal guidance, regular test series, and transparent progress updates for NEET preparation.'
+    },
+    {
+      id: 'home-reviews-card-3',
+      page: '*',
+      group: 'reviews-group',
+      section: '.mjm-review-card:nth-child(3)',
+      target: '.mjm-review-card:nth-child(3)',
+      title: 'Review: Shriya S Nair',
+      text: 'Daily DPPs build strong study habits from home, saving travel time with immediate mentor doubt support.'
+    },
+    {
+      id: 'home-reviews-card-4',
+      page: '*',
+      group: 'reviews-group',
+      section: '.mjm-review-card:nth-child(4)',
+      target: '.mjm-review-card:nth-child(4)',
+      title: 'Review: M. Sundaresan',
+      text: 'Parents of Foundation students highlight how basics are explained step by step, growing confidence in Science and Math.'
+    },
+    {
+      id: 'home-reviews-card-5',
+      page: '*',
+      group: 'reviews-group',
+      section: '.mjm-review-card:nth-child(5)',
+      target: '.mjm-review-card:nth-child(5)',
+      title: 'Review: Regati Rishikesh Reddy',
+      text: 'Regular tests show mistakes early, paired with personal study plans so students never feel lost during JEE prep.'
+    },
+    {
+      id: 'home-reviews-card-6',
+      page: '*',
+      group: 'reviews-group',
+      section: '.mjm-review-card:nth-child(6)',
+      target: '.mjm-review-card:nth-child(6)',
+      title: 'Review: V. Subramanian',
+      text: 'Patient teachers who listen closely make a real difference in small batches, ensuring every student doubt is resolved.'
+    },
+
+    // Faculty Section Heading & Individual Cards
+    {
+      id: 'faculty-section-head',
+      page: '*',
+      section: '.mjm-faculty-header',
+      target: '.faculty-card:first-child',
+      title: 'Faculty Section Heading',
+      text: 'Meet our dedicated faculty team. Learn from teachers who make concepts click with personalized attention in small batches of max 10 students.'
+    },
     {
       id: 'faculty-ayushi',
       page: '*',
+      group: 'faculty-group',
       section: '.faculty-card[data-faculty-id="ayushi"]',
       target: '.faculty-card[data-faculty-id="ayushi"]',
       title: 'Dr. Ayushi Aggarwal',
-      text: 'Dr. Ayushi Aggarwal (Ph.D., M.Sc. Gold Medalist) mentors Chemistry and Biology with 8+ years experience at premier national institutes, guiding 500+ JEE and NEET qualifiers with deep conceptual clarity.'
+      text: formatCardSpeech(CARD_DATA[11], { textContent: 'Book Free Demo Session' })
     },
     {
       id: 'faculty-anil',
       page: '*',
+      group: 'faculty-group',
       section: '.faculty-card[data-faculty-id="anil"]',
       target: '.faculty-card[data-faculty-id="anil"]',
       title: 'Anil Kumar Singh',
-      text: 'Anil Kumar Singh brings 9+ years of senior faculty experience in JEE Main and Advanced Mathematics, specializing in Calculus, Algebra, and Coordinate Geometry to help students achieve 99+ percentile scores.'
+      text: formatCardSpeech(CARD_DATA[12], { textContent: 'Book Free Demo Session' })
     },
     {
       id: 'faculty-lokesh',
       page: '*',
+      group: 'faculty-group',
       section: '.faculty-card[data-faculty-id="lokesh"]',
       target: '.faculty-card[data-faculty-id="lokesh"]',
       title: 'Lokesh Gupta',
-      text: 'Lokesh Gupta has 7+ years experience training JEE and NEET aspirants in Physics. He specializes in Mechanics, Electrodynamics, and systematic numerical breakdown for top competitive scores.'
+      text: formatCardSpeech(CARD_DATA[13], { textContent: 'Book Free Demo Session' })
     },
     {
       id: 'faculty-soujanya',
       page: '*',
+      group: 'faculty-group',
       section: '.faculty-card[data-faculty-id="soujanya"]',
       target: '.faculty-card[data-faculty-id="soujanya"]',
       title: 'Soujanya Mondal',
-      text: 'Soujanya Mondal holds an M.Sc. in Chemistry from NIT Warangal and qualified IIT JAM 2023. With senior faculty experience at Unacademy and Allen Chennai, he makes complex chemistry intuitive and scoring.'
+      text: formatCardSpeech(CARD_DATA[14], { textContent: 'Book Free Demo Session' })
     },
     {
       id: 'faculty-shubham',
       page: '*',
+      group: 'faculty-group',
       section: '.faculty-card[data-faculty-id="shubham"]',
       target: '.faculty-card[data-faculty-id="shubham"]',
       title: 'Shubham Kumar',
-      text: 'Shubham Kumar has 6+ years experience mentoring Classes 7 to 10 in Science, Mathematics, and Logical Reasoning, building strong fundamentals for school exams and Olympiads.'
+      text: formatCardSpeech(CARD_DATA[15], { textContent: 'Book Free Demo Session' })
     },
     {
       id: 'faculty-cta-step',
       page: '*',
       section: '.mjm-faculty-section .faculty-cta-bar',
-      target: '.mjm-faculty-section .faculty-cta-bar .btn-primary',
+      target: '.mjm-faculty-section .faculty-cta-bar .btn-primary, .mjm-faculty-cta a',
       title: 'Faculty Free Demo Booking',
       text: 'Our subject mentors teach in small batches of max 10 students for real personal attention. Click Book Free Demo Session to reserve your student’s counseling and demo class.'
     },
+
+    // Mentorship & Journey
     {
       id: 'home-mentorship',
       page: '/',
@@ -169,7 +567,7 @@
       id: 'home-resources',
       page: '/',
       section: 'section.shared-resources-section',
-      target: '.shared-resources-section .btn-primary',
+      target: '.shared-resources-section .btn-primary, .shared-resources-section .btn-outline',
       title: 'Free Learning Resources',
       text: 'Good learning starts before enrolment. Explore our free sample lecture videos, subject notes, and practice DPPs prepared by our faculty. Click Watch Free Classes to begin learning.'
     },
@@ -202,34 +600,38 @@
     {
       id: 'jee-batch-1',
       page: '/jee.html',
-      section: '.resource-grid .resource-card:nth-child(1)',
-      target: '.resource-grid .resource-card:nth-child(1) .btn-primary',
+      group: 'jee-batches',
+      section: '.resource-grid .resource-card:nth-child(1), .program-card.program-foundation',
+      target: '.resource-grid .resource-card:nth-child(1) .program-cta, .program-card.program-foundation .program-cta',
       title: 'JEE Foundation Batch',
-      text: 'The Foundation Batch builds JEE concepts from the basics, taught step by step in small batches of max 10 students with personal attention. Click Book Free Demo to reserve your seat.'
+      text: formatCardSpeech(CARD_DATA[3], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'jee-batch-2',
       page: '/jee.html',
-      section: '.resource-grid .resource-card:nth-child(2)',
-      target: '.resource-grid .resource-card:nth-child(2) .btn-primary',
+      group: 'jee-batches',
+      section: '.resource-grid .resource-card:nth-child(2), .program-card.program-mentorship',
+      target: '.resource-grid .resource-card:nth-child(2) .program-cta, .program-card.program-mentorship .program-cta',
       title: 'JEE Booster Batch',
-      text: 'The Booster Batch is designed to accelerate problem solving, clear backlogs, and strengthen weak topics with rigorous DPPs and regular tests. Click Book Free Demo to get started.'
+      text: formatCardSpeech(CARD_DATA[4], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'jee-batch-3',
       page: '/jee.html',
-      section: '.resource-grid .resource-card:nth-child(3)',
-      target: '.resource-grid .resource-card:nth-child(3) .btn-primary',
-      title: 'JEE Premium Batch',
-      text: 'Our Premium Batch offers customized learning plans, direct teacher access, and one-on-one personal mentoring for dedicated IIT aspirants. Click Book Free Demo to learn more.'
+      group: 'jee-batches',
+      section: '.resource-grid .resource-card:nth-child(3), .program-card.program-ranker',
+      target: '.resource-grid .resource-card:nth-child(3) .program-cta, .program-card.program-ranker .program-cta',
+      title: 'JEE Ranker Batch',
+      text: formatCardSpeech(CARD_DATA[5], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'jee-batch-4',
       page: '/jee.html',
-      section: '.resource-grid .resource-card:nth-child(4)',
-      target: '.resource-grid .resource-card:nth-child(4) .btn-primary',
-      title: 'JEE Ranker Batch',
-      text: 'The Ranker Batch for IIT-JEE 2027 focuses on advanced problem solving, weekly rank analysis, and intense practice for top 1% rank aspirants. Click Book Free Demo to join.'
+      group: 'jee-batches',
+      section: '.resource-grid .resource-card:nth-child(4), .program-card.program-one-to-one',
+      target: '.resource-grid .resource-card:nth-child(4) .program-cta, .program-card.program-one-to-one .program-cta',
+      title: 'JEE Premium Batch',
+      text: formatCardSpeech(CARD_DATA[6], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'jee-enquiry',
@@ -252,34 +654,38 @@
     {
       id: 'neet-batch-1',
       page: '/neet.html',
-      section: '.resource-grid .resource-card:nth-child(1)',
-      target: '.resource-grid .resource-card:nth-child(1) .btn-primary',
-      title: 'NEET Personal Mentorship Batch',
-      text: 'Our Personal Mentorship Batch is strictly limited to max 5 students. Get one-to-one mentoring, direct teacher support, and priority doubt solving. Click Book Free Demo to join.'
+      group: 'neet-batches',
+      section: '.neet-program-card.program-foundation, .resource-grid .resource-card:nth-child(1)',
+      target: '.neet-program-card.program-foundation .program-cta, .resource-grid .resource-card:nth-child(1) .program-cta',
+      title: 'NEET Foundation Batch',
+      text: formatCardSpeech(CARD_DATA[7], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'neet-batch-2',
       page: '/neet.html',
-      section: '.resource-grid .resource-card:nth-child(2)',
-      target: '.resource-grid .resource-card:nth-child(2) .btn-primary',
-      title: 'NEET Foundation Batch',
-      text: 'The NEET Foundation Batch focuses on deep conceptual understanding from NCERT basics with regular practice and small batches of max 10 students. Click Book Free Demo to start.'
+      group: 'neet-batches',
+      section: '.neet-program-card.program-mentorship, .resource-grid .resource-card:nth-child(2)',
+      target: '.neet-program-card.program-mentorship .program-cta, .resource-grid .resource-card:nth-child(2) .program-cta',
+      title: 'NEET Booster Batch',
+      text: formatCardSpeech(CARD_DATA[8], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'neet-batch-3',
       page: '/neet.html',
-      section: '.resource-grid .resource-card:nth-child(3)',
-      target: '.resource-grid .resource-card:nth-child(3) .btn-primary',
-      title: 'NEET One to One Program',
-      text: 'The One to One Program offers 100% personalized attention with a dedicated mentor and custom learning plan tailored to your medical entrance goals. Click Book Free Demo to enroll.'
+      group: 'neet-batches',
+      section: '.neet-program-card.program-ranker, .resource-grid .resource-card:nth-child(3)',
+      target: '.neet-program-card.program-ranker .program-cta, .resource-grid .resource-card:nth-child(3) .program-cta',
+      title: 'NEET Ranker Batch',
+      text: formatCardSpeech(CARD_DATA[10], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'neet-batch-4',
       page: '/neet.html',
-      section: '.resource-grid .resource-card:nth-child(4)',
-      target: '.resource-grid .resource-card:nth-child(4) .btn-primary',
-      title: 'NEET Ranker Batch',
-      text: 'The Ranker Batch for NEET 2027 provides advanced MCQ practice and weekly test analysis for ambitious medical aspirants. Click Book Free Demo to reserve your batch.'
+      group: 'neet-batches',
+      section: '.neet-program-card.program-one-to-one, .resource-grid .resource-card:nth-child(4)',
+      target: '.neet-program-card.program-one-to-one .program-cta, .resource-grid .resource-card:nth-child(4) .program-cta',
+      title: 'NEET Premium Batch',
+      text: formatCardSpeech(CARD_DATA[11], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'neet-enquiry',
@@ -300,42 +706,54 @@
       text: 'Welcome to the Foundation Program for Classes 7 to 10. We build strong basics in Science and Mathematics to prepare students early for JEE, NEET, and Olympiads. Click Book Free Demo Class to get started.'
     },
     {
+      id: 'foundation-classes-head',
+      page: '/foundation.html',
+      section: '.foundation-classes .foundation-heading',
+      target: '.foundation-card-7',
+      title: 'Choose Your Class Header',
+      text: 'Choose your class for personalized foundation training. Max 10 students per batch with concept-first mentoring in Science and Maths.'
+    },
+    {
       id: 'foundation-card-7',
       page: '/foundation.html',
+      group: 'foundation-classes',
       section: '.foundation-card-7',
       target: '.foundation-card-7 .foundation-card-cta',
       title: 'Class 7 Foundation',
-      text: 'Class 7 Foundation focuses on fundamental Science, Mathematics, and Olympiad problem-solving skills with max 10 students per batch. Click Book Free Demo to learn more.'
+      text: formatCardSpeech(CARD_DATA[13], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'foundation-card-8',
       page: '/foundation.html',
+      group: 'foundation-classes',
       section: '.foundation-card-8',
       target: '.foundation-card-8 .foundation-card-cta',
       title: 'Class 8 Foundation',
-      text: 'Class 8 Foundation introduces algebraic logic, physical sciences, and analytical thinking with dedicated mentor guidance. Click Book Free Demo to explore.'
+      text: formatCardSpeech(CARD_DATA[14], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'foundation-card-9',
       page: '/foundation.html',
+      group: 'foundation-classes',
       section: '.foundation-card-9',
       target: '.foundation-card-9 .foundation-card-cta',
       title: 'Class 9 Foundation',
-      text: 'Class 9 Foundation builds core scientific principles and higher-order math skills essential for board exams and competitive exams. Click Book Free Demo to join.'
+      text: formatCardSpeech(CARD_DATA[15], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'foundation-card-10',
       page: '/foundation.html',
+      group: 'foundation-classes',
       section: '.foundation-card-10',
       target: '.foundation-card-10 .foundation-card-cta',
       title: 'Class 10 Foundation',
-      text: 'Class 10 Foundation provides thorough board exam preparation alongside early bridge concepts for Class 11 JEE and NEET. Click Book Free Demo to reserve your demo.'
+      text: formatCardSpeech(CARD_DATA[16], { textContent: 'Book Free Demo Class' })
     },
     {
       id: 'foundation-why',
       page: '/foundation.html',
       section: 'section.foundation-why',
-      target: '.foundation-why-card:first-child',
+      target: '.foundation-why-grid article:first-child',
       title: 'Why Foundation Pillars',
       text: 'Discover why parents choose My JEE Mentor: max 10 students per batch, concept-first teaching, personal mentors, and regular progress updates. Explore our pillars above.'
     },
@@ -363,7 +781,7 @@
       section: '.split > div:first-child',
       target: '.split .check-list',
       title: 'Program Checklist & FAQs',
-      text: 'Check if this program fits your needs: ideal for students with concept backlogs, independent question-solving struggles, or needing personal accountability. Review the details above.'
+      text: formatCardSpeech(CARD_DATA[CARD_DATA.length - 1], { textContent: 'Book Free Demo' })
     },
     {
       id: 'booster-split-form',
@@ -412,7 +830,7 @@
     {
       id: 'freeresource-filter',
       page: '/freeresource.html',
-      section: '.resource-filter-bar',
+      section: '.resource-library-tools, .resource-filter-bar',
       target: '[data-resource-search]',
       title: 'Resource Search Bar',
       text: 'Use this search bar and category filter to quickly find study notes and practice sheets for JEE, NEET, or Foundation. Type a subject to filter.'
@@ -420,10 +838,10 @@
     {
       id: 'freeresource-grid',
       page: '/freeresource.html',
-      section: '[data-public-resources]',
-      target: '[data-public-resources] .btn',
+      section: '.shared-resource-track',
+      target: '.shared-resource-card:first-child',
       title: 'Public Resources Grid',
-      text: 'Browse our curated study material. Click Open Resource or Download to view PDF notes and formula summaries directly in your browser.'
+      text: 'Browse our curated study material. Click any card to open notes and formula summaries directly in your browser.'
     },
 
     // --- WHY CHOOSE US (/why-my-jee-mentor.html) ---
@@ -494,7 +912,13 @@
   let isTick = false;
   let modalActive = false;
 
-  // Read stored hide preference
+  // Group Hopping & Interaction State
+  let activeGroupId = null;
+  let groupHopTimer = null;
+  let groupHopPausedUntil = 0;
+  let hoverDebounceTimer = null;
+  let isCurrentlyHoveringCard = false;
+
   try {
     isHidden = sessionStorage.getItem('ollie-hidden') === 'true';
   } catch (e) {
@@ -567,7 +991,6 @@
     actBtn = document.getElementById('ollie-act');
     hideBtn = document.getElementById('ollie-hide');
 
-    // Attach guide listeners
     actBtn.onclick = function (e) {
       e.preventDefault();
       if (isTour) {
@@ -593,7 +1016,7 @@
     // Fly in from top-right corner on initial load
     owlEl.style.transition = 'none';
     owlEl.style.transform = 'translate(' + (window.innerWidth + 40) + 'px, -120px)';
-    void owlEl.offsetWidth; // force reflow
+    void owlEl.offsetWidth;
     owlEl.style.transition = '';
 
     if (!isHidden) {
@@ -601,16 +1024,129 @@
     }
   }
 
-  // 3. TARGET POSITION & PLACEMENT CALCULATOR
-  function getActiveTargetElement() {
-    if (modalActive) {
-      return document.querySelector('#booking-form button[type="submit"]') || document.querySelector('#book-demo');
+  // 3. PRECISE 3-TIER PLACEMENT ENGINE (Zero Overlap with Active Block)
+  function calculatePlacement(activeBlock, targetEl) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const isMobile = vw <= 640;
+
+    // Real Sticky Header Bottom
+    const headerEl = document.querySelector('header.site-header');
+    const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
+    const headerBottom = (headerRect && headerRect.bottom > 0) ? Math.max(0, headerRect.bottom) : 0;
+    const topSafeLimit = headerBottom + 10;
+
+    // Real Mobile Bar Top
+    const mobileBarEl = document.querySelector('.mobile-bar');
+    const mobileBarVisible = mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none';
+    const mobileBarRect = mobileBarVisible ? mobileBarEl.getBoundingClientRect() : null;
+
+    // Bottom Safe Boundary (above .mobile-bar on mobile)
+    let bottomSafeLimit = vh - 12;
+    if (mobileBarRect && mobileBarRect.top > 0) {
+      bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
     }
-    if (currentStepIdx < 0 || currentStepIdx >= activeSteps.length) {
-      return null;
+
+    // Dimensions
+    const owlW = isMobile ? 68 : 84;
+    const owlH = isMobile ? 78 : 96;
+    const bubW = bubEl.offsetWidth || (isMobile ? Math.min(300, vw - 24) : 310);
+    const bubH = bubEl.offsetHeight || 108;
+
+    const bRect = activeBlock.getBoundingClientRect();
+
+    // Helper: test if a rectangle overlaps activeBlock
+    function overlapsBlock(x, y, w, h) {
+      return !(
+        x + w <= bRect.left ||
+        x >= bRect.right ||
+        y + h <= bRect.top ||
+        y >= bRect.bottom
+      );
     }
-    const step = activeSteps[currentStepIdx];
-    return step.targetEl || step.secEl;
+
+    // --- POSITION 1: ABOVE THE BLOCK ---
+    const bubYAbove = bRect.top - bubH - 12;
+    const owlYAbove = bRect.top - owlH + 14;
+
+    const fitsAbove = (bubYAbove >= topSafeLimit) && (owlYAbove >= topSafeLimit) && (bRect.top <= vh - 40);
+
+    if (fitsAbove) {
+      let bubX = bRect.left + 20;
+      if (bubX + bubW > vw - 14) {
+        bubX = vw - bubW - 14;
+      }
+      if (bubX < 12) {
+        bubX = 12;
+      }
+
+      let owlX = bRect.left - (isMobile ? 12 : 24);
+      if (owlX < 8) owlX = Math.max(8, bRect.left + 8);
+      if (owlX + owlW > vw - 8) owlX = vw - owlW - 8;
+
+      if (!overlapsBlock(bubX, bubYAbove, bubW, bubH)) {
+        return {
+          owlX: Math.round(owlX),
+          owlY: Math.round(owlYAbove),
+          bubX: Math.round(bubX),
+          bubY: Math.round(bubYAbove),
+          mode: 'above'
+        };
+      }
+    }
+
+    // --- POSITION 2: BELOW THE BLOCK ---
+    const bubYBelow = bRect.bottom + 12;
+    const owlYBelow = bRect.bottom - 12;
+
+    const fitsBelow = (bubYBelow + bubH <= bottomSafeLimit) && (bRect.bottom >= topSafeLimit);
+
+    if (fitsBelow) {
+      let bubX = bRect.left + 20;
+      if (bubX + bubW > vw - 14) {
+        bubX = vw - bubW - 14;
+      }
+      if (bubX < 12) {
+        bubX = 12;
+      }
+
+      let owlX = bRect.left - (isMobile ? 12 : 24);
+      if (owlX < 8) owlX = Math.max(8, bRect.left + 8);
+      if (owlX + owlW > vw - 8) owlX = vw - owlW - 8;
+
+      if (!overlapsBlock(bubX, bubYBelow, bubW, bubH)) {
+        return {
+          owlX: Math.round(owlX),
+          owlY: Math.round(owlYBelow),
+          bubX: Math.round(bubX),
+          bubY: Math.round(bubYBelow),
+          mode: 'below'
+        };
+      }
+    }
+
+    // --- POSITION 3: FIXED BOTTOM-CENTER FALLBACK ---
+    let fixedBubX, fixedBubY, fixedOwlX, fixedOwlY;
+
+    if (isMobile) {
+      fixedBubX = 12;
+      fixedBubY = Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 4);
+      fixedOwlX = 14;
+      fixedOwlY = fixedBubY - owlH + 18;
+    } else {
+      fixedBubX = Math.round(Math.max(12, (vw - bubW) / 2));
+      fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 10));
+      fixedOwlX = Math.max(8, fixedBubX - owlW + 16);
+      fixedOwlY = Math.round(fixedBubY + (bubH - owlH) / 2);
+    }
+
+    return {
+      owlX: fixedOwlX,
+      owlY: fixedOwlY,
+      bubX: fixedBubX,
+      bubY: fixedBubY,
+      mode: 'fixed-bottom'
+    };
   }
 
   function placeOllieAndBubble() {
@@ -620,52 +1156,43 @@
     const vh = window.innerHeight;
     const isMobile = vw <= 640;
 
-    let targetX;
-    let targetY;
+    let targetX, targetY, bubX, bubY;
 
     if (isHidden) {
-      // Dock neatly above the floating .mobile-bar or in bottom-right corner
       owlEl.classList.add('ollie-docked');
-      targetX = vw - 88;
-      targetY = isMobile ? vh - 146 : vh - 110;
+      targetX = vw - 86;
+      targetY = isMobile ? vh - 146 : vh - 100;
       bubEl.hidden = true;
     } else {
       owlEl.classList.remove('ollie-docked');
       bubEl.hidden = false;
 
-      const target = getActiveTargetElement();
-      if (!target) {
+      let activeBlock = null;
+      let targetEl = null;
+
+      if (modalActive) {
+        activeBlock = document.querySelector('#book-demo .booking-dialog') || document.querySelector('#book-demo');
+        targetEl = document.querySelector('#booking-form button[type="submit"]') || activeBlock;
+      } else if (currentStepIdx >= 0 && currentStepIdx < activeSteps.length) {
+        const step = activeSteps[currentStepIdx];
+        activeBlock = step.secEl;
+        targetEl = step.targetEl;
+      }
+
+      if (!activeBlock) {
         targetX = vw - 96;
         targetY = vh - 120;
+        bubX = vw - 340;
+        bubY = vh - 220;
       } else {
-        const rect = target.getBoundingClientRect();
-        targetX = rect.right + 12;
-        targetY = rect.top + rect.height / 2 - 46;
-
-        // If target touches right edge, place Ollie on the left
-        if (targetX > vw - 94) {
-          targetX = rect.left - 92;
-        }
-        // If cramped on both sides, center above target
-        if (targetX < 8) {
-          targetX = Math.max(8, rect.left + rect.width / 2 - 42);
-          targetY = rect.top - 100;
-        }
+        const coords = calculatePlacement(activeBlock, targetEl);
+        targetX = coords.owlX;
+        targetY = coords.owlY;
+        bubX = coords.bubX;
+        bubY = coords.bubY;
       }
 
-      // Keep Ollie inside viewport bounds safely
-      targetX = Math.min(Math.max(8, targetX), vw - 90);
-      const bottomLimit = isMobile ? vh - 220 : vh - 108;
-      targetY = Math.min(Math.max(68, targetY), Math.max(70, bottomLimit));
-
-      // Desktop bubble placement relative to Ollie
-      if (!isMobile) {
-        const bw = bubEl.offsetWidth || 300;
-        const bh = bubEl.offsetHeight || 100;
-        const bx = Math.min(Math.max(12, targetX + 42 - bw / 2), vw - bw - 14);
-        const by = targetY > bh + 24 ? targetY - bh - 8 : targetY + 104;
-        bubEl.style.transform = `translate(${bx}px, ${by}px)`;
-      }
+      bubEl.style.transform = `translate(${bubX}px, ${bubY}px)`;
     }
 
     // Trigger wing flap during flight
@@ -673,7 +1200,7 @@
     clearTimeout(flyTimer);
     flyTimer = setTimeout(function () {
       owlEl.classList.remove('ollie-fly');
-    }, 950);
+    }, 900);
 
     owlEl.style.transform = `translate(${targetX}px, ${targetY}px)`;
   }
@@ -682,12 +1209,11 @@
     if (!txtEl) return;
     txtEl.textContent = text;
     txtEl.classList.remove('ollie-pop');
-    void txtEl.offsetWidth; // retrigger animation
+    void txtEl.offsetWidth;
     txtEl.classList.add('ollie-pop');
   }
 
-  function activateStep(index) {
-    if (index === currentStepIdx && !modalActive) return;
+  function activateStep(index, fromUserInteraction = false) {
     if (index < 0 || index >= activeSteps.length) return;
 
     if (highlightedEl) {
@@ -697,9 +1223,24 @@
     currentStepIdx = index;
     const step = activeSteps[index];
 
-    sayMessage(step.text);
+    // Read and speak card info dynamically if step matches CARD_DATA
+    let speechText = step.text;
+    const matchedCard = step.cardData || findCardDataForElement(step.secEl);
+    if (matchedCard) {
+      const ctaButton = (step.targetEl && step.targetEl !== step.secEl)
+        ? step.targetEl
+        : (step.secEl ? step.secEl.querySelector(matchedCard.cta) : null);
+      speechText = formatCardSpeech(matchedCard, ctaButton);
+      step.text = speechText;
+    }
 
-    highlightedEl = step.targetEl || step.secEl;
+    sayMessage(speechText);
+
+    // Outline / pulse target CTA button
+    highlightedEl = (step.targetEl && step.targetEl !== step.secEl)
+      ? step.targetEl
+      : (matchedCard && step.secEl ? (step.secEl.querySelector(matchedCard.cta) || step.secEl) : (step.targetEl || step.secEl));
+
     if (highlightedEl) {
       highlightedEl.classList.remove('ollie-hl');
       void highlightedEl.offsetWidth;
@@ -707,6 +1248,70 @@
     }
 
     placeOllieAndBubble();
+
+    // Check if this step is part of a card group
+    if (step.group) {
+      activeGroupId = step.group;
+      if (fromUserInteraction) {
+        // User clicked, tapped, or hovered: pause auto-hopping for 10 seconds
+        groupHopPausedUntil = Date.now() + 10000;
+        clearTimeout(groupHopTimer);
+        groupHopTimer = setTimeout(function () {
+          hopToNextGroupCard(step.group);
+        }, 10000);
+      } else if (!isTour) {
+        // Schedule auto-hop based on reading time (~4-6s)
+        const readingTime = Math.max(4200, Math.min(6500, 3000 + (step.text ? step.text.length * 36 : 2000)));
+        clearTimeout(groupHopTimer);
+        groupHopTimer = setTimeout(function () {
+          hopToNextGroupCard(step.group);
+        }, readingTime);
+      }
+    } else {
+      activeGroupId = null;
+      clearTimeout(groupHopTimer);
+    }
+  }
+
+  // 4. GROUP AUTO-HOPPING ENGINE
+  function hopToNextGroupCard(groupId) {
+    if (isTour || isHidden || modalActive) return;
+    if (Date.now() < groupHopPausedUntil) return;
+
+    // Desktop hover guard: do not hop away while cursor is actively hovering a card
+    if (isDesktopDevice() && isCurrentlyHoveringCard) {
+      return;
+    }
+
+    // Find all active steps in this group
+    const groupSteps = activeSteps
+      .map((s, idx) => ({ step: s, idx }))
+      .filter(item => item.step.group === groupId);
+
+    if (groupSteps.length <= 1) return;
+
+    // Check if group is still in view
+    const firstEl = groupSteps[0].step.secEl;
+    const lastEl = groupSteps[groupSteps.length - 1].step.secEl;
+    if (!firstEl || !lastEl) return;
+
+    const rFirst = firstEl.getBoundingClientRect();
+    const rLast = lastEl.getBoundingClientRect();
+    const groupTop = Math.min(rFirst.top, rLast.top);
+    const groupBottom = Math.max(rFirst.bottom, rLast.bottom);
+
+    // If completely scrolled off screen, cancel hopping
+    if (groupBottom < 60 || groupTop > window.innerHeight - 60) {
+      activeGroupId = null;
+      return;
+    }
+
+    // Find current index in group
+    const currentPos = groupSteps.findIndex(item => item.idx === currentStepIdx);
+    const nextPos = (currentPos + 1) % groupSteps.length;
+    const nextStepIdx = groupSteps[nextPos].idx;
+
+    activateStep(nextStepIdx, false);
   }
 
   // Jump animation on button click or guide tap
@@ -750,7 +1355,7 @@
       return;
     }
 
-    activateStep(stepIdx);
+    activateStep(stepIdx, false);
     const step = activeSteps[stepIdx];
     const el = step.secEl || step.targetEl;
 
@@ -762,7 +1367,7 @@
       }
     }
 
-    const dwellTime = 3000 + (step.text ? step.text.length * 48 : 2000);
+    const dwellTime = 3400 + (step.text ? step.text.length * 48 : 2000);
     tourTimer = setTimeout(function () {
       runTourStep(stepIdx + 1);
     }, dwellTime);
@@ -784,6 +1389,7 @@
       highlightedEl.classList.remove('ollie-hl');
     }
     stopTour();
+    clearTimeout(groupHopTimer);
     placeOllieAndBubble();
   }
 
@@ -797,9 +1403,29 @@
     pickSectionByScroll();
   }
 
-  // 4. SCROLL PICKER (Section crossing 45% viewport height)
+  // 5. SCROLL PICKER (Section crossing 45% viewport height)
   function pickSectionByScroll() {
     if (isHidden || isTour || modalActive || activeSteps.length === 0) return;
+
+    // Desktop: If user is actively hovering over a card, hover is king
+    if (isDesktopDevice() && isCurrentlyHoveringCard) {
+      placeOllieAndBubble();
+      return;
+    }
+
+    // If currently inside an active group and user is reading/interacting, check if group still in view
+    if (activeGroupId && currentStepIdx >= 0) {
+      const curStep = activeSteps[currentStepIdx];
+      if (curStep && curStep.secEl) {
+        const r = curStep.secEl.getBoundingClientRect();
+        const inView = r.top <= window.innerHeight * 0.75 && r.bottom >= window.innerHeight * 0.25;
+        if (inView) {
+          // Keep current card, recalculate placement smoothly
+          placeOllieAndBubble();
+          return;
+        }
+      }
+    }
 
     const line = window.innerHeight * 0.45;
 
@@ -810,10 +1436,16 @@
 
       const rect = el.getBoundingClientRect();
       if (rect.top <= line && rect.bottom >= line) {
-        activateStep(i);
+        if (i !== currentStepIdx) {
+          activateStep(i, false);
+        } else {
+          placeOllieAndBubble();
+        }
         return;
       }
     }
+
+    placeOllieAndBubble();
   }
 
   function onScrollHandler() {
@@ -824,12 +1456,13 @@
       if (isHidden) return;
       if (!isTour) {
         pickSectionByScroll();
+      } else {
+        placeOllieAndBubble();
       }
-      placeOllieAndBubble();
     });
   }
 
-  // 5. AUTO-EXPLAINER FALLBACK ENGINE
+  // 6. AUTO-EXPLAINER FALLBACK ENGINE
   function buildFallbackStep(element) {
     const headingEl = element.querySelector('h1, h2, h3, h4, .title, .eyebrow');
     const headingText = headingEl ? headingEl.textContent.trim().replace(/\s+/g, ' ') : 'this section';
@@ -861,7 +1494,7 @@
     };
   }
 
-  // 6. DYNAMIC SCANNER & MUTATIONOBSERVER
+  // 7. DYNAMIC SCANNER & MUTATIONOBSERVER
   function scanAndResolveSteps() {
     const currentPath = location.pathname || '/';
     const resolved = [];
@@ -870,12 +1503,10 @@
 
     // Step A: Match Hand-Crafted Steps
     for (const step of CUSTOM_STEPS) {
-      // Check page match
       if (step.page !== '*' && step.page !== currentPath) {
         continue;
       }
 
-      // Check section element
       let secEl = null;
       try {
         secEl = document.querySelector(step.section);
@@ -886,7 +1517,6 @@
         continue;
       }
 
-      // Check target button element
       let targetEl = null;
       if (step.target) {
         try {
@@ -894,22 +1524,29 @@
         } catch (err) {}
       }
 
+      const cardData = findCardDataForElement(secEl);
+
       resolved.push({
         ...step,
         secEl: secEl,
         targetEl: targetEl || secEl,
+        cardData: cardData,
         isFallback: false
       });
       matchedElements.add(secEl);
     }
 
-    // Step B: Auto-Explainer Fallback for unmapped main sections/articles
-    const candidates = document.querySelectorAll('main > section, section.section, .mjm-card, .foundation-card, .resource-card');
+    // Step B: Auto-Explainer Fallback for unmapped standalone sections
+    // CRITICAL: Skip any container that contains cards so section never replaces individual cards!
+    const candidates = document.querySelectorAll('main > section, section.section');
     candidates.forEach(function (elem) {
       if (elem.closest('#book-demo, #ollie-owl, #ollie-bub, header, footer')) return;
       if (matchedElements.has(elem)) return;
 
-      // Ensure this element is not inside an already-matched section
+      if (elem.querySelector('.mjm-card, .faculty-card, .foundation-card, .resource-card, .mjm-review-card, .step-card')) {
+        return;
+      }
+
       let alreadyCovered = false;
       for (const matched of matchedElements) {
         if (matched.contains(elem)) {
@@ -933,13 +1570,50 @@
 
     activeSteps = resolved;
 
+    // Attach Desktop Hover (150ms debounce) & Mobile Tap listeners
+    activeSteps.forEach((s, idx) => {
+      const cardEl = s.secEl;
+      if (!cardEl || cardEl.dataset.ollieCardBound) return;
+      cardEl.dataset.ollieCardBound = 'true';
+
+      // Desktop: mouseenter with 150ms debounce
+      cardEl.addEventListener('mouseenter', function () {
+        if (!isDesktopDevice()) return;
+        if (isTour || modalActive || isHidden) return;
+        clearTimeout(hoverDebounceTimer);
+        hoverDebounceTimer = setTimeout(function () {
+          isCurrentlyHoveringCard = true;
+          activateStep(idx, true);
+        }, 150);
+      }, { passive: true });
+
+      cardEl.addEventListener('mouseleave', function () {
+        if (isDesktopDevice()) {
+          clearTimeout(hoverDebounceTimer);
+          isCurrentlyHoveringCard = false;
+        }
+      }, { passive: true });
+
+      // Mobile / Touch: tap/click on card immediately jumps to it and pauses auto-hop 10s
+      cardEl.addEventListener('click', function () {
+        if (isDesktopDevice()) return;
+        if (isTour || modalActive || isHidden) return;
+        activateStep(idx, true);
+      }, { passive: true });
+
+      cardEl.addEventListener('focusin', function () {
+        if (isTour || modalActive || isHidden) return;
+        activateStep(idx, true);
+      }, { passive: true });
+    });
+
     // Debug logging when ?ollie-debug=1 is set
     if (isDebug) {
       console.group('🦉 [Ollie Guide Debugger]');
       console.log('Current URL Path:', currentPath);
       console.log('Active Steps Resolved (DOM Order):', activeSteps.length);
       activeSteps.forEach((s, idx) => {
-        console.log(`[${idx + 1}] ${s.isFallback ? '⚡ (Auto Fallback)' : '✓ (Custom Step)'} ${s.title || s.id}`);
+        console.log(`[${idx + 1}] ${s.isFallback ? '⚡ (Auto Fallback)' : '✓ (Custom Step)'} [${s.group || 'single'}] ${s.title || s.id}`);
         console.log(`    Section:`, s.secEl);
         console.log(`    Target:`, s.targetEl);
         console.log(`    Message: "${s.text}"`);
@@ -950,18 +1624,17 @@
       console.groupEnd();
     }
 
-    // If no step is active yet, activate first section or pick current view
     if (currentStepIdx < 0 && activeSteps.length > 0) {
       pickSectionByScroll();
       if (currentStepIdx < 0) {
-        activateStep(0);
+        activateStep(0, false);
       }
     } else {
       placeOllieAndBubble();
     }
   }
 
-  // 7. BOOKING POPUP MODAL MONITOR
+  // 8. BOOKING POPUP MODAL MONITOR
   function checkBookingModal() {
     const modal = document.getElementById('book-demo');
     const wasModalActive = modalActive;
@@ -972,7 +1645,7 @@
     document.body.classList.toggle('ollie-modal-active', modalActive);
 
     if (modalActive && !wasModalActive) {
-      // Find modal step
+      clearTimeout(groupHopTimer);
       const modalStep = CUSTOM_STEPS.find(s => s.id === 'modal-booking');
       if (modalStep) {
         sayMessage(modalStep.text);
@@ -982,22 +1655,21 @@
       }
       placeOllieAndBubble();
     } else if (!modalActive && wasModalActive) {
-      // Modal closed: return to active section
       pickSectionByScroll();
     }
   }
 
-  // 8. GLOBAL BUTTON CLICK REACTION ("Great choice!")
+  // 9. GLOBAL BUTTON CLICK REACTION ("Great choice!")
   function attachButtonReaction() {
     document.addEventListener('click', function (event) {
-      const btn = event.target.closest('a.btn, button.btn, .mjm-btn, .foundation-btn, .foundation-card-cta');
+      const btn = event.target.closest('a.btn, button.btn, .mjm-btn, .foundation-btn, .foundation-card-cta, .program-cta');
       if (btn && !btn.closest('#ollie-owl, #ollie-bub')) {
         jumpReaction('Great choice! Opening the details for you now.');
       }
     }, { capture: true, passive: true });
   }
 
-  // 9. INITIALIZATION & OBSERVERS
+  // 10. INITIALIZATION & OBSERVERS
   let scanDebounce = null;
   function triggerRescan() {
     clearTimeout(scanDebounce);
@@ -1013,9 +1685,11 @@
     checkBookingModal();
     attachButtonReaction();
 
-    // Scroll, resize, and interaction listeners
     window.addEventListener('scroll', onScrollHandler, { passive: true });
-    window.addEventListener('resize', placeOllieAndBubble, { passive: true });
+    window.addEventListener('resize', function () {
+      placeOllieAndBubble();
+    }, { passive: true });
+
     window.addEventListener('hashchange', function () {
       checkBookingModal();
       triggerRescan();
@@ -1027,10 +1701,8 @@
       }, { passive: true });
     });
 
-    // Debounced MutationObserver on dynamic rendering containers
     const observer = new MutationObserver(function (mutations) {
       for (const m of mutations) {
-        // Skip mutations caused by Ollie's own nodes
         if (m.target && (m.target.id === 'ollie-owl' || m.target.id === 'ollie-bub' || m.target.closest?.('#ollie-owl, #ollie-bub'))) {
           continue;
         }
@@ -1042,19 +1714,16 @@
     const rootTarget = document.getElementById('app') || document.body;
     observer.observe(rootTarget, { childList: true, subtree: true });
 
-    // Initial entrance animation
     setTimeout(function () {
       if (!isHidden) {
-        activateStep(0);
+        activateStep(0, false);
       }
     }, 600);
   }
 
-  // Start after DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initOllie);
   } else {
     initOllie();
   }
 })();
-

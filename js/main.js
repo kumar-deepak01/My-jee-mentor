@@ -368,8 +368,5 @@ initFacultyPortal();initResourceViewer();loadSharedResources();initStudentReview
 document.querySelector('[data-resource-search]')?.addEventListener('input',applyResourceFilters);document.querySelector('[data-resource-filter]')?.addEventListener('change',applyResourceFilters);
 
 
-const loadPriyaChat=()=>import('/js/chat-widget.js').catch(()=>{});
-if('requestIdleCallback' in window)requestIdleCallback(loadPriyaChat,{timeout:1800});
-else setTimeout(loadPriyaChat,900);
 
 import('./jobs.js').then(({initCareer,initFacultyJobs,initClassroom})=>{initCareer();initFacultyJobs();initClassroom()});

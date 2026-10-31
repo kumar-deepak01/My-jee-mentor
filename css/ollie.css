@@ -12,7 +12,7 @@
   --ollie-or-dark: #ea580c;
   --ollie-card: #fffbf8;
   --ollie-line: rgba(244, 119, 33, 0.35);
-  --ollie-shadow: 0 12px 32px rgba(20, 33, 61, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+  --ollie-shadow: 0 14px 34px rgba(20, 33, 61, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
   --ollie-bottom-offset: calc(14px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -24,7 +24,7 @@
   --ollie-mut: #a3adc4;
   --ollie-card: #18213a;
   --ollie-line: rgba(244, 119, 33, 0.45);
-  --ollie-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
+  --ollie-shadow: 0 16px 38px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 
@@ -41,10 +41,11 @@
   background: none;
   cursor: pointer;
   z-index: 9999;
-  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.3, 1);
+  transition: transform 0.85s cubic-bezier(0.25, 0.7, 0.25, 1);
   will-change: transform;
   outline: none;
   user-select: none;
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -58,7 +59,7 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-  filter: drop-shadow(0 6px 14px rgba(20, 33, 61, 0.22));
+  filter: drop-shadow(0 6px 14px rgba(20, 33, 61, 0.24));
   animation: ollie-bob 2.6s ease-in-out infinite;
 }
 
@@ -119,7 +120,7 @@
   position: fixed;
   left: 0;
   top: 0;
-  width: min(310px, calc(100vw - 28px));
+  width: min(320px, calc(100vw - 28px));
   background: var(--ollie-bg);
   color: var(--ollie-ink);
   border: 2px solid var(--ollie-or);
@@ -127,9 +128,11 @@
   padding: 13px 15px;
   z-index: 9998;
   box-shadow: var(--ollie-shadow);
-  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.3, 1), opacity 0.25s ease;
+  transition: transform 0.85s cubic-bezier(0.25, 0.7, 0.25, 1), opacity 0.25s ease;
+  will-change: transform;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   box-sizing: border-box;
+  pointer-events: auto;
 }
 
 #ollie-bub[hidden],
@@ -140,8 +143,8 @@
 #ollie-txt,
 .ollie-txt {
   margin: 0 0 10px;
-  font-size: 0.94rem;
-  line-height: 1.45;
+  font-size: 0.93rem;
+  line-height: 1.44;
   color: var(--ollie-ink);
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -212,11 +215,14 @@
 .ollie-hl {
   outline: 3px solid #f47721 !important;
   outline-offset: 5px !important;
-  animation: ollie-pulse 1.2s ease-in-out 3;
+  animation: ollie-pulse 1.2s ease-in-out infinite;
 }
 
 @keyframes ollie-pulse {
-  50% { outline-offset: 9px !important; }
+  50% {
+    outline-offset: 9px !important;
+    box-shadow: 0 0 16px rgba(244, 119, 33, 0.6) !important;
+  }
 }
 
 /* Modal Active Higher Stacking */
@@ -227,13 +233,13 @@ body.ollie-modal-active #ollie-bub {
   z-index: 10001 !important;
 }
 
-/* Minimized Floating Dock Badge */
+/* Minimized Floating Dock Badge at Bottom-Right */
 #ollie-owl.ollie-docked svg {
   animation: ollie-bob 3.2s ease-in-out infinite;
-  filter: drop-shadow(0 4px 12px rgba(234, 88, 12, 0.4));
+  filter: drop-shadow(0 4px 14px rgba(234, 88, 12, 0.5));
 }
 
-/* ---- Mobile View (<= 640px) ---- */
+/* ---- Responsive & Mobile Styling ---- */
 @media (max-width: 640px) {
   #ollie-owl,
   .ollie-owl {
@@ -241,17 +247,10 @@ body.ollie-modal-active #ollie-bub {
     height: 78px;
   }
 
-  /* Fixed bottom card above .mobile-bar */
   #ollie-bub,
   .ollie-bub {
-    left: 12px !important;
-    right: 12px !important;
-    top: auto !important;
-    bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
-    width: auto !important;
-    max-width: none !important;
-    transform: none !important;
-    padding: 12px 14px;
+    width: min(300px, calc(100vw - 24px));
+    padding: 11px 13px;
     border-radius: 14px;
   }
 
@@ -276,4 +275,3 @@ body.ollie-modal-active #ollie-bub {
     animation: none !important;
   }
 }
-
