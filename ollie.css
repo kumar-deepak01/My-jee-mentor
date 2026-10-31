@@ -1,0 +1,278 @@
+/* ==========================================================================
+   Ollie the Owl - Website Guide Stylesheet
+   My JEE Mentor - Light & Dark Theme Compatible
+   All classes prefixed with .ollie-
+   ========================================================================== */
+
+:root {
+  --ollie-bg: #ffffff;
+  --ollie-ink: #14213d;
+  --ollie-mut: #566079;
+  --ollie-or: #f47721;
+  --ollie-or-dark: #ea580c;
+  --ollie-card: #fffbf8;
+  --ollie-line: rgba(244, 119, 33, 0.35);
+  --ollie-shadow: 0 12px 32px rgba(20, 33, 61, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+  --ollie-bottom-offset: calc(14px + env(safe-area-inset-bottom, 0px));
+}
+
+.dark-theme,
+[data-theme="dark"],
+:root.dark-theme {
+  --ollie-bg: #111722;
+  --ollie-ink: #eef1f8;
+  --ollie-mut: #a3adc4;
+  --ollie-card: #18213a;
+  --ollie-line: rgba(244, 119, 33, 0.45);
+  --ollie-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+/* ---- Owl Guide Button ---- */
+#ollie-owl,
+.ollie-owl {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 84px;
+  height: 96px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  z-index: 9999;
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.3, 1);
+  will-change: transform;
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#ollie-owl:focus-visible {
+  outline: 2px solid var(--ollie-or);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+#ollie-owl svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 6px 14px rgba(20, 33, 61, 0.22));
+  animation: ollie-bob 2.6s ease-in-out infinite;
+}
+
+@keyframes ollie-bob {
+  50% { transform: translateY(-5px); }
+}
+
+/* Owl Eyes Blinking */
+.ollie-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ollie-blink 4.2s infinite;
+}
+
+@keyframes ollie-blink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.08); }
+}
+
+/* Wing Flapping */
+.ollie-wl,
+.ollie-wr {
+  transform-box: fill-box;
+}
+.ollie-wl { transform-origin: 100% 15%; }
+.ollie-wr { transform-origin: 0 15%; }
+
+#ollie-owl.ollie-fly .ollie-wl {
+  animation: ollie-fl 0.22s ease-in-out infinite alternate;
+}
+#ollie-owl.ollie-fly .ollie-wr {
+  animation: ollie-fr 0.22s ease-in-out infinite alternate;
+}
+#ollie-owl.ollie-fly svg {
+  animation: none;
+  transform: rotate(-6deg);
+}
+
+@keyframes ollie-fl {
+  to { transform: rotate(-38deg); }
+}
+@keyframes ollie-fr {
+  to { transform: rotate(38deg); }
+}
+
+/* Jump Reaction */
+#ollie-owl.ollie-jump svg {
+  animation: ollie-jump 0.5s 2;
+}
+
+@keyframes ollie-jump {
+  40% { transform: translateY(-20px) rotate(6deg); }
+}
+
+/* ---- Speech Bubble ---- */
+#ollie-bub,
+.ollie-bub {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: min(310px, calc(100vw - 28px));
+  background: var(--ollie-bg);
+  color: var(--ollie-ink);
+  border: 2px solid var(--ollie-or);
+  border-radius: 16px;
+  padding: 13px 15px;
+  z-index: 9998;
+  box-shadow: var(--ollie-shadow);
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.3, 1), opacity 0.25s ease;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+#ollie-bub[hidden],
+.ollie-bub[hidden] {
+  display: none !important;
+}
+
+#ollie-txt,
+.ollie-txt {
+  margin: 0 0 10px;
+  font-size: 0.94rem;
+  line-height: 1.45;
+  color: var(--ollie-ink);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+#ollie-txt.ollie-pop,
+.ollie-txt.ollie-pop {
+  animation: ollie-pop 0.35s ease-out;
+}
+
+@keyframes ollie-pop {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.ollie-bc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ollie-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff !important;
+  border: 0;
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none !important;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ollie-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(234, 88, 12, 0.45);
+}
+
+.ollie-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.ollie-lnk {
+  background: none;
+  border: 0;
+  color: var(--ollie-mut);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px;
+  transition: color 0.15s ease;
+}
+
+.ollie-lnk:hover {
+  color: var(--ollie-or);
+}
+
+/* Pulsing Highlight on Target Action Button */
+.ollie-hl {
+  outline: 3px solid #f47721 !important;
+  outline-offset: 5px !important;
+  animation: ollie-pulse 1.2s ease-in-out 3;
+}
+
+@keyframes ollie-pulse {
+  50% { outline-offset: 9px !important; }
+}
+
+/* Modal Active Higher Stacking */
+body.ollie-modal-active #ollie-owl {
+  z-index: 10002 !important;
+}
+body.ollie-modal-active #ollie-bub {
+  z-index: 10001 !important;
+}
+
+/* Minimized Floating Dock Badge */
+#ollie-owl.ollie-docked svg {
+  animation: ollie-bob 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px rgba(234, 88, 12, 0.4));
+}
+
+/* ---- Mobile View (<= 640px) ---- */
+@media (max-width: 640px) {
+  #ollie-owl,
+  .ollie-owl {
+    width: 68px;
+    height: 78px;
+  }
+
+  /* Fixed bottom card above .mobile-bar */
+  #ollie-bub,
+  .ollie-bub {
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+
+  #ollie-txt {
+    font-size: 0.88rem;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+}
+
+/* Reduced Motion Compliance */
+@media (prefers-reduced-motion: reduce) {
+  #ollie-owl,
+  #ollie-bub,
+  .ollie-owl,
+  .ollie-bub {
+    transition: none !important;
+  }
+  #ollie-owl *,
+  .ollie-hl,
+  #ollie-txt {
+    animation: none !important;
+  }
+}
