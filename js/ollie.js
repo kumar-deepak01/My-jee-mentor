@@ -114,7 +114,7 @@
 
   function getLiveFaculty() {
     const faculty = [];
-    document.querySelectorAll('.faculty-card').forEach(card => {
+    document.querySelectorAll('.mjm-faculty-card, .faculty-card').forEach(card => {
       const nameEl = card.querySelector('.faculty-name, h3');
       const name = nameEl ? nameEl.textContent.trim().replace(/\s+/g, ' ') : '';
       const tagEl = card.querySelector('.faculty-tag, .faculty-badge');
@@ -327,8 +327,8 @@
     {
       id: 'home-faculty',
       page: '*',
-      section: '.mjm-faculty-header',
-      target: '.faculty-card:first-child',
+      section: '.mjm-faculty-section, .mjm-faculty-container, .mjm-faculty-header',
+      target: '.mjm-faculty-card:first-child, .faculty-card:first-child',
       text: 'Meet our premier faculty from NITs and top institutes. Tap any teacher to view qualifications.'
     },
     {
@@ -432,6 +432,26 @@
   let modalActive = false;
   let consecutiveMisses = 0;
   let answeredCount = 0;
+
+  // Draggable Ollie state
+  let userCustomPos = null;
+  let userHasDraggedOllie = false;
+  let wasDragging = false;
+  try {
+    const savedPos = sessionStorage.getItem('ollie_user_pos');
+    if (savedPos) {
+      userCustomPos = JSON.parse(savedPos);
+      userHasDraggedOllie = true;
+    }
+  } catch (e) {}
+
+  // Pointer position & hover chip tracking (FIX 1, FIX 2, FIX 3)
+  let lastPointerX = -1;
+  let lastPointerY = -1;
+  let hoverShowTimer = null;
+  let hoverRemoveTimer = null;
+  let activeHoverCard = null;
+  let isHoverActive = false;
 
   try {
     isHidden = sessionStorage.getItem('ollie-hidden') === 'true';
@@ -567,13 +587,19 @@
       openAskPanel();
     };
 
-    owlEl.onclick = function () {
+    owlEl.onclick = function (e) {
+      if (wasDragging) {
+        wasDragging = false;
+        return;
+      }
       if (isHidden) {
         showGuide();
       } else {
         openAskPanel();
       }
     };
+
+    initDraggableOllie();
 
     // Pause scroll narration while typing
     inputFieldEl.addEventListener('focus', function () {
@@ -606,6 +632,112 @@
         bubEl.hidden = false;
       }
     }
+  }
+
+  // ==========================================================================
+  // DRAGGABLE OLLIE (User can drag and move Ollie anywhere on screen)
+  // ==========================================================================
+  function initDraggableOllie() {
+    if (!owlEl) return;
+
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let startOwlX = 0;
+    let startOwlY = 0;
+    let startBubX = 0;
+    let startBubY = 0;
+
+    owlEl.addEventListener('pointerdown', function (e) {
+      if (modalActive) return;
+
+      const oRect = owlEl.getBoundingClientRect();
+      startOwlX = oRect.left;
+      startOwlY = oRect.top;
+
+      if (bubEl && !bubEl.hidden) {
+        const bRect = bubEl.getBoundingClientRect();
+        startBubX = bRect.left;
+        startBubY = bRect.top;
+      }
+
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      isDragging = false;
+
+      try {
+        owlEl.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    });
+
+    owlEl.addEventListener('pointermove', function (e) {
+      if (dragStartX === 0 && dragStartY === 0) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+
+      if (!isDragging && Math.hypot(dx, dy) > 5) {
+        isDragging = true;
+        wasDragging = true;
+        owlEl.classList.add('ollie-dragging');
+        owlEl.style.transition = 'none';
+        if (bubEl) bubEl.style.transition = 'none';
+        document.body.style.userSelect = 'none';
+      }
+
+      if (isDragging) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const owlW = owlEl.offsetWidth || 84;
+        const owlH = owlEl.offsetHeight || 96;
+
+        const nextX = Math.max(6, Math.min(vw - owlW - 6, Math.round(startOwlX + dx)));
+        const nextY = Math.max(10, Math.min(vh - owlH - 10, Math.round(startOwlY + dy)));
+
+        owlEl.style.transform = `translate(${nextX}px, ${nextY}px)`;
+
+        if (bubEl && !bubEl.hidden) {
+          const bubW = bubEl.offsetWidth || 300;
+          const bubH = bubEl.offsetHeight || 100;
+          const nextBubX = Math.max(10, Math.min(vw - bubW - 10, Math.round(startBubX + dx)));
+          const nextBubY = Math.max(10, Math.min(vh - bubH - 10, Math.round(startBubY + dy)));
+          bubEl.style.transform = `translate(${nextBubX}px, ${nextBubY}px)`;
+        }
+      }
+    });
+
+    function finishDrag(e) {
+      if (dragStartX === 0 && dragStartY === 0) return;
+      try {
+        if (owlEl.hasPointerCapture(e.pointerId)) {
+          owlEl.releasePointerCapture(e.pointerId);
+        }
+      } catch (err) {}
+
+      dragStartX = 0;
+      dragStartY = 0;
+
+      if (isDragging) {
+        isDragging = false;
+        owlEl.classList.remove('ollie-dragging');
+        owlEl.style.transition = '';
+        if (bubEl) bubEl.style.transition = '';
+        document.body.style.userSelect = '';
+
+        const oRect = owlEl.getBoundingClientRect();
+        userCustomPos = { x: Math.round(oRect.left), y: Math.round(oRect.top) };
+        userHasDraggedOllie = true;
+        try {
+          sessionStorage.setItem('ollie_user_pos', JSON.stringify(userCustomPos));
+        } catch (err) {}
+
+        setTimeout(() => {
+          wasDragging = false;
+        }, 120);
+      }
+    }
+
+    owlEl.addEventListener('pointerup', finishDrag);
+    owlEl.addEventListener('pointercancel', finishDrag);
   }
 
   // ==========================================================================
@@ -1904,7 +2036,7 @@
     const vh = window.innerHeight;
     const isMobile = vw <= 640;
 
-    const headerEl = document.querySelector('header.site-header');
+    const headerEl = document.querySelector('header.site-header, header');
     const headerBottom = headerEl ? Math.max(0, headerEl.getBoundingClientRect().bottom) : 0;
     const topSafeLimit = headerBottom + 10;
 
@@ -1928,29 +2060,29 @@
       return !(x + w <= bRect.left || x >= bRect.right || y + h <= bRect.top || y >= bRect.bottom);
     }
 
-    // 1. ABOVE
-    const bubYAbove = bRect.top - bubH - 12;
-    const owlYAbove = bRect.top - owlH + 14;
-    const fitsAbove = (bubYAbove >= topSafeLimit) && (owlYAbove >= topSafeLimit) && (bRect.top <= vh - 40);
+    // 1. ABOVE (Owl perches on top-left outer corner, feet on top border of bubble)
+    const bubYAbove = Math.round(bRect.top - bubH - 12);
+    const owlYAbove = Math.round(bubYAbove - owlH + 14);
+    const fitsAbove = (bubYAbove >= topSafeLimit) && (owlYAbove >= topSafeLimit - 4) && (bRect.top <= vh - 40);
 
     if (fitsAbove) {
-      let bubX = Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20));
-      let owlX = Math.max(8, Math.min(vw - owlW - 8, bRect.left - (isMobile ? 12 : 24)));
+      let bubX = Math.round(Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20)));
+      let owlX = Math.round(Math.max(8, bubX - (owlW * 0.38)));
       if (!overlapsBlock(bubX, bubYAbove, bubW, bubH)) {
-        return { owlX: Math.round(owlX), owlY: Math.round(owlYAbove), bubX: Math.round(bubX), bubY: Math.round(bubYAbove) };
+        return { owlX, owlY: owlYAbove, bubX, bubY: bubYAbove };
       }
     }
 
     // 2. BELOW
-    const bubYBelow = bRect.bottom + 12;
-    const owlYBelow = bRect.bottom - 12;
+    const bubYBelow = Math.round(bRect.bottom + 12);
+    const owlYBelow = Math.round(bubYBelow - owlH + 14);
     const fitsBelow = (bubYBelow + bubH <= bottomSafeLimit) && (bRect.bottom >= topSafeLimit);
 
     if (fitsBelow) {
-      let bubX = Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20));
-      let owlX = Math.max(8, Math.min(vw - owlW - 8, bRect.left - (isMobile ? 12 : 24)));
+      let bubX = Math.round(Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20)));
+      let owlX = Math.round(Math.max(8, bubX - (owlW * 0.38)));
       if (!overlapsBlock(bubX, bubYBelow, bubW, bubH)) {
-        return { owlX: Math.round(owlX), owlY: Math.round(owlYBelow), bubX: Math.round(bubX), bubY: Math.round(bubYBelow) };
+        return { owlX, owlY: owlYBelow, bubX, bubY: bubYBelow };
       }
     }
 
@@ -1958,14 +2090,14 @@
     let fixedBubX, fixedBubY, fixedOwlX, fixedOwlY;
     if (isMobile) {
       fixedBubX = 12;
-      fixedBubY = Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 4);
+      fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 4));
       fixedOwlX = 14;
-      fixedOwlY = fixedBubY - owlH + 18;
+      fixedOwlY = Math.round(fixedBubY - owlH + 18);
     } else {
       fixedBubX = Math.round(Math.max(12, (vw - bubW) / 2));
       fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 10));
-      fixedOwlX = Math.max(8, fixedBubX - owlW + 16);
-      fixedOwlY = Math.round(fixedBubY + (bubH - owlH) / 2);
+      fixedOwlX = Math.round(Math.max(8, fixedBubX - (owlW * 0.38)));
+      fixedOwlY = Math.round(fixedBubY - owlH + 14);
     }
 
     return { owlX: fixedOwlX, owlY: fixedOwlY, bubX: fixedBubX, bubY: fixedBubY };
@@ -1975,6 +2107,11 @@
     if (!owlEl || !bubEl) return;
     if (isPanelOpen) {
       dockOwlOnPanel();
+      return;
+    }
+
+    // Do not override an active hover chip with section placement
+    if (isHoverActive && activeHoverCard) {
       return;
     }
 
@@ -2005,10 +2142,18 @@
       }
 
       if (!activeBlock) {
-        targetX = vw - 96;
-        targetY = vh - 120;
-        bubX = vw - 340;
-        bubY = vh - 220;
+        if (userHasDraggedOllie && userCustomPos) {
+          targetX = userCustomPos.x;
+          targetY = userCustomPos.y;
+          const bubW = bubEl.offsetWidth || 300;
+          bubX = Math.max(12, Math.min(vw - bubW - 14, userCustomPos.x > vw / 2 ? userCustomPos.x - bubW - 14 : userCustomPos.x + 80));
+          bubY = Math.max(70, Math.min(vh - 120, userCustomPos.y));
+        } else {
+          targetX = vw - 96;
+          targetY = vh - 120;
+          bubX = vw - 340;
+          bubY = vh - 220;
+        }
       } else {
         // Auto-collapse check: If activeBlock would overlap the Ask panel, collapse it!
         if (panelEl && !panelEl.hidden) {
@@ -2049,6 +2194,11 @@
     if (index < 0 || index >= activeSteps.length) return;
     if (isTyping || isPanelOpen) return; // Pause narration while user is interacting with panel
 
+    // A chip must never survive a section change. Clear it first!
+    if (isHoverActive) {
+      hideCardHoverChip(true);
+    }
+
     currentStepIdx = index;
     const step = activeSteps[index];
 
@@ -2088,6 +2238,7 @@
     requestAnimationFrame(() => {
       isTick = false;
       if (isHidden || isPanelOpen || isTyping) return;
+      verifyHoverOnScroll();
       if (!isTour) {
         pickSectionByScroll();
       } else {
@@ -2096,52 +2247,413 @@
     });
   }
 
-  // Attach Desktop Hover Chip & Mobile Tap
-  let hoverTimer = null;
+  // ==========================================================================
+  // DESKTOP HOVER CHIP & CARD INTERACTIONS (FIX 1, FIX 2, FIX 3)
+  // ==========================================================================
+  const CARD_SELECTOR = '.mjm-faculty-card, .faculty-card, .program-card, .neet-program-card, .foundation-card, .mjm-card';
+
+  function rectsIntersect(r1, r2) {
+    return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
+  }
+
+  function toTitleCase(str) {
+    return (str || '').toLowerCase().replace(/(?:^|\s|\/|-|\()\w/g, c => c.toUpperCase());
+  }
+
+  // FIX 1: Resolve the hovered card from the event itself: card = event.target.closest(CARD_SELECTOR)
+  // and read its name, details and CTA from THAT element's own DOM.
+  function resolveCardInfo(card) {
+    if (!card) return null;
+    const isFaculty = card.matches('.mjm-faculty-card, .faculty-card, [data-faculty-id]');
+
+    if (isFaculty) {
+      // 1. Name from card's own DOM
+      const nameEl = card.querySelector('.faculty-name, h3, .faculty-title');
+      if (!nameEl) return null;
+      const name = nameEl.textContent.trim().replace(/\s+/g, ' ');
+
+      // Heading text check: verify card's heading text equals the name used
+      const headingText = nameEl.textContent.trim().replace(/\s+/g, ' ');
+      if (!name || headingText.toLowerCase() !== name.toLowerCase()) {
+        return null;
+      }
+
+      // 2. Subject Tag
+      const tagEl = card.querySelector('.faculty-tag, .faculty-badge');
+      let subjectTag = tagEl ? tagEl.textContent.trim().replace(/\s+/g, ' ') : '';
+      if (subjectTag) {
+        const parts = subjectTag.split(/·|•/).map(p => p.trim());
+        if (parts.length >= 2) {
+          const clean0 = toTitleCase(parts[0]);
+          const clean1 = parts.slice(1).join(' & ').toUpperCase().replace('CLASS', 'Class');
+          subjectTag = `${clean0} for ${clean1}`;
+        } else {
+          subjectTag = toTitleCase(subjectTag);
+        }
+      }
+
+      // 3. One education line, one experience line, one "known for" line from card's own DOM
+      let education = '';
+      let experience = '';
+      let knownFor = '';
+
+      card.querySelectorAll('.faculty-point, li').forEach(pt => {
+        const label = (pt.querySelector('.faculty-point-label, strong, b')?.textContent || '').toLowerCase();
+        let text = (pt.querySelector('.faculty-point-text')?.textContent || pt.textContent).replace(/^[•✔✓-]\s*/, '').trim();
+        text = text.replace(/^(?:Education|Experience|Known for|Achievement|Known\s+for)\s*:\s*/i, '').trim();
+
+        if (label.includes('education') || pt.textContent.toLowerCase().includes('education:')) {
+          if (!education) education = text;
+        } else if (label.includes('experience') || pt.textContent.toLowerCase().includes('experience:')) {
+          if (!experience) experience = text;
+        } else if (label.includes('known for') || pt.textContent.toLowerCase().includes('known for:')) {
+          if (!knownFor) knownFor = text;
+        }
+      });
+
+      // Experience line (e.g. "9+ years of experience.")
+      let expLine = '';
+      if (experience) {
+        const yrMatch = experience.match(/(\d+\+?\s*years?)/i);
+        if (yrMatch) {
+          expLine = `${yrMatch[1]} of experience`;
+        } else {
+          expLine = experience;
+        }
+        expLine = expLine.charAt(0).toUpperCase() + expLine.slice(1);
+        if (!expLine.endsWith('.')) expLine += '.';
+      }
+
+      // Known for line (e.g. "Known for Calculus, Algebra and Coordinate Geometry.")
+      let knownLine = '';
+      if (knownFor) {
+        knownLine = `Known for ${knownFor.replace(/^known\s+for\s*/i, '')}`;
+        if (!knownLine.endsWith('.')) knownLine += '.';
+      }
+
+      // Faculty message format:
+      // "Meet Anil Kumar Singh, Mathematics for JEE. 9+ years of experience. Known for Calculus, Algebra and Coordinate Geometry. Click Book Free Demo to try a class." (No fee line)
+      let message = `Meet ${name}`;
+      if (subjectTag) message += `, ${subjectTag}`;
+      message += '.';
+      if (expLine) message += ` ${expLine}`;
+      if (knownLine) message += ` ${knownLine}`;
+      message += ' Click Book Free Demo to try a class.';
+      message = message.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
+
+      // Tier 4 compact line (max ~90 chars: name + one key fact)
+      let compactFact = expLine ? expLine.replace(/\.$/, '') : (knownLine ? knownLine.replace(/\.$/, '') : 'Top Mentor');
+      let compactLine = `${name} · ${subjectTag || 'Faculty'} · ${compactFact}`;
+      if (compactLine.length > 90) {
+        compactLine = compactLine.substring(0, 87) + '...';
+      }
+
+      return {
+        card,
+        name,
+        isFaculty: true,
+        headingEl: nameEl,
+        message,
+        compactLine,
+        cta: card.querySelector('button, a, .mjm-btn')
+      };
+    } else {
+      // Course / Batch card from its own DOM
+      const headingEl = card.querySelector('h3, .program-title-row, .mjm-title, .foundation-card-title, .foundation-title, .resource-title');
+      if (!headingEl) return null;
+      const name = (headingEl.childNodes[0]?.textContent?.trim() || headingEl.textContent.trim()).replace(/\s+/g, ' ');
+
+      const headingText = headingEl.textContent.trim().replace(/\s+/g, ' ');
+      if (!name || !headingText.toLowerCase().includes(name.toLowerCase())) {
+        return null;
+      }
+
+      // Fee
+      let fee = '';
+      const feeMatch = card.textContent.match(/₹\s*[\d,]+(?:\s*\/\s*(?:month|mo))?/i);
+      if (feeMatch) fee = feeMatch[0].trim();
+
+      // Details
+      const details = [];
+      card.querySelectorAll('ul li, .mjm-points span, .foundation-subject, p.program-desc, p.foundation-desc').forEach(el => {
+        const txt = el.textContent.replace(/[✔✓]/g, '').trim();
+        if (txt && details.length < 2 && !txt.includes('₹')) details.push(txt);
+      });
+
+      // CTA
+      const ctaEl = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn, a[href]');
+      const ctaText = ctaEl ? ctaEl.textContent.trim() : 'Explore Now';
+
+      let message = `${name}${fee ? ` (${fee})` : ''}. ${details.join('. ')}. Click ${ctaText} to explore.`;
+      message = message.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
+
+      let compactFact = fee || (details[0] || 'Max 10 students');
+      let compactLine = `${name}${fee ? ` · ${fee}` : ''} · ${compactFact}`;
+      if (compactLine.length > 90) {
+        compactLine = compactLine.substring(0, 87) + '...';
+      }
+
+      return {
+        card,
+        name,
+        isFaculty: false,
+        headingEl,
+        fee,
+        message,
+        compactLine,
+        cta: ctaEl
+      };
+    }
+  }
+
+  // FIX 2: 4-Tier Non-overlapping Placement
+  function calculateCardChipPlacement(card, info, minTier = 1) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const isMobile = vw <= 640;
+
+    const headerEl = document.querySelector('header.site-header, header');
+    const headerBottom = headerEl ? Math.max(0, headerEl.getBoundingClientRect().bottom) : 0;
+    const topSafeLimit = headerBottom + 10;
+
+    const mobileBarEl = document.querySelector('.mobile-bar');
+    const mobileBarVisible = mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none';
+    const mobileBarRect = mobileBarVisible ? mobileBarEl.getBoundingClientRect() : null;
+
+    let bottomSafeLimit = vh - 12;
+    if (mobileBarRect && mobileBarRect.top > 0) {
+      bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
+    }
+
+    const cRect = card.getBoundingClientRect();
+    const isTallCard = cRect.height > vh * 0.60;
+
+    const owlW = isMobile ? 68 : 84;
+    const owlH = isMobile ? 78 : 96;
+    const bubW = Math.min(320, Math.round(vw * 0.90));
+    const bubH = bubEl.offsetHeight || 110;
+
+    function overlapsCard(x, y, w, h) {
+      return !(x + w <= cRect.left || x >= cRect.right || y + h <= cRect.top || y >= cRect.bottom);
+    }
+
+    // FIX 3: Owl on top-left outer corner (outside chip, feet on top border of chip)
+    function getOwlCoordsForBubble(bX, bY) {
+      const oX = Math.round(bX - (owlW * 0.38));
+      const oY = Math.round(bY - owlH + 12);
+      return {
+        owlX: Math.max(6, Math.min(vw - owlW - 6, oX)),
+        owlY: Math.max(topSafeLimit - 6, oY)
+      };
+    }
+
+    // TIER 1: ABOVE card's top edge (8-12px gap)
+    if (minTier <= 1 && !isTallCard) {
+      const gap = 10;
+      const bubY = Math.round(cRect.top - bubH - gap);
+      let bubX = Math.round(cRect.left);
+      bubX = Math.max(14, Math.min(vw - bubW - 14, bubX));
+
+      const { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
+      const fitsAbove = (bubY >= topSafeLimit) && (owlY >= topSafeLimit);
+      const bubIntersects = overlapsCard(bubX, bubY, bubW, bubH);
+      const owlIntersects = overlapsCard(owlX, owlY, owlW, owlH);
+
+      if (fitsAbove && !bubIntersects && !owlIntersects) {
+        return { tier: 1, bubX, bubY, owlX, owlY };
+      }
+    }
+
+    // TIER 2: BELOW card
+    if (minTier <= 2 && !isTallCard) {
+      const gap = 10;
+      let bubY = Math.round(cRect.bottom + gap);
+      let bubX = Math.round(cRect.left);
+      bubX = Math.max(14, Math.min(vw - bubW - 14, bubX));
+
+      let { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
+
+      if (overlapsCard(owlX, owlY, owlW, owlH)) {
+        if (cRect.left >= owlW + 10) {
+          owlX = Math.round(cRect.left - owlW - 4);
+        } else {
+          bubY = Math.round(cRect.bottom + owlH - 4);
+          const coords = getOwlCoordsForBubble(bubX, bubY);
+          owlX = coords.owlX;
+          owlY = coords.owlY;
+        }
+      }
+
+      const fitsBelow = (bubY + bubH <= bottomSafeLimit);
+      const bubIntersects = overlapsCard(bubX, bubY, bubW, bubH);
+      const owlIntersects = overlapsCard(owlX, owlY, owlW, owlH);
+
+      if (fitsBelow && !bubIntersects && !owlIntersects) {
+        return { tier: 2, bubX, bubY, owlX, owlY };
+      }
+    }
+
+    // TIER 3: BESIDE card in wide gap
+    if (minTier <= 3) {
+      const freeRight = vw - cRect.right;
+      const freeLeft = cRect.left;
+
+      if (freeRight >= bubW + 24) {
+        const bubX = Math.round(cRect.right + 14);
+        let bubY = Math.round(Math.max(topSafeLimit + 20, Math.min(bottomSafeLimit - bubH, cRect.top + 10)));
+        const { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
+        if (!overlapsCard(bubX, bubY, bubW, bubH) && !overlapsCard(owlX, owlY, owlW, owlH)) {
+          return { tier: 3, bubX, bubY, owlX, owlY };
+        }
+      }
+
+      if (freeLeft >= bubW + (owlW * 0.4) + 14) {
+        const bubX = Math.round(cRect.left - bubW - 14);
+        let bubY = Math.round(Math.max(topSafeLimit + 20, Math.min(bottomSafeLimit - bubH, cRect.top + 10)));
+        const { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
+        if (bubX >= 10 && !overlapsCard(bubX, bubY, bubW, bubH) && !overlapsCard(owlX, owlY, owlW, owlH)) {
+          return { tier: 3, bubX, bubY, owlX, owlY };
+        }
+      }
+    }
+
+    // TIER 4: Compact one-line chip docked at bottom edge of viewport
+    const collapsedBarEl = document.querySelector('#ollie-collapsed-bar');
+    let pillSafeRight = vw - 14;
+    if (collapsedBarEl && !collapsedBarEl.hidden) {
+      const pRect = collapsedBarEl.getBoundingClientRect();
+      if (pRect.top < bottomSafeLimit && pRect.bottom > bottomSafeLimit - 60) {
+        pillSafeRight = Math.round(pRect.left - 12);
+      }
+    }
+
+    const compactW = Math.min(420, Math.min(pillSafeRight - 20, vw - 28));
+    const compactH = 50;
+    const bubY = Math.round(bottomSafeLimit - compactH);
+    let bubX = Math.round(Math.max(14, Math.min(pillSafeRight - compactW, (vw - compactW) / 2)));
+    let owlX = Math.max(6, bubX - owlW + 20);
+    let owlY = Math.round(bubY + (compactH - owlH) / 2);
+
+    return { tier: 4, bubX, bubY, owlX, owlY };
+  }
+
+  function showCardHoverChip(card) {
+    if (isTour || modalActive || isHidden || isPanelOpen) return;
+    const info = resolveCardInfo(card);
+    if (!info) return;
+
+    // Heading verification check
+    if (!info.headingEl || !info.headingEl.textContent.trim().toLowerCase().includes(info.name.toLowerCase())) {
+      return;
+    }
+
+    isHoverActive = true;
+    activeHoverCard = card;
+
+    if (info.cta) pulseElement(info.cta);
+
+    bubEl.classList.add('ollie-is-hover-chip');
+    bubEl.classList.remove('ollie-chip-tier4');
+
+    sayMessage(info.message);
+
+    const placement = calculateCardChipPlacement(card, info, 1);
+
+    if (placement.tier === 4) {
+      bubEl.classList.add('ollie-chip-tier4');
+      sayMessage(info.compactLine);
+    }
+
+    bubEl.style.transform = `translate(${placement.bubX}px, ${placement.bubY}px)`;
+    owlEl.style.transform = `translate(${placement.owlX}px, ${placement.owlY}px)`;
+
+    // Post-placement verification using getBoundingClientRect
+    if (placement.tier < 4) {
+      const bRect = bubEl.getBoundingClientRect();
+      const cRect = card.getBoundingClientRect();
+      if (rectsIntersect(bRect, cRect)) {
+        const fallback = calculateCardChipPlacement(card, info, placement.tier + 1);
+        if (fallback.tier === 4) {
+          bubEl.classList.add('ollie-chip-tier4');
+          sayMessage(info.compactLine);
+        }
+        bubEl.style.transform = `translate(${fallback.bubX}px, ${fallback.bubY}px)`;
+        owlEl.style.transform = `translate(${fallback.owlX}px, ${fallback.owlY}px)`;
+      }
+    }
+  }
+
+  function hideCardHoverChip(immediate = false) {
+    clearTimeout(hoverShowTimer);
+    clearTimeout(hoverRemoveTimer);
+    if (!isHoverActive && !activeHoverCard) return;
+
+    isHoverActive = false;
+    activeHoverCard = null;
+
+    bubEl.classList.remove('ollie-is-hover-chip', 'ollie-chip-tier4');
+
+    if (currentStepIdx >= 0 && currentStepIdx < activeSteps.length) {
+      sayMessage(activeSteps[currentStepIdx].text);
+    } else {
+      sayMessage('Preparing for JEE, NEET, or Foundation? Ask me anything or explore below.');
+    }
+    placeOllieAndBubble();
+  }
+
+  function verifyHoverOnScroll() {
+    if (!isHoverActive || !activeHoverCard) return;
+    if (lastPointerX < 0 || lastPointerY < 0) {
+      hideCardHoverChip(true);
+      return;
+    }
+    const elUnder = document.elementFromPoint(lastPointerX, lastPointerY);
+    const cardUnder = elUnder ? elUnder.closest(CARD_SELECTOR) : null;
+    if (cardUnder !== activeHoverCard) {
+      hideCardHoverChip(true);
+    }
+  }
+
   function bindCardInteractions() {
-    document.querySelectorAll('.program-card, .foundation-card, .mjm-card, .faculty-card').forEach(card => {
+    document.querySelectorAll(CARD_SELECTOR).forEach(card => {
       if (card.dataset.ollieBound) return;
       card.dataset.ollieBound = 'true';
 
-      // Desktop: 150ms debounced hover shows compact chip
-      card.addEventListener('mouseenter', function () {
+      card.addEventListener('pointerenter', function () {
         if (!isDesktopDevice() || isTour || modalActive || isHidden || isPanelOpen) return;
-        clearTimeout(hoverTimer);
-        hoverTimer = setTimeout(() => {
-          // Extract title & fee
-          const title = card.querySelector('h3, .program-title-row, .mjm-title, .faculty-name')?.textContent.trim() || 'Course';
-          const feeMatch = card.textContent.match(/₹\s*[\d,]+(?:\s*\/\s*(?:month|mo))?/i);
-          const fee = feeMatch ? feeMatch[0] : '';
-          const detail = card.querySelector('ul li, .mjm-points span, .foundation-subject, .faculty-tag')?.textContent.replace(/[✔✓]/g, '').trim() || '';
+        clearTimeout(hoverRemoveTimer);
+        clearTimeout(hoverShowTimer);
 
-          const chipHtml = `
-            <div class="ollie-hover-chip">
-              <div class="ollie-chip-title-row">
-                <span class="ollie-chip-name">${title}</span>
-                ${fee ? `<span class="ollie-chip-fee">${fee}</span>` : ''}
-              </div>
-              ${detail ? `<span class="ollie-chip-detail">${detail}</span>` : ''}
-            </div>
-          `;
-          sayMessage(chipHtml);
+        hoverShowTimer = setTimeout(() => {
+          showCardHoverChip(card);
+        }, 120);
+      });
 
-          const cta = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn');
-          pulseElement(cta || card);
+      card.addEventListener('pointerleave', function () {
+        if (!isDesktopDevice()) return;
+        clearTimeout(hoverShowTimer);
+        if (isHoverActive) {
+          clearTimeout(hoverRemoveTimer);
+          hoverRemoveTimer = setTimeout(() => {
+            if (lastPointerX >= 0 && lastPointerY >= 0 && activeHoverCard) {
+              const elUnder = document.elementFromPoint(lastPointerX, lastPointerY);
+              if (elUnder && elUnder.closest(CARD_SELECTOR) === activeHoverCard) {
+                return;
+              }
+            }
+            hideCardHoverChip();
+          }, 220); // within at most 300ms
+        }
+      });
 
-          const coords = calculatePlacement(card);
-          owlEl.style.transform = `translate(${coords.owlX}px, ${coords.owlY}px)`;
-          bubEl.style.transform = `translate(${coords.bubX}px, ${coords.bubY}px)`;
-        }, 150);
-      }, { passive: true });
+      card.addEventListener('pointercancel', function () {
+        clearTimeout(hoverShowTimer);
+        hideCardHoverChip(true);
+      });
 
-      card.addEventListener('mouseleave', function () {
-        if (isDesktopDevice()) clearTimeout(hoverTimer);
-      }, { passive: true });
-
-      // Mobile Tap jumps to card
       card.addEventListener('click', function (e) {
         if (isDesktopDevice() || isTour || modalActive || isHidden || isPanelOpen) return;
-        if (e.target.closest('a, button')) return; // Let links fire naturally
+        if (e.target.closest('a, button')) return;
         const cta = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn');
         pulseElement(cta || card);
       }, { passive: true });
@@ -2258,6 +2770,10 @@
 
     window.addEventListener('scroll', onScrollHandler, { passive: true });
     window.addEventListener('resize', () => placeOllieAndBubble(), { passive: true });
+    window.addEventListener('pointermove', e => {
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+    }, { passive: true });
 
     ['wheel', 'touchstart', 'keydown'].forEach(evt => {
       window.addEventListener(evt, () => {
