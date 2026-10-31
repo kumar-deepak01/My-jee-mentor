@@ -16,16 +16,16 @@ export const FACULTY = [
     id: 'ayushi',
     firstName: 'Dr. Ayushi',
     lastName: 'Aggarwal',
-    degree: 'Ph.D., M.Sc. (Gold Medalist)',
-    tag: 'Chemistry & Biology · JEE & NEET',
-    quote: 'True rank-level excellence begins with absolute conceptual clarity from fundamentals.',
+    degree: 'PhD (Organic & Polymer Chemistry)',
+    tag: 'Chemistry · JEE & NEET',
+    quote: 'Strong concepts build strong careers.',
     points: [
-      { label: 'Education', text: 'Ph.D. & M.Sc. in Sciences (Gold Medalist)' },
-      { label: 'Experience', text: '8+ years teaching experience at premier national coaching institutes' },
-      { label: 'Known for', text: 'Step-by-step conceptual clarity, structured notes & interactive doubt solving' },
-      { label: 'Achievement', text: 'Mentored 500+ successful aspirants qualifying JEE & NEET with top scores' }
+      { label: 'Education', text: 'PhD from SLIET Longowal, Punjab; B.Sc (Hons) Chemistry, University of Delhi.' },
+      { label: 'Experience', text: 'Taught Chemistry for IIT JEE & NEET at Motion Education and Physics Wallah.' },
+      { label: 'Known for', text: 'Making Chemistry simple, interesting and application-oriented.' },
+      { label: 'Achievement', text: '10+ research papers; qualified IIT JAM (AIR 698) and GATE.' }
     ],
-    chips: ['JEE & NEET', 'Concept Clarity', 'NCERT In-depth', 'Doubt Specialist'],
+    chips: ['IIT JAM AIR 698', '10+ Papers', 'PhD'],
     photo: '/images/faculty/ayushi.jpg',
     initials: 'AA',
     courses: ['jee', 'neet']
@@ -34,16 +34,16 @@ export const FACULTY = [
     id: 'anil',
     firstName: 'Anil Kumar',
     lastName: 'Singh',
-    degree: 'B.Tech / M.Sc. (Mathematics)',
+    degree: 'M.Tech (Mechanical), IIT (BHU) Varanasi',
     tag: 'Mathematics · JEE',
-    quote: 'Mathematics is not about memorizing formulas; it is about recognizing patterns and mastering logical deduction.',
+    quote: 'Mathematics is not just a subject, it is a way of thinking.',
     points: [
-      { label: 'Education', text: 'Engineering / Advanced Degree in Pure & Applied Mathematics' },
-      { label: 'Experience', text: 'Senior Mathematics Faculty for JEE Main & Advanced with 9+ years experience' },
-      { label: 'Known for', text: 'Calculus, Algebra, Coordinate Geometry & high-speed problem-solving tricks' },
-      { label: 'Achievement', text: 'Guided multiple batches to 99+ percentile scores in JEE Mathematics' }
+      { label: 'Education', text: 'M.Tech Mechanical Engineering, IIT (BHU), Varanasi. GATE AIR 1199.' },
+      { label: 'Experience', text: 'JEE Main & Advanced Maths at Motion Education, SmartPrep Academy and Unacademy.' },
+      { label: 'Known for', text: 'Concept-driven teaching, DPPs and test series that improve speed and accuracy.' },
+      { label: 'Achievement', text: 'Ranked among Top 10 Maths educators on Unacademy IIT-JEE (2020-21).' }
     ],
-    chips: ['Mathematics', 'JEE Main & Adv', 'Calculus Mastery', '99+ Percentile Mentor'],
+    chips: ['IIT (BHU)', 'GATE AIR 1199', 'Top 10 Educator'],
     photo: '/images/faculty/anil.jpg',
     initials: 'AS',
     courses: ['jee']
@@ -52,16 +52,16 @@ export const FACULTY = [
     id: 'lokesh',
     firstName: 'Lokesh',
     lastName: 'Gupta',
-    degree: 'B.Tech / M.Sc. (Physics)',
+    degree: 'B.Tech (Mechanical), NIT Rourkela',
     tag: 'Physics · JEE & NEET',
-    quote: 'Physics becomes intuitive when you see how physical laws govern the real world and everyday phenomena.',
+    quote: 'Physics is about understanding how the world works.',
     points: [
-      { label: 'Education', text: 'B.Tech / Masters in Physics with strong engineering foundation' },
-      { label: 'Experience', text: '7+ years training JEE & NEET aspirants across leading coaching centers' },
-      { label: 'Known for', text: 'Mechanics, Electrodynamics, Optics & systematic numerical breakdown' },
-      { label: 'Achievement', text: 'Trained hundreds of top qualifiers scoring 150+ in NEET & top JEE percentiles' }
+      { label: 'Education', text: 'B.Tech Mechanical Engineering, NIT Rourkela. 1st rank in his department.' },
+      { label: 'Experience', text: 'Physics faculty at Physics Wallah, Career Point (Udaipur) and Acadup Career Institute (Jaipur).' },
+      { label: 'Known for', text: 'Making Physics intuitive and interesting, in English and Hindi.' },
+      { label: 'Achievement', text: '98.75 percentile in IIT JAM; Best Faculty Award in coaching.' }
     ],
-    chips: ['Physics', 'JEE Main & Adv', 'NEET-UG', 'Mechanics Specialist'],
+    chips: ['NIT Rourkela', '98.75 %ile IIT JAM', 'Best Faculty Award'],
     photo: '/images/faculty/lokesh.jpg',
     initials: 'LG',
     courses: ['jee', 'neet']
@@ -83,6 +83,24 @@ export const FACULTY = [
     photo: '/images/faculty/soujanya.jpg',
     initials: 'SM',
     courses: ['jee', 'neet']
+  },
+  {
+    id: 'dipanjali',
+    firstName: 'Dipanjali',
+    lastName: 'Sagar',
+    degree: 'M.Sc (Microbiology), University Gold Medalist',
+    tag: 'Biology · NEET',
+    quote: 'Biology becomes easy when every diagram and every NCERT line is clear.',
+    points: [
+      { label: 'Education', text: 'M.Sc Microbiology (9.8 CGPA) and B.Sc Microbiology (9.4 CGPA), Parul University, Vadodara.' },
+      { label: 'Experience', text: 'Around 4 years teaching Biology (Botany + Zoology) to Class 11–12 and NEET regular and dropper students at Physics Wallah (Bidar), Vishwaguru Science Academy and It’s My Academy.' },
+      { label: 'Known for', text: 'Diagram-based Botany and Zoology, NCERT-focused clarity, daily doubt clearing, 1:1 mentoring and MCQ/PYQ practice.' },
+      { label: 'Achievement', text: 'University Gold Medalist in M.Sc (Life Sciences); qualified GATE XL (Life Sciences) and the Gujarat State Eligibility Test in 2024.' }
+    ],
+    chips: ['Gold Medalist', 'GATE XL 2024', 'NEET Biology'],
+    photo: '/images/faculty/dipanjali-avatar.svg',
+    initials: 'DS',
+    courses: ['neet']
   },
   {
     id: 'shubham',

@@ -194,6 +194,7 @@
     if (tokens.some(t => matchesFuzzy(t, ['ayushi', 'aayushi']))) return { intent: 'teacher_ayushi' };
     if (tokens.some(t => matchesFuzzy(t, ['anil', 'singh']))) return { intent: 'teacher_anil' };
     if (tokens.some(t => matchesFuzzy(t, ['lokesh', 'gupta']))) return { intent: 'teacher_lokesh' };
+    if (tokens.some(t => matchesFuzzy(t, ['dipanjali', 'deepanjali', 'sagar']))) return { intent: 'teacher_dipanjali' };
     if (tokens.some(t => matchesFuzzy(t, ['soujanya', 'mondal', 'soujnya']))) return { intent: 'teacher_soujanya' };
     if (tokens.some(t => matchesFuzzy(t, ['shubham', 'subham']))) return { intent: 'teacher_shubham' };
 
@@ -410,7 +411,7 @@
       page: '/faculty.html',
       section: '.faculty-hero, .page-hero',
       target: '.page-hero h1',
-      text: 'Learn from educators who make concepts click. NIT alumni, gold medalists & Olympiad trainers.'
+      text: 'Learn from educators who make concepts click. NIT alumni, university gold medalists & Olympiad trainers.'
     },
     {
       id: 'faculty-grid-step',
@@ -1413,6 +1414,7 @@
       case 'teacher_ayushi':
       case 'teacher_anil':
       case 'teacher_lokesh':
+      case 'teacher_dipanjali':
       case 'teacher_soujanya':
       case 'teacher_shubham':
         showFacultyInfo(intent);
@@ -2447,7 +2449,7 @@
         }
       });
 
-      // Experience line (e.g. "9+ years of experience.")
+      // Experience line (extracted dynamically from card DOM)
       let expLine = '';
       if (experience) {
         const yrMatch = experience.match(/(\d+\+?\s*years?)/i);
@@ -2460,7 +2462,7 @@
         if (!expLine.endsWith('.')) expLine += '.';
       }
 
-      // Known for line (e.g. "Known for Calculus, Algebra and Coordinate Geometry.")
+      // Known for line (extracted dynamically from card DOM)
       let knownLine = '';
       if (knownFor) {
         knownLine = `Known for ${knownFor.replace(/^known\s+for\s*/i, '')}`;
@@ -2468,7 +2470,7 @@
       }
 
       // Faculty message format:
-      // "Meet Anil Kumar Singh, Mathematics for JEE. 9+ years of experience. Known for Calculus, Algebra and Coordinate Geometry. Click Book Free Demo to try a class." (No fee line)
+      // "Meet [Name], [Subject Tag]. [Experience]. [Known for]. Click Book Free Demo to try a class." (No fee line)
       let message = `Meet ${name}`;
       if (subjectTag) message += `, ${subjectTag}`;
       message += '.';
