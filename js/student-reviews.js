@@ -55,106 +55,125 @@ const REVIEWS = [
 const reviewsStyles = `<style>
 .mjm-reviews-section {
   position: relative;
-  padding: 64px 20px;
+  padding: 56px 20px 68px;
+  font-family: 'Montserrat', system-ui, sans-serif;
 }
 .mjm-reviews-container {
-  max-width: 1200px;
+  max-width: 1560px;
   margin: 0 auto;
 }
 .mjm-reviews-header {
   text-align: center;
-  margin-bottom: 42px;
+  margin-bottom: 38px;
 }
 .mjm-reviews-title {
-  font-family: inherit;
+  font-family: 'Montserrat', system-ui, sans-serif;
   font-size: clamp(28px, 4vw, 40px);
-  font-weight: 800;
-  color: #8d480e;
+  font-weight: 900;
+  color: #ea580c;
   line-height: 1.2;
   margin: 0 0 10px;
-  letter-spacing: -0.02em;
-}
-.dark-theme .mjm-reviews-title {
-  color: #fbd77a;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 10px rgba(234, 88, 12, 0.14);
 }
 .mjm-reviews-subtitle {
-  font-size: 16px;
-  color: #525252;
+  font-size: 15.5px;
+  color: #5c4a3f;
   margin: 0;
-  font-weight: 500;
-}
-.dark-theme .mjm-reviews-subtitle {
-  color: #d1d5db;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 .mjm-reviews-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 26px;
 }
 .mjm-review-card {
-  background: radial-gradient(110% 120% at 85% 15%, #241e17 0%, #151310 60%, #0d0c0a 100%);
-  border: 1px solid rgba(249, 185, 52, 0.22);
-  border-radius: 20px;
-  padding: 26px 26px 24px;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 220px;
+  padding: 26px 26px 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.45);
+  border-radius: 24px;
+  color: #1c1917;
+  background:
+    repeating-linear-gradient(135deg, rgba(234, 88, 12, 0.035) 0px, rgba(234, 88, 12, 0.035) 1.5px, transparent 1.5px, transparent 6px),
+    linear-gradient(180deg, #ffffff 0%, #fff7f0 55%, #ffe6d4 100%);
+  border: 1px solid rgba(234, 88, 12, 0.32);
+  box-shadow: 0 16px 36px -10px rgba(234, 88, 12, 0.20), 0 4px 14px rgba(0, 0, 0, 0.04);
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-  position: relative;
   box-sizing: border-box;
+}
+.mjm-review-card::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(234, 88, 12, 0.20);
+  pointer-events: none;
+  z-index: 0;
 }
 .mjm-review-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(249, 185, 52, 0.45);
-  box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.65), 0 0 20px rgba(249, 185, 52, 0.12);
+  border-color: rgba(234, 88, 12, 0.50);
+  box-shadow: 0 22px 46px -10px rgba(234, 88, 12, 0.30), 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 .mjm-review-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  z-index: 1;
+  position: relative;
 }
 .mjm-review-stars {
   display: flex;
   gap: 3px;
-  color: #f9b934;
-  font-size: 16px;
+  color: #ea580c;
+  font-size: 17px;
   line-height: 1;
 }
 .mjm-review-quote-icon {
   display: flex;
   align-items: center;
-  opacity: 0.75;
+  opacity: 0.85;
 }
 .mjm-review-text {
-  color: #e5e5e5;
+  color: #2b1f16;
   font-size: 14.5px;
   line-height: 1.62;
-  font-weight: 400;
-  margin: 0 0 24px;
+  font-weight: 500;
+  margin: 0 0 22px;
   flex-grow: 1;
+  z-index: 1;
+  position: relative;
 }
 .mjm-review-author {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 13px;
   margin-top: auto;
+  z-index: 1;
+  position: relative;
 }
 .mjm-review-avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f9b934 0%, #d97706 100%);
-  color: #14120e;
-  font-weight: 800;
-  font-size: 15px;
+  background: radial-gradient(circle at 35% 30%, #ff9e58 0%, #ea580c 58%, #b83a00 100%);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 14.5px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(249, 185, 52, 0.35);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.38), inset 0 1px 2px rgba(255, 255, 255, 0.6);
   letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .mjm-review-meta {
   display: flex;
@@ -164,8 +183,8 @@ const reviewsStyles = `<style>
 }
 .mjm-review-name {
   font-size: 15px;
-  font-weight: 700;
-  color: #f9b934;
+  font-weight: 800;
+  color: #1c1917;
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -173,14 +192,14 @@ const reviewsStyles = `<style>
 }
 .mjm-review-role {
   font-size: 12.5px;
-  color: #a8a29e;
-  font-weight: 500;
+  color: #78350f;
+  font-weight: 700;
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-@media (max-width: 980px) {
+@media (max-width: 1024px) {
   .mjm-reviews-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
@@ -188,17 +207,20 @@ const reviewsStyles = `<style>
 }
 @media (max-width: 640px) {
   .mjm-reviews-section {
-    padding: 44px 16px;
+    padding: 40px 16px;
   }
   .mjm-reviews-header {
-    margin-bottom: 28px;
+    margin-bottom: 26px;
   }
   .mjm-reviews-grid {
     grid-template-columns: 1fr;
+    max-width: 540px;
+    margin: 0 auto;
     gap: 16px;
   }
   .mjm-review-card {
     padding: 22px 20px 20px;
+    border-radius: 20px;
   }
 }
 </style>`;
@@ -212,7 +234,7 @@ function renderReviewCards() {
         </div>
         <span class="mjm-review-quote-icon" aria-hidden="true">
           <svg width="26" height="22" viewBox="0 0 28 24" fill="none">
-            <path d="M7.5 12C9.5 12 11 13.5 11 15.5C11 17.5 9.5 19 7.5 19C5.5 19 4 17.5 4 15.5C4 11.5 7 7.5 11.5 6L12.5 7.8C9.5 9 8 10.5 7.8 12.2C8 12.1 8.3 12 8.6 12H7.5ZM20.5 12C22.5 12 24 13.5 24 15.5C24 17.5 22.5 19 20.5 19C18.5 19 17 17.5 17 15.5C17 11.5 20 7.5 24.5 6L25.5 7.8C22.5 9 21 10.5 20.8 12.2C21 12.1 21.3 12 21.6 12H20.5Z" fill="#b47a24" fill-opacity="0.6"/>
+            <path d="M7.5 12C9.5 12 11 13.5 11 15.5C11 17.5 9.5 19 7.5 19C5.5 19 4 17.5 4 15.5C4 11.5 7 7.5 11.5 6L12.5 7.8C9.5 9 8 10.5 7.8 12.2C8 12.1 8.3 12 8.6 12H7.5ZM20.5 12C22.5 12 24 13.5 24 15.5C24 17.5 22.5 19 20.5 19C18.5 19 17 17.5 17 15.5C17 11.5 20 7.5 24.5 6L25.5 7.8C22.5 9 21 10.5 20.8 12.2C21 12.1 21.3 12 21.6 12H20.5Z" fill="#ea580c" fill-opacity="0.45"/>
           </svg>
         </span>
       </div>
