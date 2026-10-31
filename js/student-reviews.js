@@ -13,42 +13,48 @@ const REVIEWS = [
     quote: "With only 10 students in a batch, the mentor knows exactly where I am weak. My doubts get solved the same day, one on one.",
     name: "Dirasantham Adithya",
     role: "JEE 2026-27",
-    initials: "DA"
+    initials: "DA",
+    svg: `<svg class="mjm-review-bg-art" viewBox="0 0 120 120" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="60" cy="52" rx="46" ry="18" transform="rotate(-30 60 52)"/><ellipse cx="60" cy="52" rx="46" ry="18" transform="rotate(30 60 52)"/><circle cx="60" cy="52" r="5" fill="#ea580c"/><path d="M22 96c10-5 24-5 38 0 14-5 28-5 38 0v-24c-10-5-24-5-38 0-14-5-28-5-38 0z" fill="#ea580c" fill-opacity="0.15"/><path d="M60 72v24"/></svg>`
   },
   {
     stars: 5,
     quote: "This is exactly what we were looking for for our child. Personal guidance, regular tests and a clear plan, and we always know how the progress is going.",
     name: "K. Ramachandran",
     role: "Parent of NEET aspirant",
-    initials: "KR"
+    initials: "KR",
+    svg: `<svg class="mjm-review-bg-art" viewBox="0 0 120 120" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="60,26 106,46 60,66 14,46" fill="#ea580c" fill-opacity="0.15"/><path d="M34 56v22c0 14 16 22 26 22s26-8 26-22V56"/><path d="M106 46v28"/><circle cx="106" cy="76" r="3" fill="#ea580c"/><path d="M20 28l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#ea580c"/><path d="M96 22l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5z" fill="#ea580c"/></svg>`
   },
   {
     stars: 5,
     quote: "The daily DPP built a study habit for me. Live classes from home saved travel time, and the mentor is always there for doubts.",
     name: "Shriya S Nair",
     role: "NEET 2026-27",
-    initials: "SN"
+    initials: "SN",
+    svg: `<svg class="mjm-review-bg-art" viewBox="0 0 120 120" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M34 20c22 16 30 32 52 48M34 68c22-16 30-32 52-48M42 28l36 24M44 60l32-22"/><path d="M22 100c10-5 24-5 38 0 14-5 28-5 38 0v-22c-10-5-24-5-38 0-14-5-28-5-38 0z" fill="#ea580c" fill-opacity="0.15"/><path d="M60 78v22"/></svg>`
   },
   {
     stars: 5,
     quote: "Our son was weak in basics. The Foundation batch explained everything step by step, and his confidence in Science and Math has grown.",
     name: "M. Sundaresan",
     role: "Parent of Class 9 student",
-    initials: "MS"
+    initials: "MS",
+    svg: `<svg class="mjm-review-bg-art" viewBox="0 0 120 120" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M60 16v10M38 24l7 7M82 24l-7 7M26 44h10M94 44h-10"/><circle cx="60" cy="44" r="12" fill="#ea580c" fill-opacity="0.15"/><path d="M20 96c12-6 26-6 40 0 14-6 28-6 40 0V70c-12-6-26-6-40 0-14-6-28-6-40 0z" fill="#ea580c" fill-opacity="0.15"/><path d="M60 70v26"/></svg>`
   },
   {
     stars: 5,
     quote: "Regular tests showed me my mistakes early. The mentor gave a personal plan, so I stopped feeling lost and started improving.",
     name: "Regati Rishikesh Reddy",
     role: "JEE 2026-27",
-    initials: "RR"
+    initials: "RR",
+    svg: `<svg class="mjm-review-bg-art" viewBox="0 0 120 120" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="60,20 100,88 20,88" fill="#ea580c" fill-opacity="0.12"/><circle cx="60" cy="62" r="14"/><path d="M38 80a28 28 0 0 1 44 0"/><path d="M60 20v68"/></svg>`
   },
   {
     stars: 5,
     quote: "The teachers actually listen. Every doubt gets patient attention, and the small batch size makes a big difference.",
     name: "V. Subramanian",
     role: "Parent of Class 8 student",
-    initials: "VS"
+    initials: "VS",
+    svg: `<svg class="mjm-review-bg-art" viewBox="0 0 120 120" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M60 22a22 22 0 0 0-14 39c4 4 6 8 6 13h16c0-5 2-9 6-13a22 22 0 0 0-14-39z" fill="#ea580c" fill-opacity="0.15"/><path d="M52 79h16M55 85h10M57 91h6"/><path d="M60 11v6M34 23l4 4M86 23l-4 4M24 43h6M96 43h-6"/></svg>`
   }
 ];
 
@@ -100,8 +106,8 @@ const reviewsStyles = `<style>
   border-radius: 24px;
   color: #1c1917;
   background:
-    repeating-linear-gradient(135deg, rgba(234, 88, 12, 0.035) 0px, rgba(234, 88, 12, 0.035) 1.5px, transparent 1.5px, transparent 6px),
-    linear-gradient(180deg, #ffffff 0%, #fff7f0 55%, #ffe6d4 100%);
+    radial-gradient(circle at 92% 18%, rgba(254, 215, 170, 0.45) 0%, transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #fffbf8 50%, #ffedd5 100%);
   border: 1px solid rgba(234, 88, 12, 0.32);
   box-shadow: 0 16px 36px -10px rgba(234, 88, 12, 0.20), 0 4px 14px rgba(0, 0, 0, 0.04);
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
@@ -120,6 +126,21 @@ const reviewsStyles = `<style>
   transform: translateY(-4px);
   border-color: rgba(234, 88, 12, 0.50);
   box-shadow: 0 22px 46px -10px rgba(234, 88, 12, 0.30), 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+.mjm-review-bg-art {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  width: 110px;
+  height: 110px;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.mjm-review-card:hover .mjm-review-bg-art {
+  opacity: 0.16;
+  transform: scale(1.05) rotate(-2deg);
 }
 .mjm-review-top {
   display: flex;
@@ -228,6 +249,7 @@ const reviewsStyles = `<style>
 function renderReviewCards() {
   return REVIEWS.map(r => `
     <article class="mjm-review-card">
+      ${r.svg || ''}
       <div class="mjm-review-top">
         <div class="mjm-review-stars" aria-label="5 out of 5 stars">
           <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>

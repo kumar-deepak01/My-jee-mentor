@@ -206,6 +206,7 @@
 
     <section class="foundation-why"><div class="container"><div class="foundation-heading"><span class="foundation-eyebrow">THE MY JEE MENTOR APPROACH</span><h2>Why Foundation at My JEE Mentor</h2></div><div class="foundation-why-grid"><article><span aria-hidden="true">✎</span><h3>Daily Practice Paper</h3></article><article><span aria-hidden="true">◷</span><h3>Regular Tests</h3></article><article><span aria-hidden="true">◇</span><h3>Concepts from Basics</h3></article><article><span aria-hidden="true">◎</span><h3>Doubt Solving &amp; Mentor Guidance</h3></article></div></div></section>
     <section class="foundation-final"><div class="container foundation-final-inner"><div><span class="foundation-eyebrow">BUILD CONFIDENCE, ONE CONCEPT AT A TIME</span><h2>Give your child a strong start.</h2></div><a class="foundation-btn foundation-btn-primary" href="#book-demo" data-open-booking data-course="Foundation">Book Free Demo Class <span aria-hidden="true">→</span></a></div></section>
+    <div id="foundation-faculty-mount"></div>
   </main>
 
   <footer class="site-footer"><div class="container"><div class="footer-grid"><div><a class="brand" href="/">My <span class="brand-accent">JEE</span> Mentor</a><p>Concept First. Rank Next.<br>Personalised learning for JEE, NEET and Foundation.</p><a href="https://www.instagram.com/" aria-label="Instagram">Instagram</a> · <a href="https://www.youtube.com/" aria-label="YouTube">YouTube</a></div><div><h3>Programs</h3><a href="/jee.html">JEE</a><br><a href="/neet.html">NEET</a><br><a href="/foundation.html" aria-current="page">Foundation</a><br><a href="/myclassroom.html">My Classroom</a></div><div><h3>Explore</h3><a href="/results.html">Results</a><br><a href="/faculty.html">Our Faculty</a><br><a href="/reviews.html">Student Reviews</a><br><a href="/freeresource.html">Free Resources</a><br><a href="/studentreview.html">Student Review</a><br><a href="/login.html">Faculty Login</a></div><div><h3>Get in touch</h3><a href="/contact.html">Contact Us</a><br><a href="tel:+917304256203">Call counselor</a><br><a href="https://wa.me/917304256203">WhatsApp</a><br><h3>Legal</h3><a href="/terms.html">Terms</a> · <a href="/privacy-policy.html">Privacy</a> · <a href="/refund-policy.html">Refund</a></div></div><div class="footer-bottom">© <span id="footer-year">2026</span> My JEE Mentor. Program details, faculty, results and testimonials are confirmed with our team.</div></div></footer>
@@ -227,6 +228,13 @@
       document.addEventListener('visibilitychange',()=>root.classList.toggle('is-hidden',document.hidden));
     })();
   </script>
-  <script type="module">import {renderBookingModal,initBooking} from "/js/booking.js";document.body.insertAdjacentHTML("beforeend",renderBookingModal());initBooking();</script>
+  <script type="module">
+    import {renderBookingModal,initBooking} from "/js/booking.js";
+    import {facultySection} from "/js/faculty-data.js";
+    document.body.insertAdjacentHTML("beforeend",renderBookingModal());
+    initBooking();
+    const mount = document.getElementById("foundation-faculty-mount");
+    if (mount) mount.outerHTML = facultySection('foundation');
+  </script>
 </body>
 </html>
