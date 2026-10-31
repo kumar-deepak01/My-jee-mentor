@@ -1,17 +1,16 @@
 /**
  * ============================================================================
- * Ollie the Owl - Interactive Website Guide
+ * Ollie the Owl - Interactive Academic Guide & Lead Generator
  * My JEE Mentor (JEE, NEET & Foundation)
  *
- * Core Features & Behaviors:
- * 1. Exact SVG, flying / wing-flap / bob / jump animations, and tour behavior.
- * 2. CARD_DATA config: maps real card data (name, fee, details, cta) with natural speech.
- * 3. Responsive interaction modes (via matchMedia '(hover: hover) and (pointer: fine)'):
- *    - Desktop: Hover is king with 150ms debounce, immediate jump, and 10s auto-hop pause.
- *    - Mobile/Touch: Scroll-driven (45% viewport line) and tap-driven with 10s pause.
- * 4. Precise 3-tier placement: ABOVE block -> BELOW block -> FIXED BOTTOM-CENTER.
- *    - Zero overlap with card contents, sticky header, or .mobile-bar.
- * 5. Dynamic MutationObserver and route exclusion on fees, login, test, classroom.
+ * Core Capabilities:
+ * 1. Interactive "Ask Ollie" Panel with multilingual rule-based intent engine (English, Hindi, Hinglish).
+ * 2. Real-time Live DOM Data Extraction for batches, fees, faculty, and navigation courses.
+ * 3. Personalized onboarding greeting + 4-stop customized tour ("Show me around").
+ * 4. In-panel Lead Generation Flow (reusing /api/leads & /api/csrf, ?ollie-test=1 dry-run).
+ * 5. Value-add passive scroll nudges (<= 20 words) and desktop hover chips.
+ * 6. Non-overlapping 3-tier placement, collision auto-collapse, and sticky header/.mobile-bar avoidance.
+ * 7. Route exclusions (fees, login, test, classroom, student-login) and ?ollie-debug=1 logging.
  * ============================================================================
  */
 
@@ -19,7 +18,6 @@
   'use strict';
 
   // 1. ROUTE EXCLUSION GUARD
-  // Exclude Ollie completely on fees, login, test, and classroom routes.
   const routePath = (location.pathname || '').toLowerCase();
   if (
     routePath.includes('fees') ||
@@ -31,316 +29,27 @@
     return;
   }
 
-  const isDebug = new URLSearchParams(location.search).get('ollie-debug') === '1';
+  // Configuration & Flags
+  const isDebug = location.search.includes('ollie-debug=1');
+  const isTestMode = location.search.includes('ollie-test=1');
+  const PHONE_NUMBER = '+91 73042 56203';
+  const WA_NUMBER = '917304256203';
 
-  // ==========================================================================
-  // CONFIGURATION: CARD_DATA
-  // Real site information: verified names, course details, real fees, & CTAs.
-  // ==========================================================================
-  const CARD_DATA = [
-    // --- HOME COURSE CARDS ---
-    {
-      selector: '.mjm-card.jee',
-      name: 'JEE 2026-27',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Max 10 students only in one batch',
-        'Physics, Chemistry & Math with a mentor who tracks every student',
-        'Personal mentorship, online live classes, regular tests and daily DPP'
-      ],
-      cta: '.mjm-card.jee .mjm-btn'
-    },
-    {
-      selector: '.mjm-card.neet',
-      name: 'NEET 2026-27',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Max 10 students only in one batch',
-        'Physics, Chemistry & Biology with dedicated personal mentorship for every doubt',
-        'Online live classes, regular tests and daily DPP'
-      ],
-      cta: '.mjm-card.neet .mjm-btn'
-    },
-    {
-      selector: '.mjm-card.foundation',
-      name: 'Foundation Program',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Class 7 to 10 with max 10 students only in one batch',
-        'Strong basics in Science, Math, Social Science & English',
-        'Online live classes, regular tests and daily DPP'
-      ],
-      cta: '.mjm-card.foundation .mjm-btn'
-    },
+  // Site map for route discovery and alias matching
+  const SITE_MAP = {
+    '/': { title: 'Home', keywords: ['home', 'main', 'start', 'shuru'] },
+    '/jee.html': { title: 'JEE Coaching', exam: 'JEE', keywords: ['jee', 'iit', 'mains', 'advance', 'advanced', 'engineering'] },
+    '/neet.html': { title: 'NEET Coaching', exam: 'NEET', keywords: ['neet', 'medical', 'doctor', 'mbbs', 'biology', 'aiims'] },
+    '/foundation.html': { title: 'Foundation', exam: 'Foundation', keywords: ['foundation', 'class 7', 'class 8', 'class 9', 'class 10', 'middle school', 'olympiad', 'boards'] },
+    '/faculty.html': { title: 'Our Faculty', keywords: ['faculty', 'teachers', 'teacher', 'sir', 'mam', 'mentors'] },
+    '/reviews.html': { title: 'Reviews', keywords: ['reviews', 'results', 'feedback', 'students', 'parents', 'testimonials'] },
+    '/freeresource.html': { title: 'Free Resources', keywords: ['resources', 'notes', 'pyq', 'dpp', 'free', 'formula', 'paper'] },
+    '/why-my-jee-mentor.html': { title: 'Why Us', keywords: ['why', 'batch size', 'mentorship', 'compare'] },
+    '/contact.html': { title: 'Contact', keywords: ['contact', 'call', 'whatsapp', 'phone', 'address', 'location'] },
+    '/career.html': { title: 'Careers', keywords: ['career', 'jobs', 'hiring', 'work', 'teach'] }
+  };
 
-    // --- JEE BATCHES (/jee.html) ---
-    {
-      selector: '.program-card.program-foundation:not(.neet-program-card), .resource-grid .resource-card:nth-child(1) .program-card',
-      name: 'JEE Foundation Batch',
-      fee: '₹3000/month',
-      details: [
-        'Build strong fundamentals, clear concepts and develop a solid JEE base',
-        'Max 10 students per batch with personal mentorship',
-        'Live classes, DPPs, homework, PYQs and regular tests'
-      ],
-      cta: '.program-card.program-foundation .program-cta, .resource-grid .resource-card:nth-child(1) .program-cta'
-    },
-    {
-      selector: '.program-card.program-mentorship:not(.neet-program-card), .resource-grid .resource-card:nth-child(2) .program-card:not(.neet-program-card)',
-      name: 'JEE Booster Batch',
-      fee: '₹4000/month',
-      details: [
-        'Strengthen existing preparation and fix weak areas',
-        'Improve problem-solving speed and boost performance',
-        'Intensive practice, PYQs and targeted doubt clearing'
-      ],
-      cta: '.program-card.program-mentorship .program-cta, .resource-grid .resource-card:nth-child(2) .program-cta'
-    },
-    {
-      selector: '.program-card.program-ranker:not(.neet-program-card), .resource-grid .resource-card:nth-child(3) .program-card:not(.neet-program-card)',
-      name: 'JEE Ranker Batch',
-      fee: '₹5000/month',
-      details: [
-        'Advanced problem-solving and intensive practice for top percentile',
-        'Comprehensive PYQs and regular performance analysis',
-        'Direct teacher support with maximum 10 students'
-      ],
-      cta: '.program-card.program-ranker .program-cta, .resource-grid .resource-card:nth-child(3) .program-cta'
-    },
-    {
-      selector: '.program-card.program-one-to-one:not(.neet-program-card), .resource-grid .resource-card:nth-child(4) .program-card:not(.neet-program-card)',
-      name: 'JEE Premium Batch',
-      fee: '₹6000/month',
-      details: [
-        'Focused learning and 1-on-1 personalized guidance',
-        'Structured preparation, regular practice and academic monitoring',
-        'Continuous mentor check-ins and performance tracking'
-      ],
-      cta: '.program-card.program-one-to-one .program-cta, .resource-grid .resource-card:nth-child(4) .program-cta'
-    },
-
-    // --- NEET BATCHES (/neet.html) ---
-    {
-      selector: '.neet-program-card.program-foundation, .neet-program-card:nth-of-type(1)',
-      name: 'NEET Foundation Batch',
-      fee: '₹3000/month',
-      details: [
-        'Strong NCERT foundation and clear basic concepts',
-        'Right approach for NEET preparation from ground up',
-        'Max 10 students per batch with personal mentorship'
-      ],
-      cta: '.neet-program-card.program-foundation .program-cta, .neet-program-card:nth-of-type(1) .program-cta'
-    },
-    {
-      selector: '.neet-program-card.program-mentorship, .neet-program-card:nth-of-type(2)',
-      name: 'NEET Booster / Personal Mentorship Batch',
-      fee: '₹4000/month',
-      details: [
-        'Strengthen concepts and improve weak areas in Physics, Chemistry & Biology',
-        'Revise high-weightage topics and boost overall performance',
-        'Priority doubt solving and regular test analysis'
-      ],
-      cta: '.neet-program-card.program-mentorship .program-cta, .neet-program-card:nth-of-type(2) .program-cta'
-    },
-    {
-      selector: '.neet-personal-mentorship, .program-card.program-mentorship[data-slug="mentorship"]',
-      name: 'NEET Personal Mentorship Batch',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Strictly limited to max 5 students per batch',
-        '1:1 personal mentoring and direct teacher support',
-        'Priority doubt solving and weekly performance review'
-      ],
-      cta: '.program-card.program-mentorship .program-cta'
-    },
-    {
-      selector: '.neet-program-card.program-ranker, .neet-program-card:nth-of-type(3)',
-      name: 'NEET Ranker Batch',
-      fee: '₹5000/month',
-      details: [
-        'Intensive revision and NCERT-focused practice & PYQs',
-        'Mock tests and regular performance analysis for top medical aspirants',
-        'Small batches with dedicated medical entrance mentors'
-      ],
-      cta: '.neet-program-card.program-ranker .program-cta, .neet-program-card:nth-of-type(3) .program-cta'
-    },
-    {
-      selector: '.neet-program-card.program-one-to-one, .neet-program-card:nth-of-type(4)',
-      name: 'NEET Premium / One to One Program',
-      fee: '₹6000/month',
-      details: [
-        'Personalised attention, structured preparation and custom study plan',
-        'Regular practice, doubt support and continuous academic monitoring',
-        '100% focused one-to-one mentor tracking'
-      ],
-      cta: '.neet-program-card.program-one-to-one .program-cta, .neet-program-card:nth-of-type(4) .program-cta'
-    },
-    {
-      selector: '.neet-one-to-one, .program-card.program-one-to-one[data-slug="one-to-one"]',
-      name: 'NEET One to One Program',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        '100% personalized learning with a dedicated medical entrance mentor',
-        'Custom study plan aligned with your syllabus pace and targets',
-        'Regular performance tracking and direct mentor access'
-      ],
-      cta: '.program-card.program-one-to-one .program-cta'
-    },
-
-    // --- FOUNDATION CLASSES (/foundation.html) ---
-    {
-      selector: '.foundation-card-7',
-      name: 'Class 7 Foundation',
-      fee: '₹2500/month',
-      details: [
-        'Max 10 students per batch for real individual attention',
-        'Science, Math, English, Spoken English & Social Science',
-        'CBSE & ICSE board aligned with daily practice papers'
-      ],
-      cta: '.foundation-card-7 .foundation-card-cta'
-    },
-    {
-      selector: '.foundation-card-8',
-      name: 'Class 8 Foundation',
-      fee: '₹2500/month',
-      details: [
-        'Max 10 students per batch building fundamental concepts',
-        'Science, Math, English, Spoken English and SST coverage',
-        'Regular practice, tests and early Olympiad foundation'
-      ],
-      cta: '.foundation-card-8 .foundation-card-cta'
-    },
-    {
-      selector: '.foundation-card-9',
-      name: 'Class 9 Foundation',
-      fee: '₹3000/month',
-      details: [
-        'Max 10 students per batch bridging high school concepts',
-        'In-depth Science & Math curriculum for CBSE and ICSE',
-        'Daily DPPs and early base for JEE and NEET competitive exams'
-      ],
-      cta: '.foundation-card-9 .foundation-card-cta'
-    },
-    {
-      selector: '.foundation-card-10',
-      name: 'Class 10 Foundation',
-      fee: '₹3000/month',
-      details: [
-        'Max 10 students per batch with board exam focus',
-        'Comprehensive syllabus coverage, daily DPPs and regular mock exams',
-        'Strong conceptual bridge for Class 11 JEE and NEET'
-      ],
-      cta: '.foundation-card-10 .foundation-card-cta'
-    },
-
-    // --- FACULTY CARDS ---
-    {
-      selector: '.faculty-card[data-faculty-id="ayushi"], .faculty-card:nth-child(1)',
-      name: 'Dr. Ayushi Aggarwal',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Chemistry & Biology faculty for JEE & NEET',
-        'Ph.D., M.Sc. Gold Medalist with 8+ years premier coaching experience',
-        'Known for step-by-step conceptual clarity and interactive doubt solving'
-      ],
-      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
-    },
-    {
-      selector: '.faculty-card[data-faculty-id="anil"], .faculty-card:nth-child(2)',
-      name: 'Anil Kumar Singh',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Mathematics faculty for JEE Main & Advanced',
-        'Senior Mathematics Faculty with 9+ years experience',
-        'Specializes in Calculus, Algebra, and Coordinate Geometry for 99+ percentile scores'
-      ],
-      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
-    },
-    {
-      selector: '.faculty-card[data-faculty-id="lokesh"], .faculty-card:nth-child(3)',
-      name: 'Lokesh Gupta',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Physics faculty for JEE & NEET',
-        '7+ years experience training JEE & NEET aspirants across leading coaching centers',
-        'Specializes in Mechanics, Electrodynamics, and systematic numerical breakdown'
-      ],
-      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
-    },
-    {
-      selector: '.faculty-card[data-faculty-id="soujanya"], .faculty-card:nth-child(4)',
-      name: 'Soujanya Mondal',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Chemistry faculty for JEE & NEET',
-        'M.Sc. Chemistry NIT Warangal, IIT JAM qualified 2023',
-        'Senior Faculty at Unacademy and Allen Chennai, known for making chemistry intuitive'
-      ],
-      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
-    },
-    {
-      selector: '.faculty-card[data-faculty-id="shubham"], .faculty-card:nth-child(5)',
-      name: 'Shubham Kumar',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Foundation faculty for Class 7 to 10',
-        'B.Sc. & Academic Pedagogy Training with 6+ years experience in Science & Math',
-        'Known for friendly mentoring, patient doubt resolution and Olympiad base building'
-      ],
-      cta: '.mjm-faculty-cta a, .faculty-cta-bar .btn-primary, a[href="#book-demo"], .site-header .btn.talk'
-    },
-
-    // --- OTHER PUBLIC BATCH / PROGRAM CARDS ---
-    {
-      selector: '.courses-jee-booster .split, main:has(.split) .split',
-      name: 'JEE Booster Program',
-      fee: 'Fee: talk to our counselor',
-      details: [
-        'Focused concept recovery and weakness fixing for Class 11-12 & droppers',
-        'Live classes, DPPs, homework, PYQs, regular tests and doubt support',
-        'Personal mentorship and performance tracking with counseling'
-      ],
-      cta: '.split a[href="#book-demo"], .split a.btn-primary, .site-header .btn.talk'
-    }
-  ];
-
-  // Helper to format natural speech from CARD_DATA
-  function formatCardSpeech(entry, ctaEl) {
-    const rawCta = ctaEl ? ctaEl.textContent.trim().replace(/\s+/g, ' ').replace(/[→›»]/g, '').trim() : '';
-    const ctaLabel = rawCta || 'Explore Now';
-    const details = Array.isArray(entry.details)
-      ? entry.details.map(d => d.replace(/\.+$/, '')).join('. ') + '.'
-      : entry.details;
-    const feeText = entry.fee.startsWith('Fee:') ? entry.fee : `Fee: ${entry.fee}`;
-
-    let action = 'see full details';
-    if (/book|demo/i.test(ctaLabel)) {
-      action = 'reserve your free demo class';
-    } else if (/talk|call/i.test(ctaLabel)) {
-      action = 'speak with our academic counselor';
-    } else if (/enquire/i.test(ctaLabel)) {
-      action = 'enquire about this program';
-    } else if (/explore/i.test(ctaLabel)) {
-      action = 'see full details';
-    }
-
-    return `This is ${entry.name}. ${details} ${feeText}. Click ${ctaLabel} to ${action}.`;
-  }
-
-  // Helper to match an element to CARD_DATA
-  function findCardDataForElement(el) {
-    if (!el) return null;
-    for (const card of CARD_DATA) {
-      try {
-        if (el.matches(card.selector) || el.closest(card.selector)) {
-          return card;
-        }
-      } catch (e) {}
-    }
-    return null;
-  }
-
-  // Device capability detector: true for mouse/desktop, false for touch
+  // Device capability check (Desktop hover vs Touch)
   function isDesktopDevice() {
     try {
       return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -350,606 +59,394 @@
   }
 
   // ==========================================================================
-  // CONFIGURATION: CUSTOM_STEPS
-  // Ordered strictly according to DOM document order.
+  // 2. LIVE SITE DATA EXTRACTION ENGINE (DOM wins, never hard-coded)
   // ==========================================================================
-  const CUSTOM_STEPS = [
-    // --- GLOBAL MODAL ---
-    {
-      id: 'modal-booking',
-      page: '*',
-      section: '#book-demo',
-      target: '#booking-form button[type="submit"]',
-      title: 'Book Free Demo Modal',
-      text: 'Book a free 1-on-1 demo session with our mentors. Enter your student name, phone number, target grade and course, then click Book Free Demo Session to confirm.'
-    },
+  function getLiveBatches(courseFilter = '') {
+    const batches = [];
+    const cards = document.querySelectorAll('.program-card, .foundation-card, .mjm-card');
 
-    // --- HOME PAGE (/) ---
-    {
-      id: 'home-header',
-      page: '/',
-      section: 'header.site-header',
-      target: '.header-actions .btn.talk',
-      title: 'Site Header',
-      text: 'Welcome to My JEE Mentor! Have a question about courses or batch timings? Click Talk to Counselor to speak directly with our academic team.'
-    },
+    cards.forEach(card => {
+      // 1. Title/Name
+      const titleEl = card.querySelector('h3, .program-title-row, .mjm-title');
+      if (!titleEl) return;
+      let name = titleEl.childNodes[0]?.textContent?.trim() || titleEl.textContent.trim();
+      name = name.replace(/\s+/g, ' ');
+
+      // 2. Fee extraction matching ₹ + digits
+      let fee = '';
+      const feeMatch = card.textContent.match(/₹\s*[\d,]+(?:\s*\/\s*(?:month|mo))?/i);
+      if (feeMatch) {
+        fee = feeMatch[0].trim();
+      }
+
+      // 3. Key details
+      const details = [];
+      card.querySelectorAll('ul li, .mjm-points span, .foundation-subject').forEach(li => {
+        const text = li.textContent.replace(/[✔✓]/g, '').trim();
+        if (text && details.length < 3) details.push(text);
+      });
+      if (details.length === 0) {
+        const p = card.querySelector('p:not(.mjm-tag):not(.foundation-kicker)');
+        if (p) details.push(p.textContent.trim());
+      }
+
+      // 4. CTA Button
+      const cta = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn-primary, a[href]');
+
+      // 5. Inferred Course
+      let course = 'General';
+      if (card.matches('.neet-program-card, .neet') || location.pathname.includes('neet')) {
+        course = 'NEET';
+      } else if (card.matches('.foundation-card, .foundation') || location.pathname.includes('foundation')) {
+        course = 'Foundation';
+      } else if (card.matches('.jee') || location.pathname.includes('jee')) {
+        course = 'JEE';
+      }
+
+      batches.push({ element: card, name, fee, details, cta, course });
+    });
+
+    if (courseFilter) {
+      return batches.filter(b => b.course.toLowerCase() === courseFilter.toLowerCase());
+    }
+    return batches;
+  }
+
+  function getLiveFaculty() {
+    const faculty = [];
+    document.querySelectorAll('.faculty-card').forEach(card => {
+      const nameEl = card.querySelector('.faculty-name, h3');
+      const name = nameEl ? nameEl.textContent.trim().replace(/\s+/g, ' ') : '';
+      const tagEl = card.querySelector('.faculty-tag, .faculty-badge');
+      const tag = tagEl ? tagEl.textContent.trim() : '';
+      const degreeEl = card.querySelector('.faculty-degree');
+      const degree = degreeEl ? degreeEl.textContent.trim() : '';
+      const quoteEl = card.querySelector('.faculty-quote');
+      const quote = quoteEl ? quoteEl.textContent.trim() : '';
+      const cta = card.querySelector('a, button');
+
+      if (name) {
+        faculty.push({ element: card, name, tag, degree, quote, cta });
+      }
+    });
+    return faculty;
+  }
+
+  function getLiveCourses() {
+    const courses = [];
+    const navLinks = document.querySelectorAll('header.site-header nav a, .nav a');
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href') || '';
+      const text = link.textContent.trim();
+      if (['JEE', 'NEET', 'Foundation'].includes(text) || href.includes('jee') || href.includes('neet') || href.includes('foundation')) {
+        courses.push({ name: text, url: href, id: text.toLowerCase() });
+      }
+    });
+    if (courses.length === 0) {
+      return [
+        { name: 'JEE', url: '/jee.html', id: 'jee' },
+        { name: 'NEET', url: '/neet.html', id: 'neet' },
+        { name: 'Foundation', url: '/foundation.html', id: 'foundation' }
+      ];
+    }
+    return courses;
+  }
+
+  // ==========================================================================
+  // 3. FUZZY MATCHING & INTENT ENGINE (Multilingual English/Hindi/Hinglish)
+  // ==========================================================================
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    const row = [];
+    for (let i = 0; i <= b.length; i++) row[i] = i;
+    for (let i = 1; i <= a.length; i++) {
+      let prev = i;
+      for (let j = 1; j <= b.length; j++) {
+        const val = a[i - 1] === b[j - 1] ? row[j - 1] : Math.min(row[j - 1], prev, row[j]) + 1;
+        row[j - 1] = prev;
+        prev = val;
+      }
+      row[b.length] = prev;
+    }
+    return row[b.length];
+  }
+
+  function matchesFuzzy(token, targetWords, maxDist = 1) {
+    if (token.length < 4) {
+      return targetWords.includes(token);
+    }
+    for (const w of targetWords) {
+      if (token === w) return true;
+      if (Math.abs(token.length - w.length) <= maxDist) {
+        if (levenshtein(token, w) <= maxDist) return true;
+      }
+    }
+    return false;
+  }
+
+  function detectQueryIntent(rawQuery) {
+    const q = rawQuery.toLowerCase().replace(/[?.,!/\\#@$%^&*()_\-+=:;"'~`]/g, ' ').trim();
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    // 1. Specific Teacher Name
+    if (tokens.some(t => matchesFuzzy(t, ['ayushi', 'aayushi']))) return { intent: 'teacher_ayushi' };
+    if (tokens.some(t => matchesFuzzy(t, ['anil', 'singh']))) return { intent: 'teacher_anil' };
+    if (tokens.some(t => matchesFuzzy(t, ['lokesh', 'gupta']))) return { intent: 'teacher_lokesh' };
+    if (tokens.some(t => matchesFuzzy(t, ['soujanya', 'mondal', 'soujnya']))) return { intent: 'teacher_soujanya' };
+    if (tokens.some(t => matchesFuzzy(t, ['shubham', 'subham']))) return { intent: 'teacher_shubham' };
+
+    // 2. Specific Batch Name
+    if (tokens.some(t => matchesFuzzy(t, ['booster', 'boster']))) return { intent: 'batch_booster' };
+    if (tokens.some(t => matchesFuzzy(t, ['ranker', 'rnker']))) return { intent: 'batch_ranker' };
+    if (tokens.some(t => matchesFuzzy(t, ['premium', 'premum']))) return { intent: 'batch_premium' };
+    if (q.includes('personal mentorship') || (tokens.includes('mentorship') && !q.includes('why'))) return { intent: 'batch_personal_mentorship' };
+    if (q.includes('one to one') || q.includes('1:1') || q.includes('1 to 1')) return { intent: 'batch_one_to_one' };
+
+    // 3. Class Specific Queries (e.g. "foundation class 9", "class 10 fees")
+    const classMatch = q.match(/\b(?:class|standard|std|grade|kaksha|कक्षा)\s*([7-9]|10|11|12|dropper)\b/i) || q.match(/\b([7-9]|10|11|12)\s*(?:th|st|nd|rd)?\s*(?:class|std|grade)?\b/i);
+    const hasFee = tokens.some(t => matchesFuzzy(t, ['fee', 'fees', 'feee', 'price', 'cost', 'charge', 'kitna', 'kitni', 'kitne', 'rupaye', 'paisa'])) || q.includes('फीस') || q.includes('दाम');
+    const hasDemo = tokens.some(t => matchesFuzzy(t, ['demo', 'trial', 'free', 'book', 'sample'])) || q.includes('डेमो') || q.includes('ट्रायल');
+    const hasAdmission = tokens.some(t => matchesFuzzy(t, ['admission', 'admissions', 'addmission', 'join', 'enrol', 'enroll', 'register', 'seat'])) || q.includes('दाखिला') || q.includes('प्रवेश');
+
+    // Lead Flow Check
+    if (hasDemo || hasAdmission) {
+      return { intent: 'lead_flow' };
+    }
+
+    // Fees Queries
+    if (hasFee) {
+      if (tokens.some(t => matchesFuzzy(t, ['jee', 'iit', 'engineering'])) || q.includes('जेईई') || q.includes('आईआईटी')) return { intent: 'jee_fees' };
+      if (tokens.some(t => matchesFuzzy(t, ['neet', 'medical', 'doctor', 'mbbs', 'biology'])) || q.includes('नीट') || q.includes('डॉक्टर')) return { intent: 'neet_fees' };
+      if (tokens.some(t => matchesFuzzy(t, ['foundation'])) || q.includes('फाउंडेशन')) return { intent: 'foundation_fees' };
+      if (classMatch && ['7', '8', '9', '10'].includes(classMatch[1])) return { intent: 'foundation_fees', cls: classMatch[1] };
+      if (classMatch && ['11', '12', 'dropper'].includes(classMatch[1])) return { intent: 'jee_or_neet_fees', cls: classMatch[1] };
+      return { intent: 'fees_general' };
+    }
+
+    // Faculty Queries
+    if (tokens.some(t => matchesFuzzy(t, ['teacher', 'teachers', 'faculty', 'facluty', 'sir', 'mam', 'madam', 'mentor', 'mentors', 'padhata', 'padhate'])) || q.includes('शिक्षक') || q.includes('अध्यापक')) {
+      return { intent: 'faculty' };
+    }
+
+    // Foundation Queries
+    if (tokens.some(t => matchesFuzzy(t, ['foundation', 'olympiad', 'boards'])) || q.includes('फाउंडेशन') || (classMatch && ['7', '8', '9', '10'].includes(classMatch[1]))) {
+      return { intent: 'foundation_info', cls: classMatch ? classMatch[1] : null };
+    }
+
+    // JEE Queries
+    if (tokens.some(t => matchesFuzzy(t, ['jee', 'iit', 'engineering', 'mains', 'advance', 'advanced'])) || q.includes('जेईई') || q.includes('आईआईटी')) {
+      return { intent: 'jee_info' };
+    }
+
+    // NEET Queries
+    if (tokens.some(t => matchesFuzzy(t, ['neet', 'medical', 'doctor', 'mbbs', 'biology', 'aiims'])) || q.includes('नीट') || q.includes('डॉक्टर')) {
+      return { intent: 'neet_info' };
+    }
+
+    // Reviews & Results
+    if (tokens.some(t => matchesFuzzy(t, ['review', 'reviews', 'result', 'results', 'feedback', 'parent', 'parents', 'student', 'students', 'testimonial'])) || q.includes('रिव्यू') || q.includes('रिजल्ट')) {
+      return { intent: 'reviews' };
+    }
+
+    // Resources / PYQ / Notes
+    if (tokens.some(t => matchesFuzzy(t, ['notes', 'pyq', 'pyqs', 'dpp', 'resource', 'resources', 'formula', 'paper', 'pdf', 'material'])) || q.includes('नोट्स')) {
+      return { intent: 'resources' };
+    }
+
+    // Contact
+    if (tokens.some(t => matchesFuzzy(t, ['contact', 'call', 'whatsapp', 'phone', 'mobile', 'address', 'location', 'office', 'timing', 'time', 'sampark'])) || q.includes('संपर्क') || q.includes('फोन')) {
+      return { intent: 'contact' };
+    }
+
+    // Why choose / Batches size
+    if (tokens.some(t => matchesFuzzy(t, ['why', 'compare'])) || q.includes('batch size') || q.includes('10 students') || q.includes('kisi batch')) {
+      return { intent: 'why_us' };
+    }
+
+    // Careers
+    if (tokens.some(t => matchesFuzzy(t, ['career', 'careers', 'job', 'jobs', 'hiring', 'vacancy', 'apply']))) {
+      return { intent: 'careers' };
+    }
+
+    // Student Portals
+    if (tokens.some(t => matchesFuzzy(t, ['login', 'classroom', 'test', 'portal', 'exam']))) {
+      return { intent: 'portals' };
+    }
+
+    return { intent: 'unknown', raw: rawQuery };
+  }
+
+  // ==========================================================================
+  // 4. VALUE-ADD PASSIVE SCROLL NUDGES (Max 20 words each)
+  // ==========================================================================
+  const PASSIVE_NUDGES = [
     {
       id: 'home-hero',
       page: '/',
       section: 'section.hero',
       target: '.hero-actions .btn-primary',
-      title: 'Hero Banner',
-      text: 'Namaste! I’m Ollie, your guide to My JEE Mentor. We offer personalized online coaching for JEE, NEET and Foundation with max 10 students per batch. Click Book Free Demo to get started.'
+      text: 'Preparing for JEE, NEET, or Foundation? Ask me anything or explore our personalized small batches below.'
     },
-    // Home Program Section Heading (Spoken once before cards start)
     {
-      id: 'home-programs-head',
+      id: 'home-programs',
       page: '/',
       section: 'section.program-section .section-head',
       target: '.mjm-card.jee .mjm-btn',
-      title: 'Choose How You Want to Learn',
-      text: 'This is Personal Mentorship Programs. Choose how you want to learn with focused support and a plan built around your goal. Explore our JEE, NEET and Foundation courses below.'
+      text: 'Strictly max 10 students per batch. Want to compare JEE, NEET and Foundation fees?'
     },
-    // Home Course Cards Group (Side-by-side group auto-hopping)
     {
       id: 'home-card-jee',
       page: '/',
-      group: 'home-courses',
       section: '.mjm-card.jee',
       target: '.mjm-card.jee .mjm-btn',
-      title: 'JEE 2026-27 Card',
-      text: formatCardSpeech(CARD_DATA[0], { textContent: 'Explore Now' })
+      text: 'Targeting IIT-JEE? Live classes, weekly test series and daily DPP tracking. Click Explore Now.'
     },
     {
       id: 'home-card-neet',
       page: '/',
-      group: 'home-courses',
       section: '.mjm-card.neet',
       target: '.mjm-card.neet .mjm-btn',
-      title: 'NEET 2026-27 Card',
-      text: formatCardSpeech(CARD_DATA[1], { textContent: 'Explore Now' })
+      text: 'Comprehensive NCERT mastery in Physics, Chemistry & Biology. Click Explore Now for full batch options.'
     },
     {
       id: 'home-card-foundation',
       page: '/',
-      group: 'home-courses',
       section: '.mjm-card.foundation',
       target: '.mjm-card.foundation .mjm-btn',
-      title: 'Foundation Card',
-      text: formatCardSpeech(CARD_DATA[2], { textContent: 'Explore Now' })
+      text: 'Classes 7 to 10 build strong Science and Math logic for boards and Olympiads. Explore details.'
     },
-
-    // Reviews Heading & Cards
     {
-      id: 'reviews-section-head',
+      id: 'home-reviews',
       page: '*',
       section: '.mjm-reviews-header',
       target: '.mjm-review-card:first-child',
-      title: 'Reviews Heading',
-      text: 'What Parents & Students Say: Small batches, personal mentors, and real attention. Read what families say before you decide.'
+      text: 'See how our small batch size and daily mentor attention helped students improve their ranks.'
     },
     {
-      id: 'home-reviews-card-1',
-      page: '*',
-      group: 'reviews-group',
-      section: '.mjm-review-card:nth-child(1)',
-      target: '.mjm-review-card:nth-child(1)',
-      title: 'Review: Dirasantham Adithya',
-      text: 'With only 10 students in a batch, mentors know exactly where students are weak and resolve doubts the same day, one-on-one.'
-    },
-    {
-      id: 'home-reviews-card-2',
-      page: '*',
-      group: 'reviews-group',
-      section: '.mjm-review-card:nth-child(2)',
-      target: '.mjm-review-card:nth-child(2)',
-      title: 'Review: K. Ramachandran',
-      text: 'Parents appreciate personal guidance, regular test series, and transparent progress updates for NEET preparation.'
-    },
-    {
-      id: 'home-reviews-card-3',
-      page: '*',
-      group: 'reviews-group',
-      section: '.mjm-review-card:nth-child(3)',
-      target: '.mjm-review-card:nth-child(3)',
-      title: 'Review: Shriya S Nair',
-      text: 'Daily DPPs build strong study habits from home, saving travel time with immediate mentor doubt support.'
-    },
-    {
-      id: 'home-reviews-card-4',
-      page: '*',
-      group: 'reviews-group',
-      section: '.mjm-review-card:nth-child(4)',
-      target: '.mjm-review-card:nth-child(4)',
-      title: 'Review: M. Sundaresan',
-      text: 'Parents of Foundation students highlight how basics are explained step by step, growing confidence in Science and Math.'
-    },
-    {
-      id: 'home-reviews-card-5',
-      page: '*',
-      group: 'reviews-group',
-      section: '.mjm-review-card:nth-child(5)',
-      target: '.mjm-review-card:nth-child(5)',
-      title: 'Review: Regati Rishikesh Reddy',
-      text: 'Regular tests show mistakes early, paired with personal study plans so students never feel lost during JEE prep.'
-    },
-    {
-      id: 'home-reviews-card-6',
-      page: '*',
-      group: 'reviews-group',
-      section: '.mjm-review-card:nth-child(6)',
-      target: '.mjm-review-card:nth-child(6)',
-      title: 'Review: V. Subramanian',
-      text: 'Patient teachers who listen closely make a real difference in small batches, ensuring every student doubt is resolved.'
-    },
-
-    // Faculty Section Heading & Individual Cards
-    {
-      id: 'faculty-section-head',
+      id: 'home-faculty',
       page: '*',
       section: '.mjm-faculty-header',
       target: '.faculty-card:first-child',
-      title: 'Faculty Section Heading',
-      text: 'Meet our dedicated faculty team. Learn from teachers who make concepts click with personalized attention in small batches of max 10 students.'
+      text: 'Meet our premier faculty from NITs and top institutes. Tap any teacher to view qualifications.'
     },
-    {
-      id: 'faculty-ayushi',
-      page: '*',
-      group: 'faculty-group',
-      section: '.faculty-card[data-faculty-id="ayushi"]',
-      target: '.faculty-card[data-faculty-id="ayushi"]',
-      title: 'Dr. Ayushi Aggarwal',
-      text: formatCardSpeech(CARD_DATA[11], { textContent: 'Book Free Demo Session' })
-    },
-    {
-      id: 'faculty-anil',
-      page: '*',
-      group: 'faculty-group',
-      section: '.faculty-card[data-faculty-id="anil"]',
-      target: '.faculty-card[data-faculty-id="anil"]',
-      title: 'Anil Kumar Singh',
-      text: formatCardSpeech(CARD_DATA[12], { textContent: 'Book Free Demo Session' })
-    },
-    {
-      id: 'faculty-lokesh',
-      page: '*',
-      group: 'faculty-group',
-      section: '.faculty-card[data-faculty-id="lokesh"]',
-      target: '.faculty-card[data-faculty-id="lokesh"]',
-      title: 'Lokesh Gupta',
-      text: formatCardSpeech(CARD_DATA[13], { textContent: 'Book Free Demo Session' })
-    },
-    {
-      id: 'faculty-soujanya',
-      page: '*',
-      group: 'faculty-group',
-      section: '.faculty-card[data-faculty-id="soujanya"]',
-      target: '.faculty-card[data-faculty-id="soujanya"]',
-      title: 'Soujanya Mondal',
-      text: formatCardSpeech(CARD_DATA[14], { textContent: 'Book Free Demo Session' })
-    },
-    {
-      id: 'faculty-shubham',
-      page: '*',
-      group: 'faculty-group',
-      section: '.faculty-card[data-faculty-id="shubham"]',
-      target: '.faculty-card[data-faculty-id="shubham"]',
-      title: 'Shubham Kumar',
-      text: formatCardSpeech(CARD_DATA[15], { textContent: 'Book Free Demo Session' })
-    },
-    {
-      id: 'faculty-cta-step',
-      page: '*',
-      section: '.mjm-faculty-section .faculty-cta-bar',
-      target: '.mjm-faculty-section .faculty-cta-bar .btn-primary, .mjm-faculty-cta a',
-      title: 'Faculty Free Demo Booking',
-      text: 'Our subject mentors teach in small batches of max 10 students for real personal attention. Click Book Free Demo Session to reserve your student’s counseling and demo class.'
-    },
-
-    // Mentorship & Journey
     {
       id: 'home-mentorship',
       page: '/',
       section: 'section.mentorship-section',
       target: '.mentorship-cta .btn',
-      title: 'Mentorship Section',
-      text: 'Every batch gets one dedicated mentor assigned from day one for weekly progress tracking, 24/7 doubt support, and custom revision plans. Click Meet Your Mentor to connect with our counseling team.'
-    },
-    {
-      id: 'home-steps',
-      page: '/',
-      section: 'section.section-soft:has(.step-grid)',
-      target: '.step-card:first-child',
-      title: 'Learning Journey',
-      text: 'Here is how your learning journey starts: first book a free demo, then take a diagnostic session, receive a personalized study plan, and begin live daily classes. Follow these steps to begin.'
+      text: 'Every batch gets one dedicated personal mentor for 24/7 doubt resolution and weekly study reviews.'
     },
     {
       id: 'home-resources',
       page: '/',
       section: 'section.shared-resources-section',
       target: '.shared-resources-section .btn-primary, .shared-resources-section .btn-outline',
-      title: 'Free Learning Resources',
-      text: 'Good learning starts before enrolment. Explore our free sample lecture videos, subject notes, and practice DPPs prepared by our faculty. Click Watch Free Classes to begin learning.'
+      text: 'Study smarter with our free formula sheets, sample video lectures, and faculty notes.'
     },
     {
-      id: 'home-final-cta',
+      id: 'home-final',
       page: '/',
       section: 'section.section-soft:last-of-type',
       target: 'section.section-soft:last-of-type .btn-primary',
-      title: 'Final Demo Call to Action',
-      text: 'Ready to give your preparation the focused attention it deserves? Book a free demo class or talk directly to our counselor today. Click Book Free Demo to reserve your seat.'
+      text: 'Experience real 1-on-1 teaching before deciding. Click Book Free Demo to reserve your session.'
     },
     {
       id: 'home-footer',
       page: '*',
       section: 'footer.site-footer',
       target: 'footer.site-footer a[href^="https://wa.me"]',
-      title: 'Site Footer',
-      text: 'This is the site footer. You can explore our JEE, NEET and Foundation programs, read student reviews, or contact our team in Navi Mumbai at +91 73042 56203. Click WhatsApp to chat directly.'
+      text: 'Have a quick question? Call +91 73042 56203 or chat with our counselor on WhatsApp.'
     },
-
-    // --- JEE PAGE (/jee.html) ---
+    // JEE page
     {
       id: 'jee-hero',
       page: '/jee.html',
       section: '.page-hero',
       target: '.page-hero .btn-primary',
-      title: 'JEE Page Hero',
-      text: 'Welcome to our JEE coaching program for Class 11, Class 12, and droppers. We offer concept-focused preparation, live teaching, and personal mentorship you can track. Click Book Free Demo to start.'
+      text: 'Concept-first JEE coaching with live teaching and tracked personal mentorship for Class 11, 12 & droppers.'
     },
     {
-      id: 'jee-batch-1',
+      id: 'jee-batches',
       page: '/jee.html',
-      group: 'jee-batches',
-      section: '.resource-grid .resource-card:nth-child(1), .program-card.program-foundation',
-      target: '.resource-grid .resource-card:nth-child(1) .program-cta, .program-card.program-foundation .program-cta',
-      title: 'JEE Foundation Batch',
-      text: formatCardSpeech(CARD_DATA[3], { textContent: 'Book Free Demo Class' })
+      section: '.resource-grid, .program-card',
+      target: '.program-cta',
+      text: 'Here are our 4 specialized JEE batches. Tap any batch or ask me for fee breakdowns.'
     },
-    {
-      id: 'jee-batch-2',
-      page: '/jee.html',
-      group: 'jee-batches',
-      section: '.resource-grid .resource-card:nth-child(2), .program-card.program-mentorship',
-      target: '.resource-grid .resource-card:nth-child(2) .program-cta, .program-card.program-mentorship .program-cta',
-      title: 'JEE Booster Batch',
-      text: formatCardSpeech(CARD_DATA[4], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'jee-batch-3',
-      page: '/jee.html',
-      group: 'jee-batches',
-      section: '.resource-grid .resource-card:nth-child(3), .program-card.program-ranker',
-      target: '.resource-grid .resource-card:nth-child(3) .program-cta, .program-card.program-ranker .program-cta',
-      title: 'JEE Ranker Batch',
-      text: formatCardSpeech(CARD_DATA[5], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'jee-batch-4',
-      page: '/jee.html',
-      group: 'jee-batches',
-      section: '.resource-grid .resource-card:nth-child(4), .program-card.program-one-to-one',
-      target: '.resource-grid .resource-card:nth-child(4) .program-cta, .program-card.program-one-to-one .program-cta',
-      title: 'JEE Premium Batch',
-      text: formatCardSpeech(CARD_DATA[6], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'jee-enquiry',
-      page: '/jee.html',
-      section: '.section-head.spaced-head',
-      target: '.section-head.spaced-head .btn-primary',
-      title: 'JEE Program Enquiry',
-      text: 'Have questions about batch schedules or JEE class options? Talk with our counselor directly. Click Call for Enquiry or WhatsApp to connect with our academic team.'
-    },
-
-    // --- NEET PAGE (/neet.html) ---
+    // NEET page
     {
       id: 'neet-hero',
       page: '/neet.html',
       section: '.page-hero',
       target: '.page-hero .btn-primary',
-      title: 'NEET Page Hero',
-      text: 'Welcome to NEET Coaching for Class 11, 12, and droppers. Master Physics, Chemistry, and Biology with structured NCERT practice and personal mentor support. Click Book Free Demo to begin.'
+      text: 'Structured Physics, Chemistry and Biology coaching with intensive NCERT practice and mock test series.'
     },
     {
-      id: 'neet-batch-1',
+      id: 'neet-batches',
       page: '/neet.html',
-      group: 'neet-batches',
-      section: '.neet-program-card.program-foundation, .resource-grid .resource-card:nth-child(1)',
-      target: '.neet-program-card.program-foundation .program-cta, .resource-grid .resource-card:nth-child(1) .program-cta',
-      title: 'NEET Foundation Batch',
-      text: formatCardSpeech(CARD_DATA[7], { textContent: 'Book Free Demo Class' })
+      section: '.resource-grid, .neet-program-card',
+      target: '.program-cta',
+      text: 'Review our NEET batch options. Need guidance choosing between 1-on-1 and small batch programs?'
     },
-    {
-      id: 'neet-batch-2',
-      page: '/neet.html',
-      group: 'neet-batches',
-      section: '.neet-program-card.program-mentorship, .resource-grid .resource-card:nth-child(2)',
-      target: '.neet-program-card.program-mentorship .program-cta, .resource-grid .resource-card:nth-child(2) .program-cta',
-      title: 'NEET Booster Batch',
-      text: formatCardSpeech(CARD_DATA[8], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'neet-batch-3',
-      page: '/neet.html',
-      group: 'neet-batches',
-      section: '.neet-program-card.program-ranker, .resource-grid .resource-card:nth-child(3)',
-      target: '.neet-program-card.program-ranker .program-cta, .resource-grid .resource-card:nth-child(3) .program-cta',
-      title: 'NEET Ranker Batch',
-      text: formatCardSpeech(CARD_DATA[10], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'neet-batch-4',
-      page: '/neet.html',
-      group: 'neet-batches',
-      section: '.neet-program-card.program-one-to-one, .resource-grid .resource-card:nth-child(4)',
-      target: '.neet-program-card.program-one-to-one .program-cta, .resource-grid .resource-card:nth-child(4) .program-cta',
-      title: 'NEET Premium Batch',
-      text: formatCardSpeech(CARD_DATA[11], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'neet-enquiry',
-      page: '/neet.html',
-      section: '.section-head.spaced-head',
-      target: '.section-head.spaced-head .btn-primary',
-      title: 'NEET Program Enquiry',
-      text: 'Need help choosing the right NEET batch? Speak with our academic counselor on WhatsApp or phone. Click Call for Enquiry for instant support.'
-    },
-
-    // --- FOUNDATION PAGE (/foundation.html) ---
+    // Foundation page
     {
       id: 'foundation-hero',
       page: '/foundation.html',
       section: 'section.foundation-hero',
       target: '.foundation-btn-primary',
-      title: 'Foundation Hero',
-      text: 'Welcome to the Foundation Program for Classes 7 to 10. We build strong basics in Science and Mathematics to prepare students early for JEE, NEET, and Olympiads. Click Book Free Demo Class to get started.'
+      text: 'Strong foundations create more choices. Classes 7–10 in Science, Math, Social Science & English.'
     },
     {
-      id: 'foundation-classes-head',
+      id: 'foundation-classes',
       page: '/foundation.html',
-      section: '.foundation-classes .foundation-heading',
-      target: '.foundation-card-7',
-      title: 'Choose Your Class Header',
-      text: 'Choose your class for personalized foundation training. Max 10 students per batch with concept-first mentoring in Science and Maths.'
-    },
-    {
-      id: 'foundation-card-7',
-      page: '/foundation.html',
-      group: 'foundation-classes',
-      section: '.foundation-card-7',
-      target: '.foundation-card-7 .foundation-card-cta',
-      title: 'Class 7 Foundation',
-      text: formatCardSpeech(CARD_DATA[13], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'foundation-card-8',
-      page: '/foundation.html',
-      group: 'foundation-classes',
-      section: '.foundation-card-8',
-      target: '.foundation-card-8 .foundation-card-cta',
-      title: 'Class 8 Foundation',
-      text: formatCardSpeech(CARD_DATA[14], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'foundation-card-9',
-      page: '/foundation.html',
-      group: 'foundation-classes',
-      section: '.foundation-card-9',
-      target: '.foundation-card-9 .foundation-card-cta',
-      title: 'Class 9 Foundation',
-      text: formatCardSpeech(CARD_DATA[15], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'foundation-card-10',
-      page: '/foundation.html',
-      group: 'foundation-classes',
-      section: '.foundation-card-10',
-      target: '.foundation-card-10 .foundation-card-cta',
-      title: 'Class 10 Foundation',
-      text: formatCardSpeech(CARD_DATA[16], { textContent: 'Book Free Demo Class' })
-    },
-    {
-      id: 'foundation-why',
-      page: '/foundation.html',
-      section: 'section.foundation-why',
-      target: '.foundation-why-grid article:first-child',
-      title: 'Why Foundation Pillars',
-      text: 'Discover why parents choose My JEE Mentor: max 10 students per batch, concept-first teaching, personal mentors, and regular progress updates. Explore our pillars above.'
-    },
-    {
-      id: 'foundation-final-cta',
-      page: '/foundation.html',
-      section: 'section.foundation-final',
-      target: '.foundation-final .foundation-btn-primary',
-      title: 'Foundation Final Demo',
-      text: 'Give your child a strong head start in middle school. Book a free demo class or talk to our counselor today. Click Book Free Demo Class to proceed.'
-    },
-
-    // --- JEE BOOSTER (/courses/jee-booster.html) ---
-    {
-      id: 'booster-hero',
-      page: '/courses/jee-booster.html',
-      section: '.page-hero',
-      target: '.page-hero .btn-primary',
-      title: 'JEE Booster Hero',
-      text: 'The JEE Booster Program is tailored to strengthen concepts and fix weak areas with focused mentorship, daily practice, and live doubt resolution. Click Book Free Demo to enroll.'
-    },
-    {
-      id: 'booster-split-info',
-      page: '/courses/jee-booster.html',
-      section: '.split > div:first-child',
-      target: '.split .check-list',
-      title: 'Program Checklist & FAQs',
-      text: formatCardSpeech(CARD_DATA[CARD_DATA.length - 1], { textContent: 'Book Free Demo' })
-    },
-    {
-      id: 'booster-split-form',
-      page: '/courses/jee-booster.html',
-      section: '.split form.enquiry-form',
-      target: '.split form.enquiry-form button[type="submit"]',
-      title: 'JEE Booster Enquiry',
-      text: 'Fill out this brief enquiry form with your name, phone number, and current preparation level to receive batch details and schedule. Click Submit Enquiry to send.'
-    },
-
-    // --- REVIEWS PAGES (/reviews.html, /studentreview.html) ---
-    {
-      id: 'reviews-hero',
-      page: '/reviews.html',
-      section: '.page-hero',
-      target: '.page-hero h1',
-      title: 'Reviews Hero',
-      text: 'Read genuine feedback and experiences from our students and parents across JEE, NEET, and Foundation programs. Click any review card to read details.'
-    },
-    {
-      id: 'studentreview-hero',
-      page: '/studentreview.html',
-      section: '.page-hero',
-      target: '.page-hero h1',
-      title: 'Student Review Hero',
-      text: 'Read genuine feedback and experiences from our students and parents across JEE, NEET, and Foundation programs. Click any review card to read details.'
-    },
-    {
-      id: 'review-form-step',
-      page: '*',
-      section: '.student-review-form-card',
-      target: '#student-review-form button[type="submit"]',
-      title: 'Submit Review Form',
-      text: 'Are you a current student or parent? Share your experience with My JEE Mentor. Enter your name, rating, and feedback, then click Submit Review.'
-    },
-
-    // --- FREE RESOURCES (/freeresource.html, /resources.html) ---
-    {
-      id: 'freeresource-hero',
-      page: '*',
-      section: '.page-hero:has(.eyebrow)',
-      target: '.page-hero .btn-primary',
-      title: 'Resource Library Hero',
-      text: 'Explore our free learning library featuring notes, presentations, formula sheets, and study materials shared directly by our faculty. Click Book Free Demo or browse below.'
-    },
-    {
-      id: 'freeresource-filter',
-      page: '/freeresource.html',
-      section: '.resource-library-tools, .resource-filter-bar',
-      target: '[data-resource-search]',
-      title: 'Resource Search Bar',
-      text: 'Use this search bar and category filter to quickly find study notes and practice sheets for JEE, NEET, or Foundation. Type a subject to filter.'
-    },
-    {
-      id: 'freeresource-grid',
-      page: '/freeresource.html',
-      section: '.shared-resource-track',
-      target: '.shared-resource-card:first-child',
-      title: 'Public Resources Grid',
-      text: 'Browse our curated study material. Click any card to open notes and formula summaries directly in your browser.'
-    },
-
-    // --- WHY CHOOSE US (/why-my-jee-mentor.html) ---
-    {
-      id: 'why-hero',
-      page: '/why-my-jee-mentor.html',
-      section: '.page-hero',
-      target: '.page-hero .btn-primary',
-      title: 'Why Us Hero',
-      text: 'Learn why our model works: small batches of max 10 students, interactive live classes, DPPs and PYQs, progress tracking, and affordable fees. Click Book Free Demo to start.'
-    },
-
-    // --- RESULTS (/results.html) ---
-    {
-      id: 'results-hero',
-      page: '/results.html',
-      section: '.page-hero',
-      target: '.page-hero .btn-primary',
-      title: 'Results Hero',
-      text: 'Every result starts with steady progress. Verified student progress and success stories will be published here with parent permission. Click Book Free Demo to consult our mentors.'
-    },
-
-    // --- CONTACT US (/contact.html) ---
-    {
-      id: 'contact-hero',
-      page: '/contact.html',
-      section: '.page-hero',
-      target: '.site-header .talk',
-      title: 'Contact Hero',
-      text: 'Have questions about our batches, fees, or schedules? Get in touch with our team in Navi Mumbai. Click Call for Enquiry or message us on WhatsApp.'
-    },
-    {
-      id: 'contact-form-step',
-      page: '/contact.html',
-      section: '.split form.enquiry-form',
-      target: '.split form.enquiry-form button[type="submit"]',
-      title: 'Contact Form',
-      text: 'Send our counseling team a direct message with your student grade and questions. Click Send Message and our team will get back to you promptly.'
-    },
-
-    // --- CAREERS (/career.html) ---
-    {
-      id: 'career-form-step',
-      page: '/career.html',
-      section: '[data-career-form]',
-      target: '[data-career-form] button[type="submit"]',
-      title: 'Careers Application',
-      text: 'Interested in teaching with My JEE Mentor? Explore our faculty opportunities. Enter your details, subject expertise, and resume link, then click Submit Application.'
+      section: '.foundation-classes, .foundation-card-grid',
+      target: '.foundation-card-cta',
+      text: 'Max 10 students per batch with CBSE & ICSE board alignment and daily practice sheets.'
     }
   ];
 
   // ==========================================================================
-  // OLLIE GUIDE STATE & CONTROLLER
+  // 5. OLLIE CONTROLLER & DOM CREATION
   // ==========================================================================
   let owlEl = null;
   let bubEl = null;
   let txtEl = null;
-  let actBtn = null;
-  let hideBtn = null;
+  let panelEl = null;
+  let collapsedBarEl = null;
+  let messagesListEl = null;
+  let chipsBarEl = null;
+  let inputFieldEl = null;
+  let sendButtonEl = null;
 
   let activeSteps = [];
   let currentStepIdx = -1;
   let isTour = false;
   let isHidden = false;
-  let tourTimer = null;
+  let isPanelOpen = false;
+  let isTyping = false;
   let flyTimer = null;
+  let tourTimer = null;
   let highlightedEl = null;
   let isTick = false;
   let modalActive = false;
-
-  // Group Hopping & Interaction State
-  let activeGroupId = null;
-  let groupHopTimer = null;
-  let groupHopPausedUntil = 0;
-  let hoverDebounceTimer = null;
-  let isCurrentlyHoveringCard = false;
+  let consecutiveMisses = 0;
+  let answeredCount = 0;
 
   try {
     isHidden = sessionStorage.getItem('ollie-hidden') === 'true';
-  } catch (e) {
-    isHidden = false;
-  }
+    isPanelOpen = sessionStorage.getItem('ollie-panel-open') === 'true';
+  } catch (e) {}
 
-  // 2. INLINE OWL SVG & BUBBLE CREATION
-  function createOllieDOM() {
+  function createOllieUI() {
     if (document.getElementById('ollie-owl')) return;
 
-    // Speech bubble container
-    const bub = document.createElement('aside');
-    bub.id = 'ollie-bub';
-    bub.className = 'ollie-bub';
-    bub.setAttribute('role', 'region');
-    bub.setAttribute('aria-label', 'Guide message from Ollie the Owl');
-    bub.hidden = true;
-    bub.innerHTML = `
-      <p id="ollie-txt" class="ollie-txt" aria-live="polite"></p>
-      <div class="ollie-bc">
-        <button type="button" class="ollie-btn" id="ollie-act">Take the tour</button>
-        <button type="button" class="ollie-lnk" id="ollie-hide">Hide guide</button>
-      </div>
-    `;
-
-    // Owl button container
+    // 1. Owl Floating Button
     const owl = document.createElement('button');
     owl.id = 'ollie-owl';
     owl.className = 'ollie-owl';
     owl.type = 'button';
-    owl.setAttribute('aria-label', 'Ollie, your website guide');
+    owl.setAttribute('aria-label', 'Ollie, your website guide and academic advisor');
     owl.innerHTML = `
       <svg viewBox="0 0 100 110" role="img" aria-hidden="true">
         <!-- Wings -->
@@ -982,72 +479,991 @@
       </svg>
     `;
 
+    // 2. Nudge Speech Bubble
+    const bub = document.createElement('aside');
+    bub.id = 'ollie-bub';
+    bub.className = 'ollie-bub';
+    bub.setAttribute('role', 'region');
+    bub.setAttribute('aria-label', 'Guide nudge from Ollie');
+    bub.hidden = true;
+    bub.innerHTML = `
+      <div id="ollie-txt" class="ollie-txt" aria-live="polite"></div>
+      <div class="ollie-bc">
+        <button type="button" class="ollie-btn" id="ollie-act">Ask Ollie</button>
+        <button type="button" class="ollie-lnk" id="ollie-hide">Hide</button>
+      </div>
+    `;
+
+    // 3. Collapsed Bar Pill
+    const bar = document.createElement('button');
+    bar.id = 'ollie-collapsed-bar';
+    bar.type = 'button';
+    bar.setAttribute('aria-label', 'Open Ask Ollie Panel');
+    bar.hidden = true;
+    bar.innerHTML = `<span>🦉</span> <span>Ask Ollie</span>`;
+
+    // 4. Interactive Ask Ollie Panel
+    const panel = document.createElement('section');
+    panel.id = 'ollie-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Ask Ollie Panel');
+    panel.hidden = true;
+    panel.innerHTML = `
+      <div class="ollie-panel-head">
+        <div class="ollie-panel-title-wrap">
+          <span style="font-size:1.15rem;">🦉</span>
+          <h3 class="ollie-panel-title">Ollie <span class="ollie-panel-badge">Guide</span></h3>
+        </div>
+        <div class="ollie-panel-controls">
+          <button type="button" class="ollie-icon-btn" id="ollie-panel-min" title="Minimize panel" aria-label="Minimize panel">_</button>
+          <button type="button" class="ollie-icon-btn" id="ollie-panel-close" title="Close guide" aria-label="Close guide">✕</button>
+        </div>
+      </div>
+      <div class="ollie-messages-wrap" id="ollie-messages" role="log" aria-live="polite"></div>
+      <div class="ollie-chips-bar" id="ollie-chips" role="toolbar" aria-label="Quick reply options"></div>
+      <form class="ollie-input-bar" id="ollie-input-form">
+        <input type="text" class="ollie-text-input" id="ollie-input" placeholder="Ask Ollie anything (e.g. jee fee, teachers, demo)..." autocomplete="off" maxlength="250">
+        <button type="submit" class="ollie-send-button" id="ollie-send" title="Send question" aria-label="Send question">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </form>
+    `;
+
     document.body.appendChild(bub);
     document.body.appendChild(owl);
+    document.body.appendChild(bar);
+    document.body.appendChild(panel);
 
     owlEl = owl;
     bubEl = bub;
     txtEl = document.getElementById('ollie-txt');
-    actBtn = document.getElementById('ollie-act');
-    hideBtn = document.getElementById('ollie-hide');
+    panelEl = panel;
+    collapsedBarEl = bar;
+    messagesListEl = document.getElementById('ollie-messages');
+    chipsBarEl = document.getElementById('ollie-chips');
+    inputFieldEl = document.getElementById('ollie-input');
+    sendButtonEl = document.getElementById('ollie-send');
 
-    actBtn.onclick = function (e) {
+    // Button Listeners
+    document.getElementById('ollie-act').onclick = function (e) {
       e.preventDefault();
-      if (isTour) {
-        stopTour();
-      } else {
-        startTour();
-      }
+      openAskPanel();
     };
 
-    hideBtn.onclick = function (e) {
+    document.getElementById('ollie-hide').onclick = function (e) {
       e.preventDefault();
       hideGuide();
+    };
+
+    document.getElementById('ollie-panel-min').onclick = function () {
+      collapseAskPanel();
+    };
+
+    document.getElementById('ollie-panel-close').onclick = function () {
+      collapseAskPanel();
+    };
+
+    collapsedBarEl.onclick = function () {
+      openAskPanel();
     };
 
     owlEl.onclick = function () {
       if (isHidden) {
         showGuide();
       } else {
-        jumpReaction();
+        openAskPanel();
       }
     };
 
-    // Fly in from top-right corner on initial load
+    // Pause scroll narration while typing
+    inputFieldEl.addEventListener('focus', function () {
+      isTyping = true;
+    });
+    inputFieldEl.addEventListener('blur', function () {
+      isTyping = false;
+    });
+
+    document.getElementById('ollie-input-form').onsubmit = function (e) {
+      e.preventDefault();
+      const query = inputFieldEl.value.trim();
+      if (!query) return;
+      inputFieldEl.value = '';
+      isTyping = false;
+      handleUserQuery(query);
+    };
+
+    // Initial entrance position
     owlEl.style.transition = 'none';
     owlEl.style.transform = 'translate(' + (window.innerWidth + 40) + 'px, -120px)';
     void owlEl.offsetWidth;
     owlEl.style.transition = '';
 
     if (!isHidden) {
-      bubEl.hidden = false;
+      if (isPanelOpen) {
+        openAskPanel();
+      } else {
+        collapsedBarEl.hidden = false;
+        bubEl.hidden = false;
+      }
     }
   }
 
-  // 3. PRECISE 3-TIER PLACEMENT ENGINE (Zero Overlap with Active Block)
-  function calculatePlacement(activeBlock, targetEl) {
+  // ==========================================================================
+  // 6. PANEL INTERACTION & MESSAGING SYSTEM
+  // ==========================================================================
+  function openAskPanel() {
+    isPanelOpen = true;
+    try {
+      sessionStorage.setItem('ollie_panel_open', 'true');
+    } catch (e) {}
+
+    panelEl.hidden = false;
+    panelEl.classList.remove('ollie-minimized');
+    collapsedBarEl.hidden = true;
+    bubEl.hidden = true;
+
+    // Perch owl on panel
+    dockOwlOnPanel();
+
+    // Trigger onboarding greeting once per session
+    checkFirstVisitGreeting();
+
+    requestAnimationFrame(() => {
+      inputFieldEl.focus({ preventScroll: true });
+    });
+  }
+
+  function collapseAskPanel() {
+    isPanelOpen = false;
+    try {
+      sessionStorage.setItem('ollie_panel_open', 'false');
+    } catch (e) {}
+
+    panelEl.classList.add('ollie-minimized');
+    setTimeout(() => {
+      if (!isPanelOpen) panelEl.hidden = true;
+    }, 300);
+
+    collapsedBarEl.hidden = false;
+    if (!isHidden) {
+      bubEl.hidden = false;
+      placeOllieAndBubble();
+    }
+  }
+
+  function dockOwlOnPanel() {
+    if (!owlEl || !panelEl) return;
+    const pRect = panelEl.getBoundingClientRect();
+    const targetX = Math.round(pRect.left - (isDesktopDevice() ? 32 : 16));
+    const targetY = Math.round(pRect.top - (isDesktopDevice() ? 48 : 36));
+
+    owlEl.classList.add('ollie-fly');
+    clearTimeout(flyTimer);
+    flyTimer = setTimeout(() => owlEl.classList.remove('ollie-fly'), 800);
+
+    owlEl.style.transform = `translate(${targetX}px, ${targetY}px)`;
+  }
+
+  function appendBotMessage(htmlContent, quickChips = []) {
+    if (!messagesListEl) return;
+    const msgEl = document.createElement('div');
+    msgEl.className = 'ollie-msg ollie-bot';
+    msgEl.innerHTML = htmlContent;
+    messagesListEl.appendChild(msgEl);
+    messagesListEl.scrollTop = messagesListEl.scrollHeight;
+
+    renderQuickChips(quickChips);
+  }
+
+  function appendUserMessage(text) {
+    if (!messagesListEl) return;
+    const msgEl = document.createElement('div');
+    msgEl.className = 'ollie-msg ollie-user';
+    msgEl.textContent = text;
+    messagesListEl.appendChild(msgEl);
+    messagesListEl.scrollTop = messagesListEl.scrollHeight;
+  }
+
+  function renderQuickChips(chips = []) {
+    if (!chipsBarEl) return;
+    chipsBarEl.innerHTML = '';
+    if (!chips || chips.length === 0) {
+      chipsBarEl.style.display = 'none';
+      return;
+    }
+    chipsBarEl.style.display = 'flex';
+    chips.forEach(chip => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ollie-chip-btn';
+      btn.textContent = chip.label || chip;
+      btn.onclick = function () {
+        if (typeof chip.action === 'function') {
+          chip.action();
+        } else {
+          handleUserQuery(chip.query || chip.label || chip);
+        }
+      };
+      chipsBarEl.appendChild(btn);
+    });
+  }
+
+  // First Visit Onboarding
+  function checkFirstVisitGreeting() {
+    let greeted = false;
+    try {
+      greeted = sessionStorage.getItem('ollie_greeted') === 'true';
+    } catch (e) {}
+
+    if (!greeted) {
+      try {
+        sessionStorage.setItem('ollie_greeted', 'true');
+      } catch (e) {}
+
+      appendBotMessage(
+        "<strong>Namaste!</strong> I'm Ollie, your academic guide. What are you preparing for?",
+        [
+          {
+            label: 'JEE',
+            action: () => {
+              appendUserMessage('JEE');
+              try { sessionStorage.setItem('ollie_exam', 'JEE'); } catch (e) {}
+              appendBotMessage('Great choice! Which class are you in right now?', [
+                { label: 'Class 11', action: () => pickClass('11') },
+                { label: 'Class 12', action: () => pickClass('12') },
+                { label: 'Dropper', action: () => pickClass('Dropper') }
+              ]);
+            }
+          },
+          {
+            label: 'NEET',
+            action: () => {
+              appendUserMessage('NEET');
+              try { sessionStorage.setItem('ollie_exam', 'NEET'); } catch (e) {}
+              appendBotMessage('Excellent! Which class are you in right now?', [
+                { label: 'Class 11', action: () => pickClass('11') },
+                { label: 'Class 12', action: () => pickClass('12') },
+                { label: 'Dropper', action: () => pickClass('Dropper') }
+              ]);
+            }
+          },
+          {
+            label: 'Foundation (Class 7-10)',
+            action: () => {
+              appendUserMessage('Foundation (Class 7-10)');
+              try { sessionStorage.setItem('ollie_exam', 'Foundation'); } catch (e) {}
+              appendBotMessage('Awesome! Which class are you studying in?', [
+                { label: 'Class 7', action: () => pickClass('7') },
+                { label: 'Class 8', action: () => pickClass('8') },
+                { label: 'Class 9', action: () => pickClass('9') },
+                { label: 'Class 10', action: () => pickClass('10') }
+              ]);
+            }
+          },
+          {
+            label: 'Just looking',
+            action: () => {
+              appendUserMessage('Just looking');
+              appendBotMessage('Take your time! Ask me anytime about fees, batches, or teachers, or take a quick tour.', [
+                { label: 'Show me around', action: () => startPersonalizedTour() },
+                { label: 'JEE Courses', action: () => handleUserQuery('jee') },
+                { label: 'NEET Courses', action: () => handleUserQuery('neet') },
+                { label: 'Talk to Counselor', action: () => handleUserQuery('contact') }
+              ]);
+            }
+          }
+        ]
+      );
+    }
+  }
+
+  function pickClass(cls) {
+    appendUserMessage(`Class ${cls}`);
+    try { sessionStorage.setItem('ollie_class', cls); } catch (e) {}
+    const exam = sessionStorage.getItem('ollie_exam') || 'Course';
+    appendBotMessage(
+      `Understood! For <strong>${exam} (Class ${cls})</strong>, we provide strictly max 10 students per batch with personal mentorship. How can I help you next?`,
+      [
+        { label: 'Show me around', action: () => startPersonalizedTour() },
+        { label: 'View Batches & Fees', action: () => handleUserQuery(`${exam} fee`) },
+        { label: 'Meet Faculty', action: () => handleUserQuery('teachers') },
+        { label: 'Book Free Demo', action: () => startLeadFlow() }
+      ]
+    );
+  }
+
+  // ==========================================================================
+  // 7. QUERY PROCESSOR & ACTIONS (Understands typed queries)
+  // ==========================================================================
+  function handleUserQuery(query) {
+    if (!query) return;
+    appendUserMessage(query);
+
+    const { intent, cls } = detectQueryIntent(query);
+    if (isDebug) {
+      console.log(`🦉 [Ollie Intent Matcher]: Query "${query}" matched intent "${intent}"`);
+    }
+
+    answeredCount++;
+
+    switch (intent) {
+      case 'jee_fees':
+      case 'jee_info':
+        showExamBatchesAndFees('JEE');
+        break;
+
+      case 'neet_fees':
+      case 'neet_info':
+        showExamBatchesAndFees('NEET');
+        break;
+
+      case 'foundation_fees':
+      case 'foundation_info':
+        showFoundationInfo(cls);
+        break;
+
+      case 'fees_general': {
+        const curExam = sessionStorage.getItem('ollie_exam');
+        if (location.pathname.includes('jee') || curExam === 'JEE') {
+          showExamBatchesAndFees('JEE');
+        } else if (location.pathname.includes('neet') || curExam === 'NEET') {
+          showExamBatchesAndFees('NEET');
+        } else if (location.pathname.includes('foundation') || curExam === 'Foundation') {
+          showFoundationInfo(cls);
+        } else {
+          appendBotMessage('Which course fees would you like to see?', [
+            { label: 'JEE Fees', action: () => showExamBatchesAndFees('JEE') },
+            { label: 'NEET Fees', action: () => showExamBatchesAndFees('NEET') },
+            { label: 'Foundation Fees', action: () => showFoundationInfo() }
+          ]);
+        }
+        break;
+      }
+
+      case 'batch_booster':
+      case 'batch_ranker':
+      case 'batch_premium':
+      case 'batch_personal_mentorship':
+      case 'batch_one_to_one':
+        showSpecificBatch(intent);
+        break;
+
+      case 'faculty':
+      case 'teacher_ayushi':
+      case 'teacher_anil':
+      case 'teacher_lokesh':
+      case 'teacher_soujanya':
+      case 'teacher_shubham':
+        showFacultyInfo(intent);
+        break;
+
+      case 'lead_flow':
+        startLeadFlow();
+        break;
+
+      case 'reviews':
+        showReviews();
+        break;
+
+      case 'resources':
+        showResources();
+        break;
+
+      case 'contact':
+        showContact();
+        break;
+
+      case 'why_us':
+        showWhyUs();
+        break;
+
+      case 'careers':
+        showCareers();
+        break;
+
+      case 'portals':
+        showPortals();
+        break;
+
+      default: {
+        consecutiveMisses++;
+        triggerConfusedReaction();
+
+        if (consecutiveMisses >= 2) {
+          appendBotMessage(
+            `I'm still learning! Would you like to speak directly with our academic team in Navi Mumbai?`,
+            [
+              { label: '📞 Call Counselor', action: () => location.href = 'tel:+917304256203' },
+              { label: '💬 WhatsApp Us', action: () => window.open(`https://wa.me/${WA_NUMBER}`, '_blank') },
+              { label: 'Book Free Demo', action: () => startLeadFlow() }
+            ]
+          );
+        } else {
+          appendBotMessage(
+            `Hmm, I didn’t quite get that. Try asking one of these:`,
+            [
+              { label: 'JEE Batches & Fees', action: () => showExamBatchesAndFees('JEE') },
+              { label: 'NEET Batches & Fees', action: () => showExamBatchesAndFees('NEET') },
+              { label: 'Foundation Classes', action: () => showFoundationInfo() },
+              { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') },
+              { label: 'Book Free Demo', action: () => startLeadFlow() }
+            ]
+          );
+        }
+        break;
+      }
+    }
+
+    // Natural lead nudge after 2 helpful answers (offered once)
+    checkNaturalLeadOffer();
+  }
+
+  function triggerConfusedReaction() {
+    if (!owlEl) return;
+    owlEl.classList.remove('ollie-confused');
+    void owlEl.offsetWidth;
+    owlEl.classList.add('ollie-confused');
+    setTimeout(() => owlEl.classList.remove('ollie-confused'), 1000);
+  }
+
+  function checkNaturalLeadOffer() {
+    let offered = false;
+    try { offered = sessionStorage.getItem('ollie_demo_offered') === 'true'; } catch (e) {}
+    if (!offered && answeredCount >= 2) {
+      try { sessionStorage.setItem('ollie_demo_offered', 'true'); } catch (e) {}
+      setTimeout(() => {
+        appendBotMessage(
+          '💡 <em>Tip: You can experience our teaching first-hand with a 1-on-1 trial class.</em>',
+          [
+            { label: 'Book Free Demo Session', action: () => startLeadFlow() },
+            { label: 'Not now', action: () => {} }
+          ]
+        );
+      }, 1500);
+    }
+  }
+
+  // Cross-Page Navigation Helper
+  function navigateWithPendingAction(targetPath, actionData) {
+    try {
+      sessionStorage.setItem('ollie_pending_action', JSON.stringify({
+        ...actionData,
+        timestamp: Date.now()
+      }));
+    } catch (e) {}
+    location.href = targetPath;
+  }
+
+  // Exam Batches & Fees
+  function showExamBatchesAndFees(exam) {
+    const isJee = exam.toUpperCase() === 'JEE';
+    const targetUrl = isJee ? '/jee.html' : '/neet.html';
+
+    if (!location.pathname.includes(isJee ? 'jee' : 'neet')) {
+      appendBotMessage(`Taking you to our <strong>${exam} Programs</strong> page now...`);
+      navigateWithPendingAction(targetUrl, { intent: isJee ? 'jee_fees' : 'neet_fees', exam });
+      return;
+    }
+
+    const liveBatches = getLiveBatches(exam);
+    if (liveBatches.length > 0) {
+      let html = `<strong>${exam} Batches & Live Fees:</strong><div class="ollie-batch-list">`;
+      liveBatches.forEach(b => {
+        const feeLine = b.fee ? `<span class="ollie-batch-fee-badge">${b.fee}</span>` : '';
+        const descLine = b.details.slice(0, 2).join(' • ');
+        html += `
+          <div class="ollie-batch-item">
+            <div class="ollie-batch-name-row">
+              <span class="ollie-batch-name">${b.name}</span>
+              ${feeLine}
+            </div>
+            ${descLine ? `<span class="ollie-batch-desc">${descLine}</span>` : ''}
+          </div>
+        `;
+      });
+      html += `</div>`;
+      appendBotMessage(html, [
+        { label: 'Book Free Demo', action: () => startLeadFlow() },
+        { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') },
+        { label: 'Talk to Counselor', action: () => showContact() }
+      ]);
+
+      // Scroll to batches section & pulse target
+      const targetSec = document.querySelector('.resource-grid, .program-card');
+      if (targetSec) {
+        targetSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const ctaBtn = targetSec.querySelector('.program-cta, .btn-primary');
+        if (ctaBtn) pulseElement(ctaBtn);
+      }
+    } else {
+      appendBotMessage(`Fee details and batch schedules are confirmed with our counseling team.`, [
+        { label: 'Talk to Counselor', action: () => showContact() },
+        { label: 'Book Free Demo', action: () => startLeadFlow() }
+      ]);
+    }
+  }
+
+  // Foundation Classes
+  function showFoundationInfo(specificClass = null) {
+    if (!location.pathname.includes('foundation')) {
+      appendBotMessage(`Taking you to our <strong>Foundation (Classes 7–10)</strong> page...`);
+      navigateWithPendingAction('/foundation.html', { intent: 'foundation_info', cls: specificClass });
+      return;
+    }
+
+    const liveBatches = getLiveBatches('Foundation');
+    let html = `<strong>Foundation Courses (Classes 7–10):</strong><div class="ollie-batch-list">`;
+    liveBatches.forEach(b => {
+      const feeLine = b.fee ? `<span class="ollie-batch-fee-badge">${b.fee}</span>` : '';
+      const descLine = b.details.slice(0, 2).join(' • ');
+      html += `
+        <div class="ollie-batch-item">
+          <div class="ollie-batch-name-row">
+            <span class="ollie-batch-name">${b.name}</span>
+            ${feeLine}
+          </div>
+          ${descLine ? `<span class="ollie-batch-desc">${descLine}</span>` : ''}
+        </div>
+      `;
+    });
+    html += `</div>`;
+    appendBotMessage(html, [
+      { label: 'Book Free Demo', action: () => startLeadFlow() },
+      { label: 'Meet Foundation Faculty', action: () => showFacultyInfo('faculty') },
+      { label: 'Why Foundation?', action: () => showWhyUs() }
+    ]);
+
+    const targetEl = specificClass
+      ? document.querySelector(`.foundation-card-${specificClass}`)
+      : document.querySelector('.foundation-card-grid, .foundation-card');
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const cta = targetEl.querySelector('.foundation-card-cta, .btn-primary');
+      if (cta) pulseElement(cta);
+    }
+  }
+
+  // Specific Batch Details
+  function showSpecificBatch(intent) {
+    const slugMap = {
+      batch_booster: { name: 'Booster Batch', selector: '.program-mentorship, .program-booster' },
+      batch_ranker: { name: 'Ranker Batch', selector: '.program-ranker' },
+      batch_premium: { name: 'Premium Batch', selector: '.program-one-to-one, .program-premium' },
+      batch_personal_mentorship: { name: 'Personal Mentorship Batch', selector: '.program-mentorship' },
+      batch_one_to_one: { name: 'One to One Program', selector: '.program-one-to-one' }
+    };
+    const info = slugMap[intent];
+    if (!info) return;
+
+    const el = document.querySelector(info.selector);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const feeMatch = el.textContent.match(/₹\s*[\d,]+(?:\s*\/\s*(?:month|mo))?/i);
+      const fee = feeMatch ? feeMatch[0] : 'Talk to counselor';
+      appendBotMessage(`Here is the <strong>${info.name}</strong> (Fee: ${fee}). We offer personal 1:1 guidance in small batches of max 10.`, [
+        { label: 'Book Demo for this Batch', action: () => startLeadFlow() },
+        { label: 'View All Batches', action: () => showExamBatchesAndFees('JEE') }
+      ]);
+      const cta = el.querySelector('.program-cta, .btn');
+      if (cta) pulseElement(cta);
+    } else {
+      appendBotMessage(`Taking you to our courses to view the <strong>${info.name}</strong>...`);
+      navigateWithPendingAction('/jee.html', { intent });
+    }
+  }
+
+  // Faculty Section
+  function showFacultyInfo(intent) {
+    // Current page faculty section
+    const facultySection = document.querySelector('.mjm-faculty-section, .mjm-faculty-header, #foundation-faculty-mount');
+    const liveFaculty = getLiveFaculty();
+
+    if (liveFaculty.length > 0 && facultySection) {
+      facultySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Target specific teacher if requested
+      const teacherMap = {
+        teacher_ayushi: 'ayushi',
+        teacher_anil: 'anil',
+        teacher_lokesh: 'lokesh',
+        teacher_soujanya: 'soujanya',
+        teacher_shubham: 'shubham'
+      };
+      const tKey = teacherMap[intent];
+      if (tKey) {
+        const card = document.querySelector(`.faculty-card[data-faculty-id="${tKey}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          pulseElement(card);
+        }
+      }
+
+      let html = `<strong>Meet Our Faculty Mentors:</strong><div class="ollie-batch-list">`;
+      liveFaculty.forEach(f => {
+        html += `
+          <div class="ollie-batch-item">
+            <div class="ollie-batch-name-row">
+              <span class="ollie-batch-name">${f.name}</span>
+              <span class="ollie-batch-fee-badge" style="background:rgba(20,33,61,0.08);color:var(--ollie-ink);">${f.tag || 'Mentor'}</span>
+            </div>
+            ${f.degree ? `<span class="ollie-batch-desc">${f.degree}</span>` : ''}
+          </div>
+        `;
+      });
+      html += `</div>`;
+      appendBotMessage(html, [
+        { label: 'Book Demo with Faculty', action: () => startLeadFlow() },
+        { label: 'View Course Batches', action: () => showExamBatchesAndFees('JEE') }
+      ]);
+    } else {
+      appendBotMessage('Taking you to our full Faculty page...', []);
+      navigateWithPendingAction('/faculty.html', { intent: 'faculty' });
+    }
+  }
+
+  // Reviews & Feedback
+  function showReviews() {
+    const revSec = document.querySelector('.mjm-reviews-section, .mjm-reviews-header');
+    if (revSec) {
+      revSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      appendBotMessage('Here is what parents & students say about our small batches and daily mentor guidance:', [
+        { label: 'Book Free Demo', action: () => startLeadFlow() },
+        { label: 'Check Batches & Fees', action: () => showExamBatchesAndFees('JEE') }
+      ]);
+    } else {
+      appendBotMessage('Opening Student Reviews...', []);
+      navigateWithPendingAction('/reviews.html', { intent: 'reviews' });
+    }
+  }
+
+  // Free Study Resources
+  function showResources() {
+    appendBotMessage('Opening our Free Study Resources library (PDF notes, formula sheets & DPPs)...', []);
+    navigateWithPendingAction('/freeresource.html', { intent: 'resources' });
+  }
+
+  // Contact Information
+  function showContact() {
+    appendBotMessage(
+      `<strong>Contact My JEE Mentor</strong><br>
+       📍 Location: Navi Mumbai, India<br>
+       📞 Phone: <a href="tel:+917304256203">${PHONE_NUMBER}</a><br>
+       💬 WhatsApp: <a href="https://wa.me/${WA_NUMBER}" target="_blank">+91 73042 56203</a><br>
+       Our counseling team is available Monday to Sunday.`,
+      [
+        { label: '📞 Call Counselor Now', action: () => location.href = 'tel:+917304256203' },
+        { label: '💬 Chat on WhatsApp', action: () => window.open(`https://wa.me/${WA_NUMBER}?text=Hi%2C%20I%20have%20an%20enquiry%20about%20My%20JEE%20Mentor.`, '_blank') },
+        { label: 'Book Free Demo', action: () => startLeadFlow() }
+      ]
+    );
+  }
+
+  // Why Choose Us
+  function showWhyUs() {
+    appendBotMessage(
+      `<strong>Why My JEE Mentor?</strong><br>
+       1. Strictly max 10 students per batch.<br>
+       2. Dedicated personal mentor assigned from day one.<br>
+       3. Daily DPPs, 24/7 doubt resolution, and weekly progress check-ins.<br>
+       4. Highly affordable subject-wise learning.`,
+      [
+        { label: 'Book Free Demo Class', action: () => startLeadFlow() },
+        { label: 'View All Batches', action: () => showExamBatchesAndFees('JEE') }
+      ]
+    );
+  }
+
+  // Careers & Portals
+  function showCareers() {
+    appendBotMessage('We are looking for passionate teachers! Opening our Careers page...', []);
+    navigateWithPendingAction('/career.html', { intent: 'careers' });
+  }
+
+  function showPortals() {
+    appendBotMessage(
+      `Existing students can sign in directly to their classroom or test portal:`,
+      [
+        { label: 'Open My Classroom ↗', action: () => window.open('https://myclassroom.myjeementor.com/', '_blank') },
+        { label: 'Open Test Portal ↗', action: () => location.href = '/test.html' }
+      ]
+    );
+  }
+
+  // ==========================================================================
+  // 8. IN-PANEL LEAD GENERATION FLOW (Reuses /api/leads, no new backend)
+  // ==========================================================================
+  function startLeadFlow() {
+    const savedExam = sessionStorage.getItem('ollie_exam') || (location.pathname.includes('neet') ? 'NEET' : location.pathname.includes('foundation') ? 'Foundation' : 'JEE');
+    const savedClass = sessionStorage.getItem('ollie_class') || (savedExam === 'Foundation' ? '9' : '11');
+
+    const formHtml = `
+      <div class="ollie-lead-box">
+        <h4>Book a Free 1-on-1 Demo</h4>
+        <p>Enter details below to reserve your free counseling & demo session:</p>
+        <form class="ollie-mini-form" id="ollie-lead-form" novalidate>
+          <div class="ollie-field">
+            <label>Student Name *</label>
+            <input type="text" name="studentName" required minlength="2" maxlength="80" placeholder="e.g. Rahul Sharma" autocomplete="name">
+          </div>
+          <div class="ollie-field">
+            <label>Parent or Student Phone (10 digits) *</label>
+            <input type="tel" name="mobile" required pattern="[6-9][0-9]{9}" maxlength="14" placeholder="9876543210" inputmode="tel" autocomplete="tel">
+          </div>
+          <div class="ollie-two-col">
+            <div class="ollie-field">
+              <label>Class *</label>
+              <select name="className" required>
+                ${['7', '8', '9', '10', '11', '12', 'Dropper'].map(c => `<option value="${c}" ${c === savedClass ? 'selected' : ''}>Class ${c}</option>`).join('')}
+              </select>
+            </div>
+            <div class="ollie-field">
+              <label>Course *</label>
+              <select name="exam" required>
+                ${['JEE', 'NEET', 'Foundation'].map(e => `<option value="${e}" ${e === savedExam ? 'selected' : ''}>${e}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="ollie-consent">
+            <input type="checkbox" name="consent" id="ollie-consent" required checked>
+            <label for="ollie-consent">I agree to be contacted by My JEE Mentor about this free demo (<a href="/privacy-policy.html" target="_blank">Privacy Policy</a>)</label>
+          </div>
+          <input type="text" name="website" style="display:none;" tabindex="-1" autocomplete="off">
+          <div class="ollie-lead-actions">
+            <button type="submit" class="ollie-lead-submit" id="ollie-lead-submit-btn">Submit & Book Demo</button>
+            <button type="button" class="ollie-lead-cancel" id="ollie-lead-cancel-btn">Not now</button>
+          </div>
+          <div class="ollie-form-status" id="ollie-lead-status" hidden></div>
+        </form>
+      </div>
+    `;
+
+    appendBotMessage(formHtml, []);
+
+    // Bind Mini Form
+    const form = document.getElementById('ollie-lead-form');
+    if (!form) return;
+
+    document.getElementById('ollie-lead-cancel-btn').onclick = function () {
+      form.closest('.ollie-msg').remove();
+      appendBotMessage('No problem! Feel free to ask anytime.', [
+        { label: 'View Batches & Fees', action: () => showExamBatchesAndFees('JEE') },
+        { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') }
+      ]);
+    };
+
+    form.onsubmit = async function (e) {
+      e.preventDefault();
+      const statusEl = document.getElementById('ollie-lead-status');
+      const submitBtn = document.getElementById('ollie-lead-submit-btn');
+
+      // 1. Validation
+      const studentName = form.studentName.value.trim();
+      let mobile = form.mobile.value.replace(/[^0-9]/g, '');
+      if (mobile.length === 12 && mobile.startsWith('91')) mobile = mobile.slice(2);
+      const className = form.className.value;
+      const exam = form.exam.value;
+      const consent = form.consent.checked;
+      const honeypot = form.website.value.trim();
+
+      if (honeypot) return; // bot detected silently
+
+      if (studentName.length < 2) {
+        showStatus('Please enter a valid student name (at least 2 letters).', true);
+        return;
+      }
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        showStatus('Please enter a valid 10-digit Indian phone number.', true);
+        return;
+      }
+      if (!consent) {
+        showStatus('Please check the consent box to proceed.', true);
+        return;
+      }
+
+      // 2. 30-Second Rate Limit Check
+      let lastSubmit = 0;
+      try { lastSubmit = Number(sessionStorage.getItem('ollie_last_submit')) || 0; } catch (err) {}
+      if (Date.now() - lastSubmit < 30000) {
+        showStatus('Please wait 30 seconds before submitting another enquiry.', true);
+        return;
+      }
+
+      function showStatus(text, isError) {
+        statusEl.hidden = false;
+        statusEl.className = 'ollie-form-status ' + (isError ? 'error' : 'success');
+        statusEl.textContent = text;
+      }
+
+      // Payload matching backend contract (reusing /api/leads schema)
+      const cleanName = studentName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'student';
+      const payload = {
+        studentName: studentName,
+        parentName: studentName + ' (Parent)',
+        email: `${cleanName}.${mobile.slice(-4)}@myjeementor.com`,
+        mobile: mobile,
+        whatsapp: mobile,
+        className: className,
+        exam: exam,
+        city: 'Online Enquiry',
+        message: `Free Demo Enquiry via Ollie Interactive Guide. Exam: ${exam}, Class: ${className}. Page: ${location.pathname}`
+      };
+
+      // 3. Dry-Run Check (?ollie-test=1)
+      if (isTestMode) {
+        console.log('🦉 [Ollie Test Dry-Run Lead Payload]:', payload);
+        try { sessionStorage.setItem('ollie_last_submit', String(Date.now())); } catch (err) {}
+        finishLeadSuccess(studentName, mobile, exam, className);
+        return;
+      }
+
+      // 4. Production Submission
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      showStatus('Submitting your demo request...', false);
+
+      try {
+        const csrfRes = await fetch('/api/csrf', { credentials: 'same-origin', cache: 'no-store' });
+        const csrfData = await csrfRes.json().catch(() => ({}));
+        if (!csrfRes.ok || !csrfData.token) {
+          throw new Error('Form security session could not be verified. Please retry.');
+        }
+
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'content-type': 'application/json',
+            'x-csrf-token': csrfData.token
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await res.json().catch(() => ({}));
+        if (!res.ok || !resData.ok) {
+          throw new Error(resData.message || 'Unable to submit enquiry right now.');
+        }
+
+        try { sessionStorage.setItem('ollie_last_submit', String(Date.now())); } catch (err) {}
+        finishLeadSuccess(studentName, mobile, exam, className);
+      } catch (err) {
+        showStatus('Could not send online right now. You can WhatsApp us directly:', true);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Retry Submission';
+        appendBotMessage(
+          `Our direct WhatsApp line is available for instant booking:`,
+          [
+            {
+              label: '💬 Book via WhatsApp Now',
+              action: () => {
+                const msg = `Hi, I want to book a free demo for ${exam} Class ${className}. Student: ${studentName}.`;
+                window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+              }
+            }
+          ]
+        );
+      }
+    };
+  }
+
+  function finishLeadSuccess(name, mobile, exam, cls) {
+    appendBotMessage(
+      `<strong>Done!</strong> Thank you ${name}. Our academic counselor will call you shortly to confirm your free 1-on-1 demo session for <strong>${exam} (Class ${cls})</strong>.<br>
+       <a class="ollie-wa-btn" href="https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hi, I just booked a free demo for ${exam} Class ${cls} on your website. My name is ${name}.`)}" target="_blank">
+         💬 Message Counselor on WhatsApp
+       </a>`,
+      [
+        { label: 'View Study Resources', action: () => showResources() },
+        { label: 'Meet Faculty', action: () => showFacultyInfo('faculty') }
+      ]
+    );
+  }
+
+  // ==========================================================================
+  // 9. PERSONALIZED 4-STOP TOUR ("Show me around")
+  // ==========================================================================
+  function startPersonalizedTour() {
+    isTour = true;
+    collapseAskPanel();
+
+    const exam = sessionStorage.getItem('ollie_exam') || 'JEE';
+    const cls = sessionStorage.getItem('ollie_class') || '11';
+
+    // Stop 1: Batches
+    sayMessage(`Stop 1 of 4: Here are our ${exam} batches with max 10 students and personalized mentoring.`);
+    let target = document.querySelector('.program-card, .foundation-card, .mjm-card');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pulseElement(target);
+    }
+
+    // Stop 2: Faculty (after 4.5s)
+    tourTimer = setTimeout(() => {
+      if (!isTour) return;
+      sayMessage(`Stop 2 of 4: Learn from premier faculty mentors with proven rank-level results.`);
+      const fac = document.querySelector('.mjm-faculty-header, .faculty-card');
+      if (fac) {
+        fac.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        pulseElement(fac);
+      }
+
+      // Stop 3: Reviews (after 4.5s)
+      tourTimer = setTimeout(() => {
+        if (!isTour) return;
+        sayMessage(`Stop 3 of 4: Real feedback from parents and students on how small batches made the difference.`);
+        const rev = document.querySelector('.mjm-reviews-header, .mjm-review-card');
+        if (rev) {
+          rev.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          pulseElement(rev);
+        }
+
+        // Stop 4: Free Demo
+        tourTimer = setTimeout(() => {
+          if (!isTour) return;
+          stopTour();
+          sayMessage(`Stop 4 of 4: Ready to try a class? Opening the free demo booking session for you!`);
+          openAskPanel();
+          startLeadFlow();
+        }, 4800);
+      }, 4800);
+    }, 4800);
+  }
+
+  function stopTour() {
+    isTour = false;
+    clearTimeout(tourTimer);
+  }
+
+  // ==========================================================================
+  // 10. PLACEMENT & COLLISION ENGINE
+  // ==========================================================================
+  function pulseElement(el) {
+    if (highlightedEl) highlightedEl.classList.remove('ollie-hl');
+    highlightedEl = el;
+    if (highlightedEl) {
+      highlightedEl.classList.remove('ollie-hl');
+      void highlightedEl.offsetWidth;
+      highlightedEl.classList.add('ollie-hl');
+    }
+  }
+
+  function calculatePlacement(activeBlock) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const isMobile = vw <= 640;
 
-    // Real Sticky Header Bottom
     const headerEl = document.querySelector('header.site-header');
-    const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
-    const headerBottom = (headerRect && headerRect.bottom > 0) ? Math.max(0, headerRect.bottom) : 0;
+    const headerBottom = headerEl ? Math.max(0, headerEl.getBoundingClientRect().bottom) : 0;
     const topSafeLimit = headerBottom + 10;
 
-    // Real Mobile Bar Top
     const mobileBarEl = document.querySelector('.mobile-bar');
     const mobileBarVisible = mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none';
     const mobileBarRect = mobileBarVisible ? mobileBarEl.getBoundingClientRect() : null;
 
-    // Bottom Safe Boundary (above .mobile-bar on mobile)
     let bottomSafeLimit = vh - 12;
     if (mobileBarRect && mobileBarRect.top > 0) {
       bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
     }
 
-    // Dimensions
     const owlW = isMobile ? 68 : 84;
     const owlH = isMobile ? 78 : 96;
     const bubW = bubEl.offsetWidth || (isMobile ? Math.min(300, vw - 24) : 310);
@@ -1055,79 +1471,38 @@
 
     const bRect = activeBlock.getBoundingClientRect();
 
-    // Helper: test if a rectangle overlaps activeBlock
     function overlapsBlock(x, y, w, h) {
-      return !(
-        x + w <= bRect.left ||
-        x >= bRect.right ||
-        y + h <= bRect.top ||
-        y >= bRect.bottom
-      );
+      return !(x + w <= bRect.left || x >= bRect.right || y + h <= bRect.top || y >= bRect.bottom);
     }
 
-    // --- POSITION 1: ABOVE THE BLOCK ---
+    // 1. ABOVE
     const bubYAbove = bRect.top - bubH - 12;
     const owlYAbove = bRect.top - owlH + 14;
-
     const fitsAbove = (bubYAbove >= topSafeLimit) && (owlYAbove >= topSafeLimit) && (bRect.top <= vh - 40);
 
     if (fitsAbove) {
-      let bubX = bRect.left + 20;
-      if (bubX + bubW > vw - 14) {
-        bubX = vw - bubW - 14;
-      }
-      if (bubX < 12) {
-        bubX = 12;
-      }
-
-      let owlX = bRect.left - (isMobile ? 12 : 24);
-      if (owlX < 8) owlX = Math.max(8, bRect.left + 8);
-      if (owlX + owlW > vw - 8) owlX = vw - owlW - 8;
-
+      let bubX = Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20));
+      let owlX = Math.max(8, Math.min(vw - owlW - 8, bRect.left - (isMobile ? 12 : 24)));
       if (!overlapsBlock(bubX, bubYAbove, bubW, bubH)) {
-        return {
-          owlX: Math.round(owlX),
-          owlY: Math.round(owlYAbove),
-          bubX: Math.round(bubX),
-          bubY: Math.round(bubYAbove),
-          mode: 'above'
-        };
+        return { owlX: Math.round(owlX), owlY: Math.round(owlYAbove), bubX: Math.round(bubX), bubY: Math.round(bubYAbove) };
       }
     }
 
-    // --- POSITION 2: BELOW THE BLOCK ---
+    // 2. BELOW
     const bubYBelow = bRect.bottom + 12;
     const owlYBelow = bRect.bottom - 12;
-
     const fitsBelow = (bubYBelow + bubH <= bottomSafeLimit) && (bRect.bottom >= topSafeLimit);
 
     if (fitsBelow) {
-      let bubX = bRect.left + 20;
-      if (bubX + bubW > vw - 14) {
-        bubX = vw - bubW - 14;
-      }
-      if (bubX < 12) {
-        bubX = 12;
-      }
-
-      let owlX = bRect.left - (isMobile ? 12 : 24);
-      if (owlX < 8) owlX = Math.max(8, bRect.left + 8);
-      if (owlX + owlW > vw - 8) owlX = vw - owlW - 8;
-
+      let bubX = Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20));
+      let owlX = Math.max(8, Math.min(vw - owlW - 8, bRect.left - (isMobile ? 12 : 24)));
       if (!overlapsBlock(bubX, bubYBelow, bubW, bubH)) {
-        return {
-          owlX: Math.round(owlX),
-          owlY: Math.round(owlYBelow),
-          bubX: Math.round(bubX),
-          bubY: Math.round(bubYBelow),
-          mode: 'below'
-        };
+        return { owlX: Math.round(owlX), owlY: Math.round(owlYBelow), bubX: Math.round(bubX), bubY: Math.round(bubYBelow) };
       }
     }
 
-    // --- POSITION 3: FIXED BOTTOM-CENTER FALLBACK ---
+    // 3. FIXED BOTTOM-CENTER
     let fixedBubX, fixedBubY, fixedOwlX, fixedOwlY;
-
     if (isMobile) {
       fixedBubX = 12;
       fixedBubY = Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 4);
@@ -1140,17 +1515,15 @@
       fixedOwlY = Math.round(fixedBubY + (bubH - owlH) / 2);
     }
 
-    return {
-      owlX: fixedOwlX,
-      owlY: fixedOwlY,
-      bubX: fixedBubX,
-      bubY: fixedBubY,
-      mode: 'fixed-bottom'
-    };
+    return { owlX: fixedOwlX, owlY: fixedOwlY, bubX: fixedBubX, bubY: fixedBubY };
   }
 
   function placeOllieAndBubble() {
     if (!owlEl || !bubEl) return;
+    if (isPanelOpen) {
+      dockOwlOnPanel();
+      return;
+    }
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -1174,9 +1547,8 @@
         activeBlock = document.querySelector('#book-demo .booking-dialog') || document.querySelector('#book-demo');
         targetEl = document.querySelector('#booking-form button[type="submit"]') || activeBlock;
       } else if (currentStepIdx >= 0 && currentStepIdx < activeSteps.length) {
-        const step = activeSteps[currentStepIdx];
-        activeBlock = step.secEl;
-        targetEl = step.targetEl;
+        activeBlock = activeSteps[currentStepIdx].secEl;
+        targetEl = activeSteps[currentStepIdx].targetEl;
       }
 
       if (!activeBlock) {
@@ -1185,7 +1557,17 @@
         bubX = vw - 340;
         bubY = vh - 220;
       } else {
-        const coords = calculatePlacement(activeBlock, targetEl);
+        // Auto-collapse check: If activeBlock would overlap the Ask panel, collapse it!
+        if (panelEl && !panelEl.hidden) {
+          const bRect = activeBlock.getBoundingClientRect();
+          const pRect = panelEl.getBoundingClientRect();
+          const wouldOverlap = !(bRect.right < pRect.left || bRect.left > pRect.right || bRect.bottom < pRect.top || bRect.top > pRect.bottom);
+          if (wouldOverlap) {
+            collapseAskPanel();
+          }
+        }
+
+        const coords = calculatePlacement(activeBlock);
         targetX = coords.owlX;
         targetY = coords.owlY;
         bubX = coords.bubX;
@@ -1195,240 +1577,40 @@
       bubEl.style.transform = `translate(${bubX}px, ${bubY}px)`;
     }
 
-    // Trigger wing flap during flight
     owlEl.classList.add('ollie-fly');
     clearTimeout(flyTimer);
-    flyTimer = setTimeout(function () {
-      owlEl.classList.remove('ollie-fly');
-    }, 900);
+    flyTimer = setTimeout(() => owlEl.classList.remove('ollie-fly'), 800);
 
     owlEl.style.transform = `translate(${targetX}px, ${targetY}px)`;
   }
 
   function sayMessage(text) {
     if (!txtEl) return;
-    txtEl.textContent = text;
+    txtEl.innerHTML = text;
     txtEl.classList.remove('ollie-pop');
     void txtEl.offsetWidth;
     txtEl.classList.add('ollie-pop');
   }
 
-  function activateStep(index, fromUserInteraction = false) {
+  function activateStep(index) {
     if (index < 0 || index >= activeSteps.length) return;
-
-    if (highlightedEl) {
-      highlightedEl.classList.remove('ollie-hl');
-    }
+    if (isTyping || isPanelOpen) return; // Pause narration while user is interacting with panel
 
     currentStepIdx = index;
     const step = activeSteps[index];
 
-    // Read and speak card info dynamically if step matches CARD_DATA
-    let speechText = step.text;
-    const matchedCard = step.cardData || findCardDataForElement(step.secEl);
-    if (matchedCard) {
-      const ctaButton = (step.targetEl && step.targetEl !== step.secEl)
-        ? step.targetEl
-        : (step.secEl ? step.secEl.querySelector(matchedCard.cta) : null);
-      speechText = formatCardSpeech(matchedCard, ctaButton);
-      step.text = speechText;
-    }
-
-    sayMessage(speechText);
-
-    // Outline / pulse target CTA button
-    highlightedEl = (step.targetEl && step.targetEl !== step.secEl)
-      ? step.targetEl
-      : (matchedCard && step.secEl ? (step.secEl.querySelector(matchedCard.cta) || step.secEl) : (step.targetEl || step.secEl));
-
-    if (highlightedEl) {
-      highlightedEl.classList.remove('ollie-hl');
-      void highlightedEl.offsetWidth;
-      highlightedEl.classList.add('ollie-hl');
-    }
-
-    placeOllieAndBubble();
-
-    // Check if this step is part of a card group
-    if (step.group) {
-      activeGroupId = step.group;
-      if (fromUserInteraction) {
-        // User clicked, tapped, or hovered: pause auto-hopping for 10 seconds
-        groupHopPausedUntil = Date.now() + 10000;
-        clearTimeout(groupHopTimer);
-        groupHopTimer = setTimeout(function () {
-          hopToNextGroupCard(step.group);
-        }, 10000);
-      } else if (!isTour) {
-        // Schedule auto-hop based on reading time (~4-6s)
-        const readingTime = Math.max(4200, Math.min(6500, 3000 + (step.text ? step.text.length * 36 : 2000)));
-        clearTimeout(groupHopTimer);
-        groupHopTimer = setTimeout(function () {
-          hopToNextGroupCard(step.group);
-        }, readingTime);
-      }
-    } else {
-      activeGroupId = null;
-      clearTimeout(groupHopTimer);
-    }
-  }
-
-  // 4. GROUP AUTO-HOPPING ENGINE
-  function hopToNextGroupCard(groupId) {
-    if (isTour || isHidden || modalActive) return;
-    if (Date.now() < groupHopPausedUntil) return;
-
-    // Desktop hover guard: do not hop away while cursor is actively hovering a card
-    if (isDesktopDevice() && isCurrentlyHoveringCard) {
-      return;
-    }
-
-    // Find all active steps in this group
-    const groupSteps = activeSteps
-      .map((s, idx) => ({ step: s, idx }))
-      .filter(item => item.step.group === groupId);
-
-    if (groupSteps.length <= 1) return;
-
-    // Check if group is still in view
-    const firstEl = groupSteps[0].step.secEl;
-    const lastEl = groupSteps[groupSteps.length - 1].step.secEl;
-    if (!firstEl || !lastEl) return;
-
-    const rFirst = firstEl.getBoundingClientRect();
-    const rLast = lastEl.getBoundingClientRect();
-    const groupTop = Math.min(rFirst.top, rLast.top);
-    const groupBottom = Math.max(rFirst.bottom, rLast.bottom);
-
-    // If completely scrolled off screen, cancel hopping
-    if (groupBottom < 60 || groupTop > window.innerHeight - 60) {
-      activeGroupId = null;
-      return;
-    }
-
-    // Find current index in group
-    const currentPos = groupSteps.findIndex(item => item.idx === currentStepIdx);
-    const nextPos = (currentPos + 1) % groupSteps.length;
-    const nextStepIdx = groupSteps[nextPos].idx;
-
-    activateStep(nextStepIdx, false);
-  }
-
-  // Jump animation on button click or guide tap
-  function jumpReaction(message) {
-    if (!owlEl) return;
-    owlEl.classList.add('ollie-jump');
-    setTimeout(function () {
-      owlEl.classList.remove('ollie-jump');
-    }, 1100);
-
-    if (message) {
-      const prevIdx = currentStepIdx;
-      sayMessage(message);
-      setTimeout(function () {
-        if (currentStepIdx === prevIdx && activeSteps[prevIdx]) {
-          sayMessage(activeSteps[prevIdx].text);
-        }
-      }, 4200);
-    }
-  }
-
-  // Tour controls
-  function updateTourButtonLabel() {
-    if (actBtn) {
-      actBtn.textContent = isTour ? 'Stop tour' : 'Take the tour';
-    }
-  }
-
-  function stopTour() {
-    isTour = false;
-    clearTimeout(tourTimer);
-    updateTourButtonLabel();
-  }
-
-  function runTourStep(stepIdx) {
-    if (!isTour) return;
-
-    if (stepIdx >= activeSteps.length) {
-      stopTour();
-      sayMessage('That’s the full tour! Book a free demo whenever you’re ready, or scroll up to revisit any section.');
-      return;
-    }
-
-    activateStep(stepIdx, false);
-    const step = activeSteps[stepIdx];
-    const el = step.secEl || step.targetEl;
-
-    if (el) {
-      if (stepIdx === 0) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-
-    const dwellTime = 3400 + (step.text ? step.text.length * 48 : 2000);
-    tourTimer = setTimeout(function () {
-      runTourStep(stepIdx + 1);
-    }, dwellTime);
-  }
-
-  function startTour() {
-    if (activeSteps.length === 0) return;
-    isTour = true;
-    updateTourButtonLabel();
-    runTourStep(0);
-  }
-
-  function hideGuide() {
-    isHidden = true;
-    try {
-      sessionStorage.setItem('ollie-hidden', 'true');
-    } catch (e) {}
-    if (highlightedEl) {
-      highlightedEl.classList.remove('ollie-hl');
-    }
-    stopTour();
-    clearTimeout(groupHopTimer);
+    sayMessage(step.text);
+    pulseElement(step.targetEl || step.secEl);
     placeOllieAndBubble();
   }
 
-  function showGuide() {
-    isHidden = false;
-    try {
-      sessionStorage.setItem('ollie-hidden', 'false');
-    } catch (e) {}
-    bubEl.hidden = false;
-    placeOllieAndBubble();
-    pickSectionByScroll();
-  }
-
-  // 5. SCROLL PICKER (Section crossing 45% viewport height)
+  // ==========================================================================
+  // 11. SCROLL & HOVER LISTENERS
+  // ==========================================================================
   function pickSectionByScroll() {
-    if (isHidden || isTour || modalActive || activeSteps.length === 0) return;
-
-    // Desktop: If user is actively hovering over a card, hover is king
-    if (isDesktopDevice() && isCurrentlyHoveringCard) {
-      placeOllieAndBubble();
-      return;
-    }
-
-    // If currently inside an active group and user is reading/interacting, check if group still in view
-    if (activeGroupId && currentStepIdx >= 0) {
-      const curStep = activeSteps[currentStepIdx];
-      if (curStep && curStep.secEl) {
-        const r = curStep.secEl.getBoundingClientRect();
-        const inView = r.top <= window.innerHeight * 0.75 && r.bottom >= window.innerHeight * 0.25;
-        if (inView) {
-          // Keep current card, recalculate placement smoothly
-          placeOllieAndBubble();
-          return;
-        }
-      }
-    }
+    if (isHidden || isTour || modalActive || isTyping || isPanelOpen || activeSteps.length === 0) return;
 
     const line = window.innerHeight * 0.45;
-
     for (let i = 0; i < activeSteps.length; i++) {
       const step = activeSteps[i];
       const el = step.secEl || step.targetEl;
@@ -1437,23 +1619,22 @@
       const rect = el.getBoundingClientRect();
       if (rect.top <= line && rect.bottom >= line) {
         if (i !== currentStepIdx) {
-          activateStep(i, false);
+          activateStep(i);
         } else {
           placeOllieAndBubble();
         }
         return;
       }
     }
-
     placeOllieAndBubble();
   }
 
   function onScrollHandler() {
     if (isTick) return;
     isTick = true;
-    requestAnimationFrame(function () {
+    requestAnimationFrame(() => {
       isTick = false;
-      if (isHidden) return;
+      if (isHidden || isPanelOpen || isTyping) return;
       if (!isTour) {
         pickSectionByScroll();
       } else {
@@ -1462,250 +1643,168 @@
     });
   }
 
-  // 6. AUTO-EXPLAINER FALLBACK ENGINE
-  function buildFallbackStep(element) {
-    const headingEl = element.querySelector('h1, h2, h3, h4, .title, .eyebrow');
-    const headingText = headingEl ? headingEl.textContent.trim().replace(/\s+/g, ' ') : 'this section';
+  // Attach Desktop Hover Chip & Mobile Tap
+  let hoverTimer = null;
+  function bindCardInteractions() {
+    document.querySelectorAll('.program-card, .foundation-card, .mjm-card, .faculty-card').forEach(card => {
+      if (card.dataset.ollieBound) return;
+      card.dataset.ollieBound = 'true';
 
-    const pEl = element.querySelector('p');
-    let sentence = pEl ? pEl.textContent.trim().replace(/\s+/g, ' ') : '';
-    if (sentence.includes('.')) {
-      sentence = sentence.split('.')[0] + '.';
-    } else if (sentence.length > 90) {
-      sentence = sentence.substring(0, 90) + '...';
-    }
+      // Desktop: 150ms debounced hover shows compact chip
+      card.addEventListener('mouseenter', function () {
+        if (!isDesktopDevice() || isTour || modalActive || isHidden || isPanelOpen) return;
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(() => {
+          // Extract title & fee
+          const title = card.querySelector('h3, .program-title-row, .mjm-title, .faculty-name')?.textContent.trim() || 'Course';
+          const feeMatch = card.textContent.match(/₹\s*[\d,]+(?:\s*\/\s*(?:month|mo))?/i);
+          const fee = feeMatch ? feeMatch[0] : '';
+          const detail = card.querySelector('ul li, .mjm-points span, .foundation-subject, .faculty-tag')?.textContent.replace(/[✔✓]/g, '').trim() || '';
 
-    const btnEl = element.querySelector('a.btn, button.btn, button, .mjm-btn, a[href]');
-    const btnText = btnEl ? btnEl.textContent.trim().replace(/\s+/g, ' ') : '';
+          const chipHtml = `
+            <div class="ollie-hover-chip">
+              <div class="ollie-chip-title-row">
+                <span class="ollie-chip-name">${title}</span>
+                ${fee ? `<span class="ollie-chip-fee">${fee}</span>` : ''}
+              </div>
+              ${detail ? `<span class="ollie-chip-detail">${detail}</span>` : ''}
+            </div>
+          `;
+          sayMessage(chipHtml);
 
-    let text = `This is ${headingText}.`;
-    if (sentence) text += ` ${sentence}`;
-    if (btnText && btnText.length < 32) {
-      text += ` Click ${btnText} to explore.`;
-    }
+          const cta = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn');
+          pulseElement(cta || card);
 
-    return {
-      id: 'auto-' + Math.random().toString(36).substr(2, 6),
-      secEl: element,
-      targetEl: btnEl || element,
-      title: 'Auto-explainer: ' + headingText,
-      text: text,
-      isFallback: true
-    };
-  }
-
-  // 7. DYNAMIC SCANNER & MUTATIONOBSERVER
-  function scanAndResolveSteps() {
-    const currentPath = location.pathname || '/';
-    const resolved = [];
-    const matchedElements = new Set();
-    const missingCustomSteps = [];
-
-    // Step A: Match Hand-Crafted Steps
-    for (const step of CUSTOM_STEPS) {
-      if (step.page !== '*' && step.page !== currentPath) {
-        continue;
-      }
-
-      let secEl = null;
-      try {
-        secEl = document.querySelector(step.section);
-      } catch (err) {}
-
-      if (!secEl) {
-        missingCustomSteps.push(step);
-        continue;
-      }
-
-      let targetEl = null;
-      if (step.target) {
-        try {
-          targetEl = secEl.matches(step.target) ? secEl : secEl.querySelector(step.target);
-        } catch (err) {}
-      }
-
-      const cardData = findCardDataForElement(secEl);
-
-      resolved.push({
-        ...step,
-        secEl: secEl,
-        targetEl: targetEl || secEl,
-        cardData: cardData,
-        isFallback: false
-      });
-      matchedElements.add(secEl);
-    }
-
-    // Step B: Auto-Explainer Fallback for unmapped standalone sections
-    // CRITICAL: Skip any container that contains cards so section never replaces individual cards!
-    const candidates = document.querySelectorAll('main > section, section.section');
-    candidates.forEach(function (elem) {
-      if (elem.closest('#book-demo, #ollie-owl, #ollie-bub, header, footer')) return;
-      if (matchedElements.has(elem)) return;
-
-      if (elem.querySelector('.mjm-card, .faculty-card, .foundation-card, .resource-card, .mjm-review-card, .step-card')) {
-        return;
-      }
-
-      let alreadyCovered = false;
-      for (const matched of matchedElements) {
-        if (matched.contains(elem)) {
-          alreadyCovered = true;
-          break;
-        }
-      }
-      if (alreadyCovered) return;
-
-      const fallback = buildFallbackStep(elem);
-      resolved.push(fallback);
-      matchedElements.add(elem);
-    });
-
-    // Step C: Sort strictly in natural DOM document order
-    resolved.sort(function (a, b) {
-      if (a.secEl === b.secEl) return 0;
-      const position = a.secEl.compareDocumentPosition(b.secEl);
-      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
-
-    activeSteps = resolved;
-
-    // Attach Desktop Hover (150ms debounce) & Mobile Tap listeners
-    activeSteps.forEach((s, idx) => {
-      const cardEl = s.secEl;
-      if (!cardEl || cardEl.dataset.ollieCardBound) return;
-      cardEl.dataset.ollieCardBound = 'true';
-
-      // Desktop: mouseenter with 150ms debounce
-      cardEl.addEventListener('mouseenter', function () {
-        if (!isDesktopDevice()) return;
-        if (isTour || modalActive || isHidden) return;
-        clearTimeout(hoverDebounceTimer);
-        hoverDebounceTimer = setTimeout(function () {
-          isCurrentlyHoveringCard = true;
-          activateStep(idx, true);
+          const coords = calculatePlacement(card);
+          owlEl.style.transform = `translate(${coords.owlX}px, ${coords.owlY}px)`;
+          bubEl.style.transform = `translate(${coords.bubX}px, ${coords.bubY}px)`;
         }, 150);
       }, { passive: true });
 
-      cardEl.addEventListener('mouseleave', function () {
-        if (isDesktopDevice()) {
-          clearTimeout(hoverDebounceTimer);
-          isCurrentlyHoveringCard = false;
-        }
+      card.addEventListener('mouseleave', function () {
+        if (isDesktopDevice()) clearTimeout(hoverTimer);
       }, { passive: true });
 
-      // Mobile / Touch: tap/click on card immediately jumps to it and pauses auto-hop 10s
-      cardEl.addEventListener('click', function () {
-        if (isDesktopDevice()) return;
-        if (isTour || modalActive || isHidden) return;
-        activateStep(idx, true);
-      }, { passive: true });
-
-      cardEl.addEventListener('focusin', function () {
-        if (isTour || modalActive || isHidden) return;
-        activateStep(idx, true);
+      // Mobile Tap jumps to card
+      card.addEventListener('click', function (e) {
+        if (isDesktopDevice() || isTour || modalActive || isHidden || isPanelOpen) return;
+        if (e.target.closest('a, button')) return; // Let links fire naturally
+        const cta = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn');
+        pulseElement(cta || card);
       }, { passive: true });
     });
+  }
 
-    // Debug logging when ?ollie-debug=1 is set
+  // ==========================================================================
+  // 12. DYNAMIC SCANNER & MUTATIONOBSERVER
+  // ==========================================================================
+  function scanAndResolveSteps() {
+    const currentPath = location.pathname || '/';
+    const resolved = [];
+
+    PASSIVE_NUDGES.forEach(nudge => {
+      if (nudge.page !== '*' && nudge.page !== currentPath) return;
+      const secEl = document.querySelector(nudge.section);
+      if (!secEl) return;
+      const targetEl = nudge.target ? (secEl.matches(nudge.target) ? secEl : secEl.querySelector(nudge.target)) : secEl;
+      resolved.push({ ...nudge, secEl, targetEl: targetEl || secEl });
+    });
+
+    resolved.sort((a, b) => {
+      if (a.secEl === b.secEl) return 0;
+      return a.secEl.compareDocumentPosition(b.secEl) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+
+    activeSteps = resolved;
+    bindCardInteractions();
+
+    // Check for pending cross-page actions
+    handlePendingCrossPageAction();
+
+    // Debugging summary
     if (isDebug) {
-      console.group('🦉 [Ollie Guide Debugger]');
-      console.log('Current URL Path:', currentPath);
-      console.log('Active Steps Resolved (DOM Order):', activeSteps.length);
-      activeSteps.forEach((s, idx) => {
-        console.log(`[${idx + 1}] ${s.isFallback ? '⚡ (Auto Fallback)' : '✓ (Custom Step)'} [${s.group || 'single'}] ${s.title || s.id}`);
-        console.log(`    Section:`, s.secEl);
-        console.log(`    Target:`, s.targetEl);
-        console.log(`    Message: "${s.text}"`);
-      });
-      if (missingCustomSteps.length > 0) {
-        console.warn('⚠️ Custom steps defined for this page but missing in DOM:', missingCustomSteps.map(m => m.id));
-      }
+      console.group('🦉 [Ollie Debugger - Live Extraction & State]');
+      console.log('Courses in Navigation:', getLiveCourses());
+      console.log('Live Extracted Batches:', getLiveBatches());
+      console.log('Live Extracted Faculty:', getLiveFaculty());
+      console.log('Resolved Passive Nudges:', activeSteps.length);
       console.groupEnd();
     }
 
     if (currentStepIdx < 0 && activeSteps.length > 0) {
       pickSectionByScroll();
-      if (currentStepIdx < 0) {
-        activateStep(0, false);
-      }
     } else {
       placeOllieAndBubble();
     }
   }
 
-  // 8. BOOKING POPUP MODAL MONITOR
-  function checkBookingModal() {
-    const modal = document.getElementById('book-demo');
-    const wasModalActive = modalActive;
-    const isTarget = location.hash === '#book-demo';
-    const isOpen = Boolean(modal && (isTarget || modal.classList.contains('open') || window.getComputedStyle(modal).display === 'flex'));
-
-    modalActive = isOpen;
-    document.body.classList.toggle('ollie-modal-active', modalActive);
-
-    if (modalActive && !wasModalActive) {
-      clearTimeout(groupHopTimer);
-      const modalStep = CUSTOM_STEPS.find(s => s.id === 'modal-booking');
-      if (modalStep) {
-        sayMessage(modalStep.text);
-        if (highlightedEl) highlightedEl.classList.remove('ollie-hl');
-        highlightedEl = document.querySelector('#booking-form button[type="submit"]');
-        if (highlightedEl) highlightedEl.classList.add('ollie-hl');
+  function handlePendingCrossPageAction() {
+    let pending = null;
+    try {
+      const stored = sessionStorage.getItem('ollie_pending_action');
+      if (stored) {
+        pending = JSON.parse(stored);
+        sessionStorage.removeItem('ollie_pending_action');
       }
-      placeOllieAndBubble();
-    } else if (!modalActive && wasModalActive) {
-      pickSectionByScroll();
+    } catch (e) {}
+
+    if (pending && Date.now() - (pending.timestamp || 0) < 30000) {
+      openAskPanel();
+      setTimeout(() => {
+        if (pending.intent === 'jee_fees') showExamBatchesAndFees('JEE');
+        else if (pending.intent === 'neet_fees') showExamBatchesAndFees('NEET');
+        else if (pending.intent === 'foundation_info') showFoundationInfo(pending.cls);
+        else if (pending.intent === 'faculty') showFacultyInfo('faculty');
+        else if (pending.intent) showSpecificBatch(pending.intent);
+      }, 350);
     }
   }
 
-  // 9. GLOBAL BUTTON CLICK REACTION ("Great choice!")
-  function attachButtonReaction() {
-    document.addEventListener('click', function (event) {
-      const btn = event.target.closest('a.btn, button.btn, .mjm-btn, .foundation-btn, .foundation-card-cta, .program-cta');
-      if (btn && !btn.closest('#ollie-owl, #ollie-bub')) {
-        jumpReaction('Great choice! Opening the details for you now.');
-      }
-    }, { capture: true, passive: true });
+  function hideGuide() {
+    isHidden = true;
+    try { sessionStorage.setItem('ollie-hidden', 'true'); } catch (e) {}
+    if (highlightedEl) highlightedEl.classList.remove('ollie-hl');
+    stopTour();
+    collapseAskPanel();
+    placeOllieAndBubble();
   }
 
-  // 10. INITIALIZATION & OBSERVERS
-  let scanDebounce = null;
+  function showGuide() {
+    isHidden = false;
+    try { sessionStorage.setItem('ollie-hidden', 'false'); } catch (e) {}
+    bubEl.hidden = false;
+    collapsedBarEl.hidden = false;
+    placeOllieAndBubble();
+    pickSectionByScroll();
+  }
+
+  // ==========================================================================
+  // 13. INITIALIZATION
+  // ==========================================================================
+  let rescanDebounce = null;
   function triggerRescan() {
-    clearTimeout(scanDebounce);
-    scanDebounce = setTimeout(function () {
-      checkBookingModal();
+    clearTimeout(rescanDebounce);
+    rescanDebounce = setTimeout(() => {
       scanAndResolveSteps();
     }, 120);
   }
 
   function initOllie() {
-    createOllieDOM();
+    createOllieUI();
     scanAndResolveSteps();
-    checkBookingModal();
-    attachButtonReaction();
 
     window.addEventListener('scroll', onScrollHandler, { passive: true });
-    window.addEventListener('resize', function () {
-      placeOllieAndBubble();
-    }, { passive: true });
+    window.addEventListener('resize', () => placeOllieAndBubble(), { passive: true });
 
-    window.addEventListener('hashchange', function () {
-      checkBookingModal();
-      triggerRescan();
-    });
-
-    ['wheel', 'touchstart', 'keydown'].forEach(function (evt) {
-      window.addEventListener(evt, function () {
+    ['wheel', 'touchstart', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, () => {
         if (isTour) stopTour();
       }, { passive: true });
     });
 
-    const observer = new MutationObserver(function (mutations) {
+    const observer = new MutationObserver(mutations => {
       for (const m of mutations) {
-        if (m.target && (m.target.id === 'ollie-owl' || m.target.id === 'ollie-bub' || m.target.closest?.('#ollie-owl, #ollie-bub'))) {
-          continue;
-        }
+        if (m.target && (m.target.id === 'ollie-owl' || m.target.id === 'ollie-bub' || m.target.id === 'ollie-panel')) continue;
         triggerRescan();
         break;
       }
@@ -1714,9 +1813,9 @@
     const rootTarget = document.getElementById('app') || document.body;
     observer.observe(rootTarget, { childList: true, subtree: true });
 
-    setTimeout(function () {
-      if (!isHidden) {
-        activateStep(0, false);
+    setTimeout(() => {
+      if (!isHidden && !isPanelOpen) {
+        activateStep(0);
       }
     }, 600);
   }

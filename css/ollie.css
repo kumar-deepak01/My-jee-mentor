@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ollie the Owl - Website Guide Stylesheet
+   Ollie the Owl - Interactive Website Guide & Lead Generator Stylesheet
    My JEE Mentor - Light & Dark Theme Compatible
    All classes prefixed with .ollie-
    ========================================================================== */
@@ -114,7 +114,18 @@
   40% { transform: translateY(-20px) rotate(6deg); }
 }
 
-/* ---- Speech Bubble ---- */
+/* Confused Reaction (Feather puff / shake) */
+#ollie-owl.ollie-confused svg {
+  animation: ollie-shake 0.45s ease-in-out 2;
+}
+
+@keyframes ollie-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20%, 60% { transform: translateX(-5px) rotate(-5deg); }
+  40%, 80% { transform: translateX(5px) rotate(5deg); }
+}
+
+/* ---- Speech Bubble / Nudge Bubble ---- */
 #ollie-bub,
 .ollie-bub {
   position: fixed;
@@ -143,7 +154,7 @@
 #ollie-txt,
 .ollie-txt {
   margin: 0 0 10px;
-  font-size: 0.93rem;
+  font-size: 0.92rem;
   line-height: 1.44;
   color: var(--ollie-ink);
   font-weight: 500;
@@ -157,6 +168,38 @@
 
 @keyframes ollie-pop {
   from { opacity: 0; transform: translateY(6px); }
+}
+
+/* Compact Hover Chip */
+.ollie-hover-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ollie-chip-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.ollie-chip-name {
+  font-weight: 750;
+  font-size: 0.9rem;
+  color: var(--ollie-ink);
+}
+.ollie-chip-fee {
+  background: rgba(244, 119, 33, 0.16);
+  color: var(--ollie-or-dark);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+.ollie-chip-detail {
+  font-size: 0.8rem;
+  color: var(--ollie-mut);
+  line-height: 1.35;
 }
 
 .ollie-bc {
@@ -229,7 +272,8 @@
 body.ollie-modal-active #ollie-owl {
   z-index: 10002 !important;
 }
-body.ollie-modal-active #ollie-bub {
+body.ollie-modal-active #ollie-bub,
+body.ollie-modal-active #ollie-panel {
   z-index: 10001 !important;
 }
 
@@ -237,6 +281,486 @@ body.ollie-modal-active #ollie-bub {
 #ollie-owl.ollie-docked svg {
   animation: ollie-bob 3.2s ease-in-out infinite;
   filter: drop-shadow(0 4px 14px rgba(234, 88, 12, 0.5));
+}
+
+/* ==========================================================================
+   ASK OLLIE PANEL (Interactive Guide & Lead Generator)
+   ========================================================================== */
+#ollie-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: min(540px, calc(100vh - 90px));
+  background: var(--ollie-bg);
+  color: var(--ollie-ink);
+  border: 2px solid var(--ollie-or);
+  border-radius: 20px;
+  box-shadow: 0 18px 48px rgba(20, 33, 61, 0.28), 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9998;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease;
+  transform: translateY(0);
+  box-sizing: border-box;
+}
+
+#ollie-panel[hidden] {
+  display: none !important;
+}
+
+#ollie-panel.ollie-minimized {
+  transform: translateY(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Collapsed Slim Ask Ollie Bar */
+#ollie-collapsed-bar {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ollie-bg);
+  color: var(--ollie-ink);
+  border: 2px solid var(--ollie-or);
+  border-radius: 999px;
+  padding: 8px 16px 8px 12px;
+  box-shadow: var(--ollie-shadow);
+  cursor: pointer;
+  z-index: 9997;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 750;
+  font-size: 0.88rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#ollie-collapsed-bar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(234, 88, 12, 0.38);
+}
+
+#ollie-collapsed-bar[hidden] {
+  display: none !important;
+}
+
+/* Panel Header */
+.ollie-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(244, 119, 33, 0.12) 0%, rgba(244, 119, 33, 0.04) 100%);
+  border-bottom: 1px solid var(--ollie-line);
+  flex-shrink: 0;
+}
+
+.ollie-panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ollie-panel-title {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--ollie-ink);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ollie-panel-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.14);
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.ollie-panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ollie-icon-btn {
+  background: none;
+  border: 0;
+  color: var(--ollie-mut);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ollie-icon-btn:hover {
+  background: rgba(244, 119, 33, 0.15);
+  color: var(--ollie-or-dark);
+}
+
+/* Panel Messages Container */
+.ollie-messages-wrap {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ollie-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 90%;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  animation: ollie-pop 0.25s ease-out;
+  box-sizing: border-box;
+}
+
+.ollie-msg.ollie-bot {
+  align-self: flex-start;
+  background: var(--ollie-card);
+  border: 1px solid var(--ollie-line);
+  border-radius: 14px 14px 14px 3px;
+  padding: 10px 12px;
+  color: var(--ollie-ink);
+}
+
+.ollie-msg.ollie-user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  border-radius: 14px 14px 3px 14px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.ollie-msg-time {
+  font-size: 0.65rem;
+  color: var(--ollie-mut);
+  margin-top: 4px;
+  align-self: flex-end;
+}
+
+/* Structured Live Batches & Faculty In Chat */
+.ollie-batch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ollie-batch-item {
+  background: var(--ollie-bg);
+  border: 1px solid var(--ollie-line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: border-color 0.15s ease;
+}
+
+.ollie-batch-item:hover {
+  border-color: var(--ollie-or);
+}
+
+.ollie-batch-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ollie-batch-name {
+  font-weight: 750;
+  font-size: 0.86rem;
+  color: var(--ollie-ink);
+}
+
+.ollie-batch-fee-badge {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--ollie-or-dark);
+  background: rgba(244, 119, 33, 0.12);
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ollie-batch-desc {
+  font-size: 0.78rem;
+  color: var(--ollie-mut);
+  line-height: 1.35;
+}
+
+.ollie-batch-action {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ollie-or-dark);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+/* Quick Chips Row */
+.ollie-chips-bar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border-top: 1px solid rgba(244, 119, 33, 0.15);
+  background: var(--ollie-bg);
+}
+
+.ollie-chips-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.ollie-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ollie-card);
+  color: var(--ollie-ink);
+  border: 1px solid var(--ollie-line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.ollie-chip-btn:hover {
+  background: var(--ollie-or);
+  color: #ffffff;
+  border-color: var(--ollie-or);
+}
+
+/* Input Bar */
+.ollie-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--ollie-line);
+  background: var(--ollie-bg);
+  flex-shrink: 0;
+}
+
+.ollie-text-input {
+  flex: 1 1 auto;
+  background: var(--ollie-card);
+  border: 1.5px solid var(--ollie-line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+  color: var(--ollie-ink);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ollie-text-input:focus {
+  border-color: var(--ollie-or);
+  box-shadow: 0 0 0 3px rgba(244, 119, 33, 0.18);
+}
+
+.ollie-send-button {
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  border: 0;
+  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 3px 10px rgba(234, 88, 12, 0.35);
+}
+
+.ollie-send-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(234, 88, 12, 0.45);
+}
+
+.ollie-send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mini Lead Form */
+.ollie-lead-box {
+  background: var(--ollie-bg);
+  border: 1.5px solid var(--ollie-or);
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.12);
+}
+
+.ollie-lead-box h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--ollie-or-dark);
+}
+
+.ollie-lead-box p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ollie-mut);
+}
+
+.ollie-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ollie-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ollie-ink);
+}
+
+.ollie-field input,
+.ollie-field select {
+  border: 1px solid var(--ollie-line);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 0.82rem;
+  background: var(--ollie-card);
+  color: var(--ollie-ink);
+  outline: none;
+  font-family: inherit;
+}
+
+.ollie-field input:focus,
+.ollie-field select:focus {
+  border-color: var(--ollie-or);
+}
+
+.ollie-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ollie-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--ollie-mut);
+  line-height: 1.3;
+}
+
+.ollie-consent input {
+  margin-top: 2px;
+  accent-color: var(--ollie-or);
+}
+
+.ollie-consent a {
+  color: var(--ollie-or-dark);
+  text-decoration: underline;
+}
+
+.ollie-lead-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ollie-lead-submit {
+  flex: 1;
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3);
+}
+
+.ollie-lead-cancel {
+  background: none;
+  border: 1px solid var(--ollie-line);
+  color: var(--ollie-mut);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ollie-form-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.ollie-form-status.error {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+}
+
+.ollie-form-status.success {
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+}
+
+.ollie-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #25d366;
+  color: #ffffff !important;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.8rem;
+  margin-top: 6px;
+  box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
 }
 
 /* ---- Responsive & Mobile Styling ---- */
@@ -259,12 +783,32 @@ body.ollie-modal-active #ollie-bub {
     line-height: 1.4;
     margin-bottom: 8px;
   }
+
+  #ollie-panel {
+    right: 10px;
+    left: 10px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-width: none;
+    height: 460px;
+    max-height: calc(75vh - 50px);
+    border-radius: 18px;
+  }
+
+  #ollie-collapsed-bar {
+    right: 12px;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    font-size: 0.82rem;
+    padding: 6px 14px 6px 10px;
+  }
 }
 
 /* Reduced Motion Compliance */
 @media (prefers-reduced-motion: reduce) {
   #ollie-owl,
   #ollie-bub,
+  #ollie-panel,
+  #ollie-collapsed-bar,
   .ollie-owl,
   .ollie-bub {
     transition: none !important;
