@@ -2233,6 +2233,9 @@ html.dark-theme .resource-card-copy p {
   padding: 42px 32px 30px;
   border-radius: 24px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.06);
+  contain: layout style;
+  transform: translateZ(0);
+  will-change: transform;
 }
 .booking-modal-head {
   margin-bottom: 20px;
@@ -2298,6 +2301,7 @@ html.dark-theme .resource-card-copy p {
   outline: none;
   transition: border-color .15s ease, box-shadow .15s ease;
   box-sizing: border-box;
+  transform: translateZ(0);
 }
 .mj-counselling-form input:focus,
 .mj-counselling-form select:focus {
@@ -2320,8 +2324,10 @@ html.dark-theme .resource-card-copy p {
 }
 .mj-multiselect-trigger {
   width: 100%;
-  min-height: 48px;
-  padding: 6px 12px;
+  height: 46px;
+  min-height: 46px;
+  max-height: 46px;
+  padding: 0 12px;
   border: 1.5px solid #d1d5db;
   border-radius: 12px;
   background: #ffffff;
@@ -2331,10 +2337,13 @@ html.dark-theme .resource-card-copy p {
   gap: 8px;
   cursor: pointer;
   text-align: left;
-  transition: all .15s ease;
+  transition: border-color .15s ease, box-shadow .15s ease;
   box-sizing: border-box;
   font-family: inherit;
   outline: none;
+  contain: layout style;
+  overflow: hidden;
+  user-select: none;
 }
 .mj-multiselect-trigger:focus,
 .mj-multiselect.is-open .mj-multiselect-trigger {
@@ -2345,27 +2354,37 @@ html.dark-theme .resource-card-copy p {
   color: #6b7280;
   font-size: 0.92rem;
   font-weight: 400;
+  white-space: nowrap;
 }
 .mj-selected-chips {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   flex: 1;
-  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.mj-selected-chips::-webkit-scrollbar {
+  display: none;
 }
 .mj-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 9px;
+  padding: 3px 8px;
   background: #fff2e8;
   color: #9a3412;
   border: 1px solid #fed7aa;
   border-radius: 7px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.2;
-  animation: mjChipFade .15s ease-out;
+  flex-shrink: 0;
+  white-space: nowrap;
+  animation: mjChipFade .12s ease-out;
 }
 .mj-chip-remove {
   border: none;
@@ -2390,7 +2409,7 @@ html.dark-theme .resource-card-copy p {
   display: flex;
   align-items: center;
   color: #6b7280;
-  transition: transform .2s ease;
+  transition: transform .18s ease;
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -2400,7 +2419,7 @@ html.dark-theme .resource-card-copy p {
 }
 .mj-multiselect-dropdown {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 6px);
   top: auto;
   left: 0;
   right: 0;
@@ -2410,7 +2429,9 @@ html.dark-theme .resource-card-copy p {
   border-radius: 14px;
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  animation: mjDropUpIn .18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: mjDropUpIn .12s cubic-bezier(0, 0, 0.2, 1);
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 .mj-multiselect-search-wrap {
   display: flex;
@@ -2661,8 +2682,8 @@ html.dark-theme .resource-card-copy p {
 }
 
 @keyframes mjDropUpIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px) translateZ(0); }
+  to { opacity: 1; transform: translateY(0) translateZ(0); }
 }
 @keyframes mjChipFade {
   from { opacity: 0; transform: scale(0.9); }
@@ -2697,7 +2718,9 @@ html.dark-theme .resource-card-copy p {
     font-size: 0.9rem;
   }
   .mj-multiselect-trigger {
-    min-height: 46px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
   }
   .mj-booking-submit {
     min-height: 48px;

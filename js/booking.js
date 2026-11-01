@@ -70,13 +70,13 @@ export function renderLeadForm(id = 'lead-form') {
     <div class="field full mj-multiselect-field">
       <label id="${id}-subjects-label" class="mj-field-label">Preferred Subjects <span class="mj-optional">(Optional)</span></label>
       <div class="mj-multiselect" data-multiselect id="${id}-subjects-container">
-        <button type="button" class="mj-multiselect-trigger" id="${id}-subjects-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}-subjects-label">
+        <div role="combobox" tabindex="0" class="mj-multiselect-trigger" id="${id}-subjects-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}-subjects-label">
           <span class="mj-multiselect-placeholder">Select subjects (optional)...</span>
           <div class="mj-selected-chips" aria-live="polite"></div>
           <span class="mj-multiselect-arrow" aria-hidden="true">
             <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 7.5 5 5 5-5"/></svg>
           </span>
-        </button>
+        </div>
         <div class="mj-multiselect-dropdown" role="listbox" aria-multiselectable="true" hidden>
           <div class="mj-multiselect-search-wrap">
             <svg class="mj-search-icon" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
@@ -158,6 +158,9 @@ const loadTurnstile = () => {
 export function initBooking() {
   const overlay = document.querySelector('[data-booking-overlay]');
   if (!overlay) return;
+  if (overlay.dataset.bookingInitialized === 'true') return;
+  overlay.dataset.bookingInitialized = 'true';
+
   const dialog = overlay.querySelector('[data-booking-dialog]');
   const closeButton = overlay.querySelector('[data-booking-close]');
   const formView = overlay.querySelector('[data-booking-form-view]');
@@ -223,6 +226,7 @@ export function initBooking() {
       const searchInput = container.querySelector('.mj-multiselect-search');
       const searchClear = container.querySelector('.mj-search-clear');
       const options = [...container.querySelectorAll('.mj-multiselect-option')];
+      const optionsContainer = container.querySelector('.mj-multiselect-options');
       const emptyMsg = container.querySelector('.mj-multiselect-empty');
       const countEl = container.querySelector('.mj-multiselect-count');
       const clearBtn = container.querySelector('.mj-btn-clear');
@@ -232,22 +236,24 @@ export function initBooking() {
 
       let selected = [];
 
+      // Pre-cache values for zero-latency searching
+      options.forEach(opt => {
+        opt._val = opt.dataset.value;
+        opt._search = (opt.dataset.value || '').toLowerCase();
+      });
+
       const updateUI = () => {
-        // Synchronize checkboxes and active classes
         options.forEach(opt => {
-          const val = opt.dataset.value;
-          const isChecked = selected.includes(val);
+          const isChecked = selected.includes(opt._val);
           const chk = opt.querySelector('input[type="checkbox"]');
           if (chk) chk.checked = isChecked;
           opt.classList.toggle('is-selected', isChecked);
         });
 
-        // Update hidden input
         if (hiddenInput) {
           hiddenInput.value = selected.join(', ');
         }
 
-        // Update chips
         chipsWrap.innerHTML = '';
         if (selected.length === 0) {
           placeholder.style.display = 'inline';
@@ -269,17 +275,16 @@ export function initBooking() {
         trigger.setAttribute('aria-expanded', 'true');
         container.classList.add('is-open');
 
-        // Scroll modal if needed to ensure the drop-up is fully visible without clipping
-        const dialog = container.closest('.booking-dialog');
-        if (dialog) {
+        const dlg = container.closest('.booking-dialog');
+        if (dlg) {
           requestAnimationFrame(() => {
             const containerRect = container.getBoundingClientRect();
-            const dialogRect = dialog.getBoundingClientRect();
+            const dialogRect = dlg.getBoundingClientRect();
             const dropdownHeight = dropdown.offsetHeight || 260;
             const topClearance = containerRect.top - dropdownHeight;
             if (topClearance < dialogRect.top + 12) {
               const neededScroll = (dialogRect.top + 12) - topClearance;
-              dialog.scrollBy({ top: -neededScroll, behavior: 'smooth' });
+              dlg.scrollBy({ top: -neededScroll, behavior: 'smooth' });
             }
           });
         }
@@ -292,6 +297,7 @@ export function initBooking() {
       };
 
       const closeDropdown = () => {
+        if (dropdown.hidden) return;
         dropdown.hidden = true;
         trigger.setAttribute('aria-expanded', 'false');
         container.classList.remove('is-open');
@@ -302,17 +308,20 @@ export function initBooking() {
         else closeDropdown();
       };
 
+      let searchRaf = 0;
       const filterOptions = query => {
-        const q = query.trim().toLowerCase();
-        let visibleCount = 0;
-        options.forEach(opt => {
-          const text = (opt.textContent || '').toLowerCase();
-          const match = text.includes(q);
-          opt.style.display = match ? 'flex' : 'none';
-          if (match) visibleCount++;
+        cancelAnimationFrame(searchRaf);
+        searchRaf = requestAnimationFrame(() => {
+          const q = query.trim().toLowerCase();
+          let visibleCount = 0;
+          options.forEach(opt => {
+            const match = !q || opt._search.includes(q);
+            opt.style.display = match ? 'flex' : 'none';
+            if (match) visibleCount++;
+          });
+          if (emptyMsg) emptyMsg.hidden = visibleCount > 0;
+          if (searchClear) searchClear.hidden = !q;
         });
-        if (emptyMsg) emptyMsg.hidden = visibleCount > 0;
-        if (searchClear) searchClear.hidden = !q;
       };
 
       // Trigger click
@@ -326,6 +335,14 @@ export function initBooking() {
           return;
         }
         toggleDropdown();
+      });
+
+      // Keyboard support on trigger
+      trigger.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          toggleDropdown();
+        }
       });
 
       // Search input
@@ -348,23 +365,23 @@ export function initBooking() {
         });
       }
 
-      // Option change
-      options.forEach(opt => {
-        const val = opt.dataset.value;
-        const chk = opt.querySelector('input[type="checkbox"]');
-        opt.addEventListener('click', e => {
+      // Fast delegated option clicks
+      if (optionsContainer) {
+        optionsContainer.addEventListener('click', e => {
+          const opt = e.target.closest('.mj-multiselect-option');
+          if (!opt) return;
           e.preventDefault();
+          const val = opt._val;
           const index = selected.indexOf(val);
           if (index > -1) {
             selected.splice(index, 1);
           } else {
-            // Keep order as defined in AVAILABLE_SUBJECTS
             const temp = [...selected, val];
             selected = AVAILABLE_SUBJECTS.filter(s => temp.includes(s));
           }
           updateUI();
         });
-      });
+      }
 
       // Clear button
       if (clearBtn) {
@@ -386,10 +403,10 @@ export function initBooking() {
 
       // Close on outside click
       document.addEventListener('click', event => {
-        if (!container.contains(event.target)) {
+        if (!dropdown.hidden && !container.contains(event.target)) {
           closeDropdown();
         }
-      });
+      }, { passive: true });
 
       // Close on Escape
       container.addEventListener('keydown', e => {
@@ -421,16 +438,28 @@ export function initBooking() {
     form.reset();
     showStatus(form, '');
     if (bookingCourses.has(course)) form.elements.course.value = course;
+
+    // Compensate scrollbar width on desktop to prevent layout shifting
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
     overlay.hidden = false;
     document.body.classList.add('booking-open');
     mountCaptcha(form);
-    requestAnimationFrame(() => form.querySelector('input:not([type="hidden"])')?.focus({ preventScroll: true }));
+
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (!isTouch) {
+      requestAnimationFrame(() => form.querySelector('input:not([type="hidden"])')?.focus({ preventScroll: true }));
+    }
   };
 
   const close = () => {
     clearTimeout(closeTimer);
     overlay.hidden = true;
     document.body.classList.remove('booking-open');
+    document.body.style.paddingRight = '';
     previousFocus?.focus?.({ preventScroll: true });
   };
 
@@ -452,7 +481,7 @@ export function initBooking() {
       return;
     }
     if (event.key !== 'Tab') return;
-    const focusable = [...dialog.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element => !element.hidden && element.getClientRects().length);
+    const focusable = [...dialog.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element => !element.hidden && element.offsetParent !== null);
     if (!focusable.length) { event.preventDefault(); dialog.focus(); return; }
     const first = focusable[0], last = focusable.at(-1);
     if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
@@ -556,10 +585,12 @@ export function initBooking() {
         sep
       ].join('\n');
 
-      const waUrl = `https://wa.me/917304256203?text=${encodeURIComponent(waMessage)}`;
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const waUrl = isMobile
+        ? `https://wa.me/917304256203?text=${encodeURIComponent(waMessage)}`
+        : `https://api.whatsapp.com/send/?phone=917304256203&text=${encodeURIComponent(waMessage)}`;
 
       // Immediate redirect / popup for WhatsApp
-      const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
       let popupOpened = false;
       if (!isMobile) {
         try {
