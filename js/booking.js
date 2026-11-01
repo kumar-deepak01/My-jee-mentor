@@ -5,12 +5,10 @@ export const AVAILABLE_SUBJECTS = [
   'Chemistry',
   'Mathematics',
   'Biology',
-  'SST',
   'English',
   'Science',
   'Spoken English',
-  'Social Science',
-  'Logical Reasoning'
+  'Social Science'
 ];
 
 export const AVAILABLE_CLASSES = [
