@@ -3,7 +3,7 @@
  * Centralized results data and render functions for Home, Results, JEE, and NEET pages.
  */
 
-export const RESULTS_VERIFIED = false; // false = displays red sample badge, true = hides badge
+export const RESULTS_VERIFIED = true;
 
 export const RESULTS = [
   // 5 JEE Students
@@ -137,12 +137,7 @@ function formatExamTag(label) {
 }
 
 function renderSampleBanner() {
-  if (RESULTS_VERIFIED) return '';
-  return `
-    <div class="mjr-sample-banner-wrap">
-      <span class="mjr-sample-banner">SAMPLE DATA - REPLACE WITH VERIFIED RESULTS BEFORE LIVE</span>
-    </div>
-  `;
+  return '';
 }
 
 export function renderResultCard(item) {
@@ -225,7 +220,6 @@ export function resultsSection(exam = 'jee') {
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(subtitle)} of students who stayed consistent.</p>
         </div>
-        ${renderSampleBanner()}
         <div class="mjr-grid">
           ${cards.map(renderResultCard).join('')}
         </div>
@@ -251,7 +245,6 @@ export function resultsHomeSection() {
           <h2>Our Students' Achievements</h2>
           <p>Small batches, personal mentors and consistent effort lead to real ranks.</p>
         </div>
-        ${renderSampleBanner()}
         ${renderFilterChips('all')}
         <div class="mjr-groups-wrap">
           <div class="mjr-result-group" data-result-group="jee">
@@ -300,7 +293,6 @@ export function resultsPageMarkup() {
     </section>
     <section class="section mjr-section" id="results-main-section">
       <div class="container">
-        ${renderSampleBanner()}
         ${renderFilterChips('all')}
         <div class="mjr-groups-wrap">
           <div class="mjr-result-group" data-result-group="jee">

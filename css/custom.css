@@ -454,22 +454,9 @@ html.dark-theme .hero .stat-points li{color:#c1cad6}
   padding-bottom: 64px;
 }
 
-.mjr-sample-banner-wrap {
-  text-align: center;
-  margin: -6px auto 28px;
-}
-
+.mjr-sample-banner-wrap,
 .mjr-sample-banner {
-  display: inline-block;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 5px 16px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  display: none !important;
 }
 
 .mjr-filters {
