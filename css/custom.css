@@ -2309,10 +2309,14 @@ html.dark-theme .resource-card-copy p {
 }
 .mj-multiselect-field {
   position: relative;
+  z-index: 80;
 }
 .mj-multiselect {
   position: relative;
   width: 100%;
+}
+.mj-multiselect.is-open {
+  z-index: 120;
 }
 .mj-multiselect-trigger {
   width: 100%;
@@ -2396,16 +2400,17 @@ html.dark-theme .resource-card-copy p {
 }
 .mj-multiselect-dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  bottom: calc(100% + 8px);
+  top: auto;
   left: 0;
   right: 0;
-  z-index: 60;
+  z-index: 120;
   background: #ffffff;
   border: 1.5px solid #e5e7eb;
   border-radius: 14px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14), 0 3px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  animation: mjDropdownIn .16s ease-out;
+  animation: mjDropUpIn .18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .mj-multiselect-search-wrap {
   display: flex;
@@ -2443,7 +2448,7 @@ html.dark-theme .resource-card-copy p {
   color: #111827;
 }
 .mj-multiselect-options {
-  max-height: 200px;
+  max-height: clamp(140px, 28vh, 195px);
   overflow-y: auto;
   padding: 6px;
   display: flex;
@@ -2655,8 +2660,8 @@ html.dark-theme .resource-card-copy p {
   background: #20ba59;
 }
 
-@keyframes mjDropdownIn {
-  from { opacity: 0; transform: translateY(-6px); }
+@keyframes mjDropUpIn {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes mjChipFade {
@@ -2754,7 +2759,7 @@ html.dark-theme .mj-multiselect.is-open .mj-multiselect-trigger {
 html.dark-theme .mj-multiselect-dropdown {
   background: #171f2c;
   border-color: #2e3a4e;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 html.dark-theme .mj-multiselect-search-wrap,
 html.dark-theme .mj-multiselect-footer {

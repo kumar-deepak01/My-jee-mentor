@@ -112,7 +112,7 @@ export function renderLeadForm(id = 'lead-form') {
       <div class="booking-turnstile" data-turnstile hidden></div>
       <div class="form-status" role="status" aria-live="polite"></div>
       <button class="btn btn-primary mj-booking-submit" type="submit">
-        <span class="mj-submit-icon" aria-hidden="true">🚀</span> Submit &amp; Connect on WhatsApp
+        <span class="mj-submit-icon" aria-hidden="true">\uD83D\uDE80</span> Submit &amp; Connect on WhatsApp
       </button>
       <p class="notice">⚡ Direct WhatsApp connect with mentor • Small batches • Personal guidance</p>
     </div>
@@ -124,16 +124,16 @@ export function renderBookingModal() {
     <section class="booking-dialog" data-booking-dialog role="dialog" aria-modal="true" aria-labelledby="booking-title" tabindex="-1">
       <button class="booking-close" type="button" data-booking-close aria-label="Close booking form">&times;</button>
       <div class="booking-modal-head">
-        <h2 id="booking-title">🎓 Book Your Free Counselling Session</h2>
+        <h2 id="booking-title">\uD83C\uDF93 Book Your Free Counselling Session</h2>
         <p class="booking-intro">Tell us a little about yourself. Our academic team will connect with you shortly!</p>
       </div>
       <div data-booking-form-view>${renderLeadForm('booking-lead-form')}</div>
       <div class="booking-success" data-booking-success tabindex="-1" hidden>
-        <div class="booking-success-icon" aria-hidden="true">🎉</div>
+        <div class="booking-success-icon" aria-hidden="true">\uD83C\uDF89</div>
         <h3>Enquiry Submitted Successfully!</h3>
         <p>Connecting you to our academic mentor on WhatsApp...</p>
         <div class="booking-success-actions">
-          <a class="btn btn-primary mj-wa-direct-btn" data-wa-link href="#" target="_blank" rel="noopener">Open WhatsApp Now 🚀</a>
+          <a class="btn btn-primary mj-wa-direct-btn" data-wa-link href="#" target="_blank" rel="noopener">Open WhatsApp Now \uD83D\uDE80</a>
         </div>
       </div>
     </section>
@@ -268,6 +268,22 @@ export function initBooking() {
         dropdown.hidden = false;
         trigger.setAttribute('aria-expanded', 'true');
         container.classList.add('is-open');
+
+        // Scroll modal if needed to ensure the drop-up is fully visible without clipping
+        const dialog = container.closest('.booking-dialog');
+        if (dialog) {
+          requestAnimationFrame(() => {
+            const containerRect = container.getBoundingClientRect();
+            const dialogRect = dialog.getBoundingClientRect();
+            const dropdownHeight = dropdown.offsetHeight || 260;
+            const topClearance = containerRect.top - dropdownHeight;
+            if (topClearance < dialogRect.top + 12) {
+              const neededScroll = (dialogRect.top + 12) - topClearance;
+              dialog.scrollBy({ top: -neededScroll, behavior: 'smooth' });
+            }
+          });
+        }
+
         if (searchInput) {
           searchInput.value = '';
           filterOptions('');
@@ -503,40 +519,41 @@ export function initBooking() {
       const submit = form.querySelector('[type="submit"]');
       submit.disabled = true;
       const originalText = submit.innerHTML;
-      submit.innerHTML = '<span class="mj-submit-icon" aria-hidden="true">⏳</span> Connecting to WhatsApp...';
+      submit.innerHTML = '<span class="mj-submit-icon" aria-hidden="true">\u23F3</span> Connecting to WhatsApp...';
       form.dataset.submitting = 'true';
       showStatus(form, '');
 
-      // Build WhatsApp message strictly according to specification
+      // Build WhatsApp message with safe Unicode escapes and exact requested emojis
+      const sep = '\u2501'.repeat(18);
       const waMessage = [
-        '🎓 *NEW STUDENT ENQUIRY – MY JEE MENTOR*',
+        '\uD83C\uDF93 *NEW STUDENT ENQUIRY \u2013 MY JEE MENTOR*',
         '',
-        '━━━━━━━━━━━━━━━━━━',
+        sep,
         '',
-        '👨‍🎓 *STUDENT DETAILS*',
+        '\uD83D\uDC68\u200D\uD83C\uDF93 *STUDENT DETAILS*',
         '',
-        `👤 Student Name: ${studentName}`,
-        `📱 Mobile Number: ${mobile10}`,
-        `🏫 Class: ${className}`,
-        `📚 Course: ${course}`,
+        `\uD83D\uDC64 Student Name: ${studentName}`,
+        `\uD83D\uDCF1 Mobile Number: ${mobile10}`,
+        `\uD83C\uDFEB Class: ${className}`,
+        `\uD83D\uDCDA Course: ${course}`,
         '',
-        '━━━━━━━━━━━━━━━━━━',
+        sep,
         '',
-        '📖 *ACADEMIC PREFERENCES*',
+        '\uD83D\uDCD6 *ACADEMIC PREFERENCES*',
         '',
-        `🎯 Current Coaching: ${currentCoaching}`,
-        `📘 Preferred Subjects: ${preferredSubjects}`,
-        `🌐 Preferred Language: ${language}`,
+        `\uD83C\uDFEB Current Coaching: ${currentCoaching}`,
+        `\uD83C\uDFAF Preferred Subjects: ${preferredSubjects}`,
+        `\uD83C\uDF10 Preferred Language: ${language}`,
         '',
-        '━━━━━━━━━━━━━━━━━━',
+        sep,
         '',
-        '✅ Enquiry submitted through the My JEE Mentor Website.',
+        '\u2705 Enquiry submitted through the My JEE Mentor Website.',
         '',
         'We would like to know more about the available courses and counselling sessions.',
         '',
         'Thank you!',
         '',
-        '━━━━━━━━━━━━━━━━━━'
+        sep
       ].join('\n');
 
       const waUrl = `https://wa.me/917304256203?text=${encodeURIComponent(waMessage)}`;
@@ -569,7 +586,7 @@ export function initBooking() {
         if (status) {
           status.className = 'form-status success';
           status.style.display = 'block';
-          status.innerHTML = `<strong>Enquiry Submitted! 🎉</strong> Connecting you to WhatsApp... <a class="btn btn-sm btn-primary mj-status-wa-btn" href="${waUrl}" target="_blank" rel="noopener">Open WhatsApp Now 🚀</a>`;
+          status.innerHTML = `<strong>Enquiry Submitted! \uD83C\uDF89</strong> Connecting you to WhatsApp... <a class="btn btn-sm btn-primary mj-status-wa-btn" href="${waUrl}" target="_blank" rel="noopener">Open WhatsApp Now \uD83D\uDE80</a>`;
         }
       }
 
