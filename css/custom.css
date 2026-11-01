@@ -670,7 +670,8 @@ html.dark-theme .hero .stat-points li{color:#c1cad6}
   text-overflow: ellipsis;
 }
 
-.mjr-student-percentile {
+.mjr-student-percentile,
+.mjr-student-sublabel {
   font-size: 12px;
   font-weight: 800;
   color: #ea580c;
@@ -678,36 +679,73 @@ html.dark-theme .hero .stat-points li{color:#c1cad6}
   line-height: 1.2;
 }
 
-/* NEET Marks & Progress Bar */
-.mjr-marks-wrap {
-  margin-bottom: 12px;
+/* NEET Score Highlight Box (Image 2 style) */
+.mjr-neet-score-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fff7f0 100%);
+  border: 1px solid rgba(234, 88, 12, 0.22);
+  border-radius: 14px;
+  padding: 10px 12px 10px;
+  margin: 10px 0 12px;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.06);
 }
 
-.mjr-marks-label {
+.mjr-neet-score-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.mjr-score-label-stack {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.mjr-score-label-stack span {
+  font-size: 9.5px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: #14213d;
+  text-transform: uppercase;
+}
+
+.mjr-score-pct-badge {
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2.5px 8.5px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+  line-height: 1;
+}
+
+.mjr-neet-score-val {
   display: flex;
   align-items: baseline;
-  gap: 2px;
-  font-size: 14.5px;
-  font-weight: 900;
-  color: #14213d;
-  line-height: 1.2;
+  margin-bottom: 2px;
 }
 
-.mjr-marks-label strong {
+.mjr-score-num {
+  font-size: 26px;
   font-weight: 900;
-  color: #14213d;
+  color: #ea580c;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
-.mjr-marks-label span {
-  font-size: 12px;
-  font-weight: 700;
-  color: #64748b;
+.mjr-score-denom {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #14213d;
+  margin-left: 2px;
 }
 
 .mjr-progress-track {
   width: 100%;
   height: 6px;
-  background: rgba(20, 33, 61, 0.08);
+  background: rgba(20, 33, 61, 0.09);
   border-radius: 999px;
   overflow: hidden;
   margin-top: 6px;
@@ -832,7 +870,8 @@ html.dark-theme .mjr-student-name {
   color: #f1f5f9;
 }
 
-html.dark-theme .mjr-student-percentile {
+html.dark-theme .mjr-student-percentile,
+html.dark-theme .mjr-student-sublabel {
   color: #fb923c;
 }
 
@@ -849,12 +888,18 @@ html.dark-theme .mjr-exam-sub {
   color: #fb923c;
 }
 
-html.dark-theme .mjr-marks-label strong {
-  color: #f1f5f9;
+html.dark-theme .mjr-neet-score-card {
+  background: #131924;
+  border-color: rgba(234, 88, 12, 0.28);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-html.dark-theme .mjr-marks-label span {
-  color: #94a3b8;
+html.dark-theme .mjr-score-label-stack span {
+  color: #cbd5e1;
+}
+
+html.dark-theme .mjr-score-denom {
+  color: #cbd5e1;
 }
 
 html.dark-theme .mjr-progress-track {

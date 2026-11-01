@@ -58,50 +58,55 @@ export const RESULTS = [
     id: 'neet-1',
     exam: 'neet',
     name: 'Ishita Rawat',
-    examLabel: 'NEET 680/720',
+    examLabel: 'NEET UG',
     air: '920',
-    percentile: '99.96 %ile',
-    marks: 680,
+    subLabel: 'NEET UG Result',
+    marks: 676,
+    percentage: '93.9%',
     quote: 'An NCERT-based revision plan and regular tests improved my accuracy.'
   },
   {
     id: 'neet-2',
     exam: 'neet',
     name: 'Mohit Yadav',
-    examLabel: 'NEET 645/720',
+    examLabel: 'NEET UG',
     air: '3,450',
-    percentile: '99.86 %ile',
-    marks: 645,
+    subLabel: 'NEET UG Result',
+    marks: 655,
+    percentage: '91.0%',
     quote: 'Mock test analysis taught me how to manage my time.'
   },
   {
     id: 'neet-3',
     exam: 'neet',
     name: 'Sneha Patel',
-    examLabel: 'NEET 628/720',
+    examLabel: 'NEET UG',
     air: '5,100',
-    percentile: '99.79 %ile',
-    marks: 628,
+    subLabel: 'NEET UG Result',
+    marks: 645,
+    percentage: '89.6%',
     quote: 'Weekly progress reviews with my mentor kept me consistent.'
   },
   {
     id: 'neet-4',
     exam: 'neet',
     name: 'Dev Chauhan',
-    examLabel: 'NEET 610/720',
+    examLabel: 'NEET UG',
     air: '7,800',
-    percentile: '99.68 %ile',
-    marks: 610,
+    subLabel: 'NEET UG Result',
+    marks: 635,
+    percentage: '88.2%',
     quote: 'Doubt classes and short notes made Chemistry my favourite subject.'
   },
   {
     id: 'neet-5',
     exam: 'neet',
     name: 'Priya Nair',
-    examLabel: 'NEET 595/720',
+    examLabel: 'NEET UG',
     air: '10,200',
-    percentile: '99.58 %ile',
-    marks: 595,
+    subLabel: 'NEET UG Result',
+    marks: 625,
+    percentage: '86.8%',
     quote: "My mentor's guidance and regular practice helped me stay calm and confident in the exam."
   }
 ];
@@ -144,7 +149,7 @@ export function renderResultCard(item) {
   const initials = getInitials(item.name);
   const isNeet = item.exam === 'neet';
   const marks = Number(item.marks) || 0;
-  const percentage = Math.min(100, Math.max(0, (marks / 720) * 100)).toFixed(1);
+  const pctStr = item.percentage || `${Math.min(100, Math.max(0, (marks / 720) * 100)).toFixed(1)}%`;
 
   return `
     <article class="mjr-card mjr-card-${escapeHtml(item.exam)}" data-exam="${escapeHtml(item.exam)}">
@@ -160,16 +165,28 @@ export function renderResultCard(item) {
         <div class="mjr-avatar" aria-hidden="true">${escapeHtml(initials)}</div>
         <div class="mjr-student-info">
           <h4 class="mjr-student-name">${escapeHtml(item.name)}</h4>
-          <span class="mjr-student-percentile">${escapeHtml(item.percentile)}</span>
+          ${isNeet ? `
+            <span class="mjr-student-sublabel">${escapeHtml(item.subLabel || 'NEET UG Result')}</span>
+          ` : `
+            <span class="mjr-student-percentile">${escapeHtml(item.percentile)}</span>
+          `}
         </div>
       </div>
       ${isNeet ? `
-        <div class="mjr-marks-wrap">
-          <div class="mjr-marks-label">
-            <strong>${marks}</strong><span>/720</span>
+        <div class="mjr-neet-score-card">
+          <div class="mjr-neet-score-header">
+            <div class="mjr-score-label-stack">
+              <span>MARKS</span>
+              <span>SCORED</span>
+            </div>
+            <span class="mjr-score-pct-badge">${escapeHtml(pctStr)}</span>
+          </div>
+          <div class="mjr-neet-score-val">
+            <span class="mjr-score-num">${marks}</span>
+            <span class="mjr-score-denom"> / 720</span>
           </div>
           <div class="mjr-progress-track" role="progressbar" aria-valuenow="${marks}" aria-valuemin="0" aria-valuemax="720" aria-label="${escapeHtml(item.name)} marks">
-            <div class="mjr-progress-fill" style="width:${percentage}%;"></div>
+            <div class="mjr-progress-fill" style="width:${escapeHtml(pctStr)};"></div>
           </div>
         </div>
       ` : `
