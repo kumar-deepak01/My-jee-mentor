@@ -11,10 +11,10 @@ const sanitize=k=>body(k).customSanitizer(v=>typeof v==='string'?v.trim().replac
 router.get('/csrf',(req,res)=>{const token=randomBytes(32).toString('hex');res.cookie('csrf',token,{httpOnly:true,sameSite:'strict',secure:process.env.NODE_ENV==='production',maxAge:30*60*1000,path:'/'});res.json({token});});
 router.post('/leads',limiter,
  ...fields.map(sanitize),
- body('studentName').isLength({min:2,max:80}),body('parentName').isLength({min:2,max:80}),body('email').isEmail().isLength({max:254}),
+ body('studentName').isLength({min:2,max:80}),body('parentName').optional({checkFalsy:true}).isLength({max:80}),body('email').optional({checkFalsy:true}).isEmail().isLength({max:254}),
  body('mobile').matches(/^\+?[0-9 ()-]{8,18}$/),body('whatsapp').optional({checkFalsy:true}).matches(/^\+?[0-9 ()-]{8,18}$/),
- body('className').isIn(['7','8','9','10','11','12','Dropper']),body('exam').isIn(['JEE','NEET','Foundation']),
- body('city').notEmpty().isLength({max:80}),...['targetYear','currentCoaching','preferredSubject','language'].map(k=>body(k).optional({checkFalsy:true}).isLength({max:100})),body('message').optional({checkFalsy:true}).isLength({max:1000}),
+ body('className').isIn(['7','8','9','10','11','12','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12','Dropper']),body('exam').isIn(['JEE','NEET','Foundation']),
+ body('city').optional({checkFalsy:true}).isLength({max:80}),...['targetYear','currentCoaching','preferredSubject','language'].map(k=>body(k).optional({checkFalsy:true}).isLength({max:100})),body('message').optional({checkFalsy:true}).isLength({max:1000}),
  async(req,res)=>{
   if(req.body?.website)return res.status(200).json({ok:true});
   const cookie=req.cookies?.csrf,header=req.get('x-csrf-token')||'';

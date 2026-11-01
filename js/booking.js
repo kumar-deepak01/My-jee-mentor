@@ -1,28 +1,143 @@
 const bookingCourses = new Set(['JEE', 'NEET', 'Foundation']);
 
+export const AVAILABLE_SUBJECTS = [
+  'Physics',
+  'Chemistry',
+  'Mathematics',
+  'Biology',
+  'SST',
+  'English',
+  'Science',
+  'Spoken English',
+  'Social Science',
+  'Logical Reasoning'
+];
+
+export const AVAILABLE_CLASSES = [
+  'Class 7',
+  'Class 8',
+  'Class 9',
+  'Class 10',
+  'Class 11',
+  'Class 12',
+  'Dropper'
+];
+
+export const AVAILABLE_COURSES = ['JEE', 'NEET', 'Foundation'];
+export const AVAILABLE_LANGUAGES = ['English', 'Hindi'];
+
 export function renderLeadForm(id = 'lead-form') {
-  const field = (name, label, control, required = false) => `<div class="field"><label for="${id}-${name}">${label}${required ? ' *' : ''}</label>${control.replace('<control-id>', `${id}-${name}`)}</div>`;
-  return `<form id="${id}" class="card form-grid" data-lead-form novalidate>
-    ${field('studentName', 'Student Name', '<input id="<control-id>" name="studentName" required minlength="2" maxlength="80" autocomplete="name">', true)}
-    ${field('parentName', 'Parent Name', '<input id="<control-id>" name="parentName" required minlength="2" maxlength="80">', true)}
-    ${field('email', 'Email', '<input id="<control-id>" name="email" type="email" required maxlength="254" autocomplete="email">', true)}
-    ${field('mobile', 'Mobile', '<input id="<control-id>" name="mobile" type="tel" required inputmode="tel" autocomplete="tel" maxlength="18">', true)}
-    ${field('whatsapp', 'WhatsApp Number', '<input id="<control-id>" name="whatsapp" type="tel" inputmode="tel" maxlength="18">')}
-    ${field('className', 'Class', `<select id="<control-id>" name="className" required><option value="">Select class</option>${['7', '8', '9', '10', '11', '12', 'Dropper'].map(value => `<option>${value}</option>`).join('')}</select>`, true)}
-    ${field('course', 'Course', '<select id="<control-id>" name="course" required data-course-field><option value="">Select course</option><option>JEE</option><option>NEET</option><option>Foundation</option></select>', true)}
-    ${field('targetYear', 'Target Year', '<input id="<control-id>" name="targetYear" maxlength="10">')}
-    ${field('currentCoaching', 'Current Coaching', '<input id="<control-id>" name="currentCoaching" maxlength="100">')}
-    ${field('subject', 'Preferred Subject', '<input id="<control-id>" name="subject" maxlength="60">')}
-    ${field('city', 'City', '<input id="<control-id>" name="city" required maxlength="80" autocomplete="address-level2">', true)}
-    ${field('language', 'Preferred Language', '<select id="<control-id>" name="language"><option>English</option><option>Hindi</option><option>Other</option></select>')}
-    ${field('message', 'Message', '<textarea id="<control-id>" name="message" maxlength="1000"></textarea>')}
+  return `<form id="${id}" class="card form-grid mj-counselling-form" data-lead-form novalidate>
+    <div class="field">
+      <label for="${id}-studentName">Student Name *</label>
+      <input id="${id}-studentName" name="studentName" type="text" required minlength="2" maxlength="80" autocomplete="name" placeholder="Student's full name">
+    </div>
+
+    <div class="field">
+      <label for="${id}-mobile">Mobile Number *</label>
+      <input id="${id}-mobile" name="mobile" type="tel" required inputmode="numeric" autocomplete="tel" maxlength="15" placeholder="10-digit mobile number">
+    </div>
+
+    <div class="field">
+      <label for="${id}-className">Class *</label>
+      <select id="${id}-className" name="className" required>
+        <option value="">Select class</option>
+        ${AVAILABLE_CLASSES.map(cls => `<option value="${cls}">${cls}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="${id}-course">Course *</label>
+      <select id="${id}-course" name="course" required data-course-field>
+        <option value="">Select course</option>
+        ${AVAILABLE_COURSES.map(c => `<option value="${c}">${c}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="${id}-currentCoaching">Current Coaching <span class="mj-optional">(Optional)</span></label>
+      <input id="${id}-currentCoaching" name="currentCoaching" type="text" maxlength="100" placeholder="e.g. Allen, Aakash, Self-study">
+    </div>
+
+    <div class="field">
+      <label for="${id}-language">Preferred Language *</label>
+      <select id="${id}-language" name="language" required>
+        <option value="English" selected>English</option>
+        <option value="Hindi">Hindi</option>
+      </select>
+    </div>
+
+    <div class="field full mj-multiselect-field">
+      <label id="${id}-subjects-label" class="mj-field-label">Preferred Subjects <span class="mj-optional">(Optional)</span></label>
+      <div class="mj-multiselect" data-multiselect id="${id}-subjects-container">
+        <button type="button" class="mj-multiselect-trigger" id="${id}-subjects-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}-subjects-label">
+          <span class="mj-multiselect-placeholder">Select subjects (optional)...</span>
+          <div class="mj-selected-chips" aria-live="polite"></div>
+          <span class="mj-multiselect-arrow" aria-hidden="true">
+            <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 7.5 5 5 5-5"/></svg>
+          </span>
+        </button>
+        <div class="mj-multiselect-dropdown" role="listbox" aria-multiselectable="true" hidden>
+          <div class="mj-multiselect-search-wrap">
+            <svg class="mj-search-icon" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
+            <input type="text" class="mj-multiselect-search" placeholder="Search subjects..." aria-label="Search subjects" autocomplete="off">
+            <button type="button" class="mj-search-clear" aria-label="Clear search" hidden>&times;</button>
+          </div>
+          <div class="mj-multiselect-options">
+            ${AVAILABLE_SUBJECTS.map(subj => `
+              <label class="mj-multiselect-option" data-value="${subj}">
+                <input type="checkbox" value="${subj}" class="mj-multiselect-check">
+                <span class="mj-checkbox-custom" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                </span>
+                <span class="mj-option-text">${subj}</span>
+              </label>
+            `).join('')}
+            <div class="mj-multiselect-empty" hidden>No matching subjects found</div>
+          </div>
+          <div class="mj-multiselect-footer">
+            <span class="mj-multiselect-count">0 selected</span>
+            <div class="mj-multiselect-actions">
+              <button type="button" class="mj-btn-clear">Clear</button>
+              <button type="button" class="mj-btn-done">Done</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="preferredSubjects" value="">
+      </div>
+    </div>
+
     <div class="hidden-field" aria-hidden="true"><label>Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
-    <div class="field full"><div class="booking-turnstile" data-turnstile hidden></div><div class="form-status" role="status" aria-live="polite"></div><p class="notice">By submitting, you agree that our team may contact you about your enquiry. Please do not enter sensitive personal information.</p><button class="btn btn-primary" type="submit">Book Free Counselling</button></div>
+    <div class="field full form-footer">
+      <div class="booking-turnstile" data-turnstile hidden></div>
+      <div class="form-status" role="status" aria-live="polite"></div>
+      <button class="btn btn-primary mj-booking-submit" type="submit">
+        <span class="mj-submit-icon" aria-hidden="true">🚀</span> Submit &amp; Connect on WhatsApp
+      </button>
+      <p class="notice">⚡ Direct WhatsApp connect with mentor • Small batches • Personal guidance</p>
+    </div>
   </form>`;
 }
 
 export function renderBookingModal() {
-  return `<div class="booking-overlay" data-booking-overlay hidden><section class="booking-dialog" data-booking-dialog role="dialog" aria-modal="true" aria-labelledby="booking-title" tabindex="-1"><button class="booking-close" type="button" data-booking-close aria-label="Close booking form">&times;</button><h2 id="booking-title">Book Free Counselling</h2><p class="booking-intro">Share a few details and our team will contact you shortly.</p><div data-booking-form-view>${renderLeadForm('booking-lead-form')}</div><div class="booking-success" data-booking-success tabindex="-1" hidden><span class="booking-success-icon" aria-hidden="true">✓</span><h3>Thank you!</h3><p>Hum jaldi contact karenge</p></div></section></div>`;
+  return `<div class="booking-overlay" data-booking-overlay hidden>
+    <section class="booking-dialog" data-booking-dialog role="dialog" aria-modal="true" aria-labelledby="booking-title" tabindex="-1">
+      <button class="booking-close" type="button" data-booking-close aria-label="Close booking form">&times;</button>
+      <div class="booking-modal-head">
+        <h2 id="booking-title">🎓 Book Your Free Counselling Session</h2>
+        <p class="booking-intro">Tell us a little about yourself. Our academic team will connect with you shortly!</p>
+      </div>
+      <div data-booking-form-view>${renderLeadForm('booking-lead-form')}</div>
+      <div class="booking-success" data-booking-success tabindex="-1" hidden>
+        <div class="booking-success-icon" aria-hidden="true">🎉</div>
+        <h3>Enquiry Submitted Successfully!</h3>
+        <p>Connecting you to our academic mentor on WhatsApp...</p>
+        <div class="booking-success-actions">
+          <a class="btn btn-primary mj-wa-direct-btn" data-wa-link href="#" target="_blank" rel="noopener">Open WhatsApp Now 🚀</a>
+        </div>
+      </div>
+    </section>
+  </div>`;
 }
 
 let turnstileReady;
@@ -54,16 +169,19 @@ export function initBooking() {
 
   const showStatus = (form, message, error = false) => {
     const status = form.querySelector('.form-status');
+    if (!status) return;
     status.textContent = message;
     status.style.display = message ? 'block' : 'none';
     status.classList.toggle('error', error);
   };
+
   const resetCaptcha = form => {
     const widget = captchaWidgets.get(form);
     if (widget !== undefined && window.turnstile) window.turnstile.reset(widget);
     const token = form.querySelector('[name="turnstileToken"]');
     if (token) token.value = '';
   };
+
   const mountCaptcha = async form => {
     const slot = form.querySelector('[data-turnstile]');
     if (!slot || !siteKey || captchaWidgets.has(form) || form.closest('[data-booking-overlay]')?.hidden) return;
@@ -91,6 +209,193 @@ export function initBooking() {
       showStatus(form, error.message, true);
     }
   };
+
+  /* Multi-select setup */
+  const initMultiSelects = () => {
+    document.querySelectorAll('[data-multiselect]').forEach(container => {
+      if (container.dataset.initialized === 'true') return;
+      container.dataset.initialized = 'true';
+
+      const trigger = container.querySelector('.mj-multiselect-trigger');
+      const placeholder = container.querySelector('.mj-multiselect-placeholder');
+      const chipsWrap = container.querySelector('.mj-selected-chips');
+      const dropdown = container.querySelector('.mj-multiselect-dropdown');
+      const searchInput = container.querySelector('.mj-multiselect-search');
+      const searchClear = container.querySelector('.mj-search-clear');
+      const options = [...container.querySelectorAll('.mj-multiselect-option')];
+      const emptyMsg = container.querySelector('.mj-multiselect-empty');
+      const countEl = container.querySelector('.mj-multiselect-count');
+      const clearBtn = container.querySelector('.mj-btn-clear');
+      const doneBtn = container.querySelector('.mj-btn-done');
+      const hiddenInput = container.querySelector('input[type="hidden"]');
+      const parentForm = container.closest('form');
+
+      let selected = [];
+
+      const updateUI = () => {
+        // Synchronize checkboxes and active classes
+        options.forEach(opt => {
+          const val = opt.dataset.value;
+          const isChecked = selected.includes(val);
+          const chk = opt.querySelector('input[type="checkbox"]');
+          if (chk) chk.checked = isChecked;
+          opt.classList.toggle('is-selected', isChecked);
+        });
+
+        // Update hidden input
+        if (hiddenInput) {
+          hiddenInput.value = selected.join(', ');
+        }
+
+        // Update chips
+        chipsWrap.innerHTML = '';
+        if (selected.length === 0) {
+          placeholder.style.display = 'inline';
+          if (countEl) countEl.textContent = '0 selected';
+        } else {
+          placeholder.style.display = 'none';
+          selected.forEach(item => {
+            const chip = document.createElement('span');
+            chip.className = 'mj-chip';
+            chip.innerHTML = `${item}<button type="button" class="mj-chip-remove" data-remove="${item}" aria-label="Remove ${item}">&times;</button>`;
+            chipsWrap.appendChild(chip);
+          });
+          if (countEl) countEl.textContent = `${selected.length} selected`;
+        }
+      };
+
+      const openDropdown = () => {
+        dropdown.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+        container.classList.add('is-open');
+        if (searchInput) {
+          searchInput.value = '';
+          filterOptions('');
+          searchInput.focus();
+        }
+      };
+
+      const closeDropdown = () => {
+        dropdown.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        container.classList.remove('is-open');
+      };
+
+      const toggleDropdown = () => {
+        if (dropdown.hidden) openDropdown();
+        else closeDropdown();
+      };
+
+      const filterOptions = query => {
+        const q = query.trim().toLowerCase();
+        let visibleCount = 0;
+        options.forEach(opt => {
+          const text = (opt.textContent || '').toLowerCase();
+          const match = text.includes(q);
+          opt.style.display = match ? 'flex' : 'none';
+          if (match) visibleCount++;
+        });
+        if (emptyMsg) emptyMsg.hidden = visibleCount > 0;
+        if (searchClear) searchClear.hidden = !q;
+      };
+
+      // Trigger click
+      trigger.addEventListener('click', event => {
+        const removeBtn = event.target.closest('.mj-chip-remove');
+        if (removeBtn) {
+          event.stopPropagation();
+          const itemToRemove = removeBtn.dataset.remove;
+          selected = selected.filter(s => s !== itemToRemove);
+          updateUI();
+          return;
+        }
+        toggleDropdown();
+      });
+
+      // Search input
+      if (searchInput) {
+        searchInput.addEventListener('input', e => filterOptions(e.target.value));
+        searchInput.addEventListener('keydown', e => {
+          if (e.key === 'Escape') {
+            closeDropdown();
+            trigger.focus();
+          }
+        });
+      }
+
+      // Search clear button
+      if (searchClear) {
+        searchClear.addEventListener('click', () => {
+          searchInput.value = '';
+          filterOptions('');
+          searchInput.focus();
+        });
+      }
+
+      // Option change
+      options.forEach(opt => {
+        const val = opt.dataset.value;
+        const chk = opt.querySelector('input[type="checkbox"]');
+        opt.addEventListener('click', e => {
+          e.preventDefault();
+          const index = selected.indexOf(val);
+          if (index > -1) {
+            selected.splice(index, 1);
+          } else {
+            // Keep order as defined in AVAILABLE_SUBJECTS
+            const temp = [...selected, val];
+            selected = AVAILABLE_SUBJECTS.filter(s => temp.includes(s));
+          }
+          updateUI();
+        });
+      });
+
+      // Clear button
+      if (clearBtn) {
+        clearBtn.addEventListener('click', e => {
+          e.preventDefault();
+          selected = [];
+          updateUI();
+        });
+      }
+
+      // Done button
+      if (doneBtn) {
+        doneBtn.addEventListener('click', e => {
+          e.preventDefault();
+          closeDropdown();
+          trigger.focus();
+        });
+      }
+
+      // Close on outside click
+      document.addEventListener('click', event => {
+        if (!container.contains(event.target)) {
+          closeDropdown();
+        }
+      });
+
+      // Close on Escape
+      container.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !dropdown.hidden) {
+          closeDropdown();
+          trigger.focus();
+        }
+      });
+
+      // Handle form reset
+      if (parentForm) {
+        parentForm.addEventListener('reset', () => {
+          selected = [];
+          setTimeout(updateUI, 0);
+          closeDropdown();
+        });
+      }
+
+      updateUI();
+    });
+  };
+
   const open = (course = '') => {
     previousFocus = document.activeElement;
     clearTimeout(closeTimer);
@@ -105,6 +410,7 @@ export function initBooking() {
     mountCaptcha(form);
     requestAnimationFrame(() => form.querySelector('input:not([type="hidden"])')?.focus({ preventScroll: true }));
   };
+
   const close = () => {
     clearTimeout(closeTimer);
     overlay.hidden = true;
@@ -121,6 +427,7 @@ export function initBooking() {
     }
     if (event.target === overlay || event.target.closest('[data-booking-close]')) close();
   });
+
   document.addEventListener('keydown', event => {
     if (overlay.hidden) return;
     if (event.key === 'Escape') {
@@ -136,58 +443,170 @@ export function initBooking() {
     else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
   });
 
+  initMultiSelects();
+
   document.querySelectorAll('[data-lead-form]').forEach(form => {
     mountCaptcha(form);
     form.addEventListener('submit', async event => {
       event.preventDefault();
       if (form.dataset.submitting === 'true') return;
-      if (!form.reportValidity()) return;
-      if (form.elements.website.value.trim()) return;
+      if (form.elements.website?.value.trim()) return;
+
+      const studentName = (form.elements.studentName?.value || '').trim();
+      if (studentName.length < 2) {
+        showStatus(form, 'Please enter the student\'s full name (at least 2 letters).', true);
+        form.elements.studentName?.focus();
+        return;
+      }
+
+      const mobileRaw = (form.elements.mobile?.value || '').trim();
+      const cleanMobile = mobileRaw.replace(/\D/g, '');
+      const isValidMobile = (cleanMobile.length === 10 && /^[6-9]\d{9}$/.test(cleanMobile)) ||
+                            (cleanMobile.length === 12 && cleanMobile.startsWith('91') && /^[6-9]\d{9}$/.test(cleanMobile.slice(2))) ||
+                            (cleanMobile.length === 11 && cleanMobile.startsWith('0') && /^[6-9]\d{9}$/.test(cleanMobile.slice(1)));
+
+      if (!isValidMobile) {
+        showStatus(form, 'Please enter a valid 10-digit Indian mobile number.', true);
+        form.elements.mobile?.focus();
+        return;
+      }
+
+      const mobile10 = cleanMobile.length === 12 && cleanMobile.startsWith('91')
+        ? cleanMobile.slice(2)
+        : cleanMobile.length === 11 && cleanMobile.startsWith('0')
+        ? cleanMobile.slice(1)
+        : cleanMobile;
+
+      const className = (form.elements.className?.value || '').trim();
+      if (!className) {
+        showStatus(form, 'Please select the student\'s class.', true);
+        form.elements.className?.focus();
+        return;
+      }
+
+      const course = (form.elements.course?.value || '').trim();
+      if (!course) {
+        showStatus(form, 'Please select a course (JEE, NEET, or Foundation).', true);
+        form.elements.course?.focus();
+        return;
+      }
+
+      const language = (form.elements.language?.value || '').trim() || 'English';
+      const currentCoaching = (form.elements.currentCoaching?.value || '').trim() || 'Not Provided';
+      const preferredSubjects = (form.elements.preferredSubjects?.value || '').trim() || 'Not Provided';
+
       if (siteKey && !form.elements.turnstileToken?.value) {
         showStatus(form, 'Please complete the security check and try again.', true);
         return;
       }
+
       const submit = form.querySelector('[type="submit"]');
       submit.disabled = true;
-      const originalText = submit.textContent;
-      submit.textContent = 'Sending...';
+      const originalText = submit.innerHTML;
+      submit.innerHTML = '<span class="mj-submit-icon" aria-hidden="true">⏳</span> Connecting to WhatsApp...';
       form.dataset.submitting = 'true';
-      showStatus(form, 'Sending your enquiry...');
-      try {
-        const csrfResponse = await fetch('/api/csrf', { credentials: 'same-origin', cache: 'no-store' });
-        const csrf = await csrfResponse.json().catch(() => ({}));
-        if (!csrfResponse.ok || !csrf.token) throw new Error(csrf.message || 'Your form session could not be started. Please try again.');
-        const raw = Object.fromEntries(new FormData(form));
-        const payload = {
-          studentName: raw.studentName, parentName: raw.parentName, email: raw.email, mobile: raw.mobile,
-          whatsapp: raw.whatsapp, className: raw.className, exam: raw.course, targetYear: raw.targetYear,
-          currentCoaching: raw.currentCoaching, preferredSubject: raw.subject, city: raw.city,
-          language: raw.language, message: raw.message, website: raw.website, turnstileToken: raw.turnstileToken || ''
-        };
-        const response = await fetch('/api/leads', {
-          method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-csrf-token': csrf.token },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.ok) throw new Error(result.message || 'Your enquiry could not be sent. Please try again.');
-        if (form.id === 'booking-lead-form') {
-          formView.hidden = true;
-          successView.hidden = false;
-          closeButton.focus({ preventScroll: true });
-          closeTimer = window.setTimeout(close, 3000);
-        } else {
-          form.reset();
-          resetCaptcha(form);
-          showStatus(form, 'Thank you! Hum jaldi contact karenge');
-        }
-      } catch (error) {
-        showStatus(form, error.message || 'Your enquiry could not be sent. Please try again.', true);
-        resetCaptcha(form);
-      } finally {
-        delete form.dataset.submitting;
-        submit.disabled = false;
-        submit.textContent = originalText;
+      showStatus(form, '');
+
+      // Build WhatsApp message strictly according to specification
+      const waMessage = [
+        '🎓 *NEW STUDENT ENQUIRY – MY JEE MENTOR*',
+        '',
+        '━━━━━━━━━━━━━━━━━━',
+        '',
+        '👨‍🎓 *STUDENT DETAILS*',
+        '',
+        `👤 Student Name: ${studentName}`,
+        `📱 Mobile Number: ${mobile10}`,
+        `🏫 Class: ${className}`,
+        `📚 Course: ${course}`,
+        '',
+        '━━━━━━━━━━━━━━━━━━',
+        '',
+        '📖 *ACADEMIC PREFERENCES*',
+        '',
+        `🎯 Current Coaching: ${currentCoaching}`,
+        `📘 Preferred Subjects: ${preferredSubjects}`,
+        `🌐 Preferred Language: ${language}`,
+        '',
+        '━━━━━━━━━━━━━━━━━━',
+        '',
+        '✅ Enquiry submitted through the My JEE Mentor Website.',
+        '',
+        'We would like to know more about the available courses and counselling sessions.',
+        '',
+        'Thank you!',
+        '',
+        '━━━━━━━━━━━━━━━━━━'
+      ].join('\n');
+
+      const waUrl = `https://wa.me/917304256203?text=${encodeURIComponent(waMessage)}`;
+
+      // Immediate redirect / popup for WhatsApp
+      const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+      let popupOpened = false;
+      if (!isMobile) {
+        try {
+          const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
+          if (win && !win.closed) popupOpened = true;
+        } catch (_) {}
       }
+      if (isMobile || !popupOpened) {
+        if (isMobile) {
+          window.location.href = waUrl;
+        }
+      }
+
+      // Update UI state
+      if (form.id === 'booking-lead-form') {
+        const waLink = successView?.querySelector('[data-wa-link]');
+        if (waLink) waLink.href = waUrl;
+        formView.hidden = true;
+        successView.hidden = false;
+        closeButton?.focus({ preventScroll: true });
+        closeTimer = window.setTimeout(close, 7000);
+      } else {
+        const status = form.querySelector('.form-status');
+        if (status) {
+          status.className = 'form-status success';
+          status.style.display = 'block';
+          status.innerHTML = `<strong>Enquiry Submitted! 🎉</strong> Connecting you to WhatsApp... <a class="btn btn-sm btn-primary mj-status-wa-btn" href="${waUrl}" target="_blank" rel="noopener">Open WhatsApp Now 🚀</a>`;
+        }
+      }
+
+      // Background submission to API (never blocks student)
+      (async () => {
+        try {
+          const csrfResponse = await fetch('/api/csrf', { credentials: 'same-origin', cache: 'no-store' });
+          const csrf = await csrfResponse.json().catch(() => ({}));
+          const payload = {
+            studentName,
+            parentName: '',
+            email: '',
+            mobile: mobile10,
+            whatsapp: mobile10,
+            className,
+            exam: course,
+            targetYear: '',
+            currentCoaching: currentCoaching === 'Not Provided' ? '' : currentCoaching,
+            preferredSubject: preferredSubjects === 'Not Provided' ? '' : preferredSubjects,
+            city: '',
+            language,
+            message: `WhatsApp Enquiry. Coaching: ${currentCoaching} | Subjects: ${preferredSubjects}`,
+            website: '',
+            turnstileToken: form.elements.turnstileToken?.value || ''
+          };
+          await fetch('/api/leads', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json', 'x-csrf-token': csrf.token || '' },
+            body: JSON.stringify(payload)
+          });
+        } catch (_) {}
+      })();
+
+      delete form.dataset.submitting;
+      submit.disabled = false;
+      submit.innerHTML = originalText;
     });
   });
 

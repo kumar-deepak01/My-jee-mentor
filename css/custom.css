@@ -2223,3 +2223,572 @@ html.dark-theme .resource-card-copy p {
     transform: none !important;
   }
 }
+
+/* ==========================================================================
+   UPGRADED BOOKING & COUNSELLING FORM STYLES
+   ========================================================================== */
+.booking-dialog {
+  width: min(100%, 580px);
+  max-height: 92vh;
+  padding: 42px 32px 30px;
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+.booking-modal-head {
+  margin-bottom: 20px;
+  padding-right: 36px;
+}
+.booking-dialog h2 {
+  font-size: clamp(1.35rem, 3.6vw, 1.62rem);
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+  line-height: 1.25;
+}
+.booking-intro {
+  font-size: 0.94rem;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0;
+}
+.booking-close {
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 50%;
+  background: #f9fafb;
+  color: #4b5563;
+  transition: all .15s ease;
+}
+.booking-close:hover {
+  background: #fff2e8;
+  border-color: #fdba74;
+  color: #ea580c;
+}
+.mj-counselling-form {
+  gap: 14px 16px;
+}
+.mj-counselling-form .field label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mj-optional {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+.mj-counselling-form input,
+.mj-counselling-form select {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  font-size: 0.92rem;
+  color: #111827;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  box-sizing: border-box;
+}
+.mj-counselling-form input:focus,
+.mj-counselling-form select:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.16);
+}
+.mj-counselling-form select {
+  cursor: pointer;
+}
+.mj-multiselect-field {
+  position: relative;
+}
+.mj-multiselect {
+  position: relative;
+  width: 100%;
+}
+.mj-multiselect-trigger {
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .15s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+}
+.mj-multiselect-trigger:focus,
+.mj-multiselect.is-open .mj-multiselect-trigger {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.16);
+}
+.mj-multiselect-placeholder {
+  color: #6b7280;
+  font-size: 0.92rem;
+  font-weight: 400;
+}
+.mj-selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  align-items: center;
+}
+.mj-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  background: #fff2e8;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  animation: mjChipFade .15s ease-out;
+}
+.mj-chip-remove {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: #c2410c;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  transition: background .12s ease;
+}
+.mj-chip-remove:hover {
+  background: #fdba74;
+  color: #7c2d12;
+}
+.mj-multiselect-arrow {
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+  transition: transform .2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.mj-multiselect.is-open .mj-multiselect-arrow {
+  transform: rotate(180deg);
+  color: #ea580c;
+}
+.mj-multiselect-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14), 0 3px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: mjDropdownIn .16s ease-out;
+}
+.mj-multiselect-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #f9fafb;
+}
+.mj-search-icon {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+.mj-multiselect-search {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  font-size: 0.88rem !important;
+  color: #111827 !important;
+  outline: none !important;
+  padding: 3px 0 !important;
+  height: auto !important;
+  box-shadow: none !important;
+}
+.mj-search-clear {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.mj-search-clear:hover {
+  color: #111827;
+}
+.mj-multiselect-options {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overscroll-behavior: contain;
+}
+.mj-multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .12s ease;
+  user-select: none;
+  font-size: 0.88rem;
+  font-weight: 550;
+  color: #374151;
+  margin: 0;
+}
+.mj-multiselect-option:hover {
+  background: #f3f4f6;
+}
+.mj-multiselect-option.is-selected {
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 700;
+}
+.mj-multiselect-check {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.mj-checkbox-custom {
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid #9ca3af;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #fff;
+  transition: all .12s ease;
+}
+.mj-checkbox-custom svg {
+  opacity: 0;
+  transform: scale(0.7);
+  transition: all .12s ease;
+  stroke: #ffffff;
+}
+.mj-multiselect-option.is-selected .mj-checkbox-custom {
+  border-color: #ea580c;
+  background: #ea580c;
+}
+.mj-multiselect-option.is-selected .mj-checkbox-custom svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.mj-multiselect-empty {
+  padding: 18px 10px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.mj-multiselect-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-top: 1px solid #f3f4f6;
+  background: #f9fafb;
+  font-size: 0.82rem;
+}
+.mj-multiselect-count {
+  color: #6b7280;
+  font-weight: 600;
+}
+.mj-multiselect-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mj-btn-clear {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color .12s ease;
+}
+.mj-btn-clear:hover {
+  color: #111827;
+}
+.mj-btn-done {
+  border: none;
+  background: #ea580c;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 5px 13px;
+  border-radius: 6px;
+  transition: background .12s ease;
+}
+.mj-btn-done:hover {
+  background: #c2410c;
+}
+.mj-booking-submit {
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 24px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  margin-top: 8px;
+  text-decoration: none;
+}
+.mj-booking-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(234, 88, 12, 0.45);
+  filter: brightness(1.03);
+}
+.mj-booking-submit:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+}
+.mj-booking-submit[disabled] {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+.mj-submit-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.booking-success {
+  padding: 38px 16px 28px;
+  text-align: center;
+}
+.booking-success-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin: 0 auto 14px;
+  animation: mjPop .32s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.booking-success h3 {
+  font-size: 1.55rem;
+  font-weight: 850;
+  margin: 0 0 8px;
+  color: #111827;
+}
+.booking-success p {
+  color: #4b5563;
+  font-size: 1rem;
+  margin: 0 0 22px;
+  line-height: 1.5;
+}
+.mj-wa-direct-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 26px;
+  border-radius: 12px;
+  background: #25d366;
+  border: none;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35);
+  text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mj-wa-direct-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+  background: #20ba59;
+}
+.mj-status-wa-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: #25d366;
+  color: #ffffff !important;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
+}
+.mj-status-wa-btn:hover {
+  background: #20ba59;
+}
+
+@keyframes mjDropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes mjChipFade {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes mjPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media(max-width: 560px) {
+  .booking-dialog {
+    width: 100%;
+    max-height: 92vh;
+    padding: 48px 16px 20px;
+  }
+  .booking-modal-head {
+    margin-bottom: 16px;
+    padding-right: 32px;
+  }
+  .booking-dialog h2 {
+    font-size: 1.35rem;
+  }
+  .mj-counselling-form {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .mj-counselling-form input,
+  .mj-counselling-form select {
+    height: 44px;
+    font-size: 0.9rem;
+  }
+  .mj-multiselect-trigger {
+    min-height: 46px;
+  }
+  .mj-booking-submit {
+    min-height: 48px;
+    font-size: 0.98rem;
+    padding: 12px 18px;
+  }
+}
+
+/* Dark theme overrides */
+html.dark-theme .booking-dialog {
+  background: #151b27;
+  color: #f3f4f6;
+  border: 1px solid #283347;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+html.dark-theme .booking-dialog h2 {
+  color: #ffffff;
+}
+html.dark-theme .booking-intro {
+  color: #9ca3af;
+}
+html.dark-theme .booking-close {
+  background: #1f2737;
+  border-color: #2e3a4e;
+  color: #d1d5db;
+}
+html.dark-theme .booking-close:hover {
+  background: #2a1f18;
+  border-color: #ea580c;
+  color: #fdba74;
+}
+html.dark-theme .mj-counselling-form .field label {
+  color: #e5e7eb;
+}
+html.dark-theme .mj-optional {
+  color: #9ca3af;
+}
+html.dark-theme .mj-counselling-form input,
+html.dark-theme .mj-counselling-form select {
+  background: #1a2232;
+  border-color: #2e3a4e;
+  color: #f3f4f6;
+}
+html.dark-theme .mj-counselling-form input:focus,
+html.dark-theme .mj-counselling-form select:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.25);
+}
+html.dark-theme .mj-multiselect-trigger {
+  background: #1a2232;
+  border-color: #2e3a4e;
+  color: #f3f4f6;
+}
+html.dark-theme .mj-multiselect-trigger:focus,
+html.dark-theme .mj-multiselect.is-open .mj-multiselect-trigger {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.25);
+}
+html.dark-theme .mj-multiselect-dropdown {
+  background: #171f2c;
+  border-color: #2e3a4e;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+}
+html.dark-theme .mj-multiselect-search-wrap,
+html.dark-theme .mj-multiselect-footer {
+  background: #131924;
+  border-color: #242f40;
+}
+html.dark-theme .mj-multiselect-search {
+  color: #f3f4f6 !important;
+}
+html.dark-theme .mj-multiselect-placeholder {
+  color: #9ca3af;
+}
+html.dark-theme .mj-multiselect-option {
+  color: #d1d5db;
+}
+html.dark-theme .mj-multiselect-option:hover {
+  background: #222b3b;
+}
+html.dark-theme .mj-multiselect-option.is-selected {
+  background: #2b1f17;
+  color: #fdba74;
+}
+html.dark-theme .mj-checkbox-custom {
+  border-color: #4b5563;
+  background: #1a2232;
+}
+html.dark-theme .mj-chip {
+  background: #2d1d12;
+  border-color: #7c2d12;
+  color: #fdba74;
+}
+html.dark-theme .booking-success h3 {
+  color: #ffffff;
+}
+html.dark-theme .booking-success p {
+  color: #9ca3af;
+}

@@ -1,6 +1,6 @@
 import {timingSafeEqual} from 'node:crypto';
 
-const allowedClasses=new Set(['7','8','9','10','11','12','Dropper']);
+const allowedClasses=new Set(['7','8','9','10','11','12','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12','Dropper']);
 const allowedCourses=new Set(['JEE','NEET','Foundation']);
 const text=(value,max=1000)=>typeof value==='string'?value.trim().replace(/[\u0000-\u001f\u007f]/g,'').slice(0,max):'';
 const safeEqual=(a,b)=>{const left=Buffer.from(String(a||'')),right=Buffer.from(String(b||''));return left.length===right.length&&timingSafeEqual(left,right)};
@@ -18,8 +18,11 @@ export default async function handler(req,res){
     targetYear:text(body.targetYear,100),currentCoaching:text(body.currentCoaching,100),preferredSubject:text(body.preferredSubject,100),
     city:text(body.city,80),language:text(body.language,100),message:text(body.message,1000)
   };
-  if(lead.studentName.length<2||lead.parentName.length<2||!/^\S+@\S+\.\S+$/.test(lead.email)||!/^\+?[0-9 ()-]{8,18}$/.test(lead.mobile)||!allowedClasses.has(lead.className)||!allowedCourses.has(lead.exam)||!lead.city){
+  if(lead.studentName.length<2||!/^\+?[0-9 ()-]{8,18}$/.test(lead.mobile)||!allowedClasses.has(lead.className)||!allowedCourses.has(lead.exam)){
     return res.status(400).json({message:'Please check the required fields and try again.'});
+  }
+  if(lead.email&&!/^\S+@\S+\.\S+$/.test(lead.email)){
+    return res.status(400).json({message:'Please enter a valid email address.'});
   }
   if(process.env.NODE_ENV==='production'&&!process.env.TURNSTILE_SECRET)return res.status(503).json({message:'Form service is temporarily unavailable.'});
   if(process.env.TURNSTILE_SECRET){
@@ -32,7 +35,7 @@ export default async function handler(req,res){
   const labels={studentName:'Student Name',parentName:'Parent Name',email:'Email',mobile:'Mobile',whatsapp:'WhatsApp',className:'Class',exam:'Course',targetYear:'Target Year',currentCoaching:'Current Coaching',preferredSubject:'Preferred Subject',city:'City',language:'Preferred Language',message:'Message'};
   const lines=Object.entries(labels).filter(([key])=>lead[key]).map(([key,label])=>`${label}: ${lead[key]}`);
   try{
-    const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.LEADS_FROM_EMAIL,to:['amyjeementor@gmail.com'],reply_to:lead.email,subject:`New counselling enquiry — ${lead.studentName}`,text:lines.join('\n')})});
+    const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.LEADS_FROM_EMAIL,to:['amyjeementor@gmail.com'],...(lead.email?{reply_to:lead.email}:{}),subject:`New counselling enquiry — ${lead.studentName}`,text:lines.join('\n')})});
     if(!response.ok){const details=await response.json().catch(()=>({}));console.error('Lead email delivery failed:',{status:response.status,message:String(details.message||'Email provider rejected the request').slice(0,300)});return res.status(502).json({message:'Your enquiry could not be emailed right now. Please try again or call/WhatsApp us.'})}
     return res.status(201).json({ok:true});
   }catch(error){console.error('Lead email delivery failed:',{name:String(error?.name||'Error'),message:String(error?.message||'Request failed').slice(0,300)});return res.status(502).json({message:'Your enquiry could not be emailed right now. Please try again or call/WhatsApp us.'})}
