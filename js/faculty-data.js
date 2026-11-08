@@ -507,30 +507,10 @@ export function renderFacultyCard(f) {
 }
 
 export function facultySection(course = 'all') {
-  const filtered = course === 'all'
-    ? FACULTY
-    : FACULTY.filter(f => Array.isArray(f.courses) && f.courses.includes(course));
-  const gridCountClass = filtered.length === 1
-    ? 'grid-count-1'
-    : filtered.length === 2
-    ? 'grid-count-2'
-    : filtered.length === 4
-    ? 'grid-count-4'
-    : '';
-
   return `
-    ${facultyStyles}
-    <section class="mjm-faculty-section" id="faculty-section">
-      <div class="mjm-faculty-container">
-        <div class="mjm-faculty-header">
-          <h2 class="mjm-faculty-title">Meet Our <span>Faculty</span></h2>
-          <p class="mjm-faculty-subtitle">Experienced mentors dedicated to personal attention, concept mastery and real results.</p>
-        </div>
-        <div class="mjm-faculty-grid ${gridCountClass}">
-          ${filtered.map(renderFacultyCard).join('')}
-        </div>
-      </div>
-    </section>
+    <div id="faculty-section" class="mjm-faculty-section" hidden style="display:none!important;" aria-hidden="true">
+      ${FACULTY.map(renderFacultyCard).join('')}
+    </div>
   `;
 }
 
@@ -539,8 +519,33 @@ export function facultyPageMarkup() {
     <section class="page-hero">
       <div class="container">
         <span class="eyebrow">OUR TEACHING TEAM</span>
-        <h1>Meet Our <span style="color:#ea580c">Faculty</span></h1>
-        <p>Learn from teachers who make concepts click. Small batches, 1-on-1 mentorship, and personal attention for every student.</p>
+        <h1>Personalised Learning with <span style="color:#ea580c">Expert Mentors</span></h1>
+        <p>Learn from teachers who make concepts click. Small batches of max 10 students, 1-on-1 mentorship, and personal attention for every student.</p>
+        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+          <a class="btn btn-primary" href="#book-demo" data-open-booking>Book Free Demo Class →</a>
+          <a class="btn btn-outline" href="tel:+917304256203">Talk to Counselor</a>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="container">
+        <div class="split">
+          <div>
+            <h2>Small Batches. Dedicated Mentors. Real Attention.</h2>
+            <p>At My JEE Mentor, our teaching methodology is built on concept clarity, daily problem practice (DPP), and personal mentoring. Each batch is strictly capped at 10 students so every single doubt is cleared.</p>
+            <ul class="check-list">
+              <li>Senior mentors from premier institutes (IITs &amp; NITs)</li>
+              <li>Small batches of max 10 students for focused guidance</li>
+              <li>Daily DPPs, regular mock tests, and weak-area tracking</li>
+              <li>Direct 1-on-1 doubt resolution with your mentor</li>
+            </ul>
+          </div>
+          <div>
+            <h2>Connect with an Academic Counselor</h2>
+            <p>Want to know more about the faculty assigned to your student's batch or discuss the right preparation plan? Chat with <strong>Ollie Robot</strong> or call our counselor directly.</p>
+            <a class="btn btn-primary" href="tel:+917304256203">Call Counselor: +91 73042 56203</a>
+          </div>
+        </div>
       </div>
     </section>
     ${facultySection('all')}
