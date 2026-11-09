@@ -459,7 +459,26 @@ export function initBooking() {
     document.body.classList.remove('booking-open');
     document.body.style.paddingRight = '';
     previousFocus?.focus?.({ preventScroll: true });
+    if (window.location.hash && (window.location.hash.toLowerCase() === '#book-demo' || window.location.hash.toLowerCase() === '#demo' || window.location.hash.toLowerCase() === '#booking')) {
+      try {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      } catch (_) {}
+    }
   };
+
+  const checkHashAndOpen = () => {
+    const hash = (window.location.hash || '').toLowerCase();
+    const params = new URLSearchParams(window.location.search);
+    if (hash === '#book-demo' || hash === '#demo' || hash === '#booking' || params.has('demo') || params.has('booking')) {
+      const course = params.get('course') || '';
+      open(course);
+    }
+  };
+
+  // Auto-open modal if visited with #book-demo or ?demo in URL
+  checkHashAndOpen();
+  window.addEventListener('hashchange', checkHashAndOpen);
+  window.addEventListener('popstate', checkHashAndOpen);
 
   document.addEventListener('click', event => {
     const trigger = event.target.closest('[data-open-booking]');
@@ -618,6 +637,37 @@ export function initBooking() {
           status.innerHTML = `<strong>Enquiry Submitted! \uD83C\uDF89</strong> Connecting you to WhatsApp... <a class="btn btn-sm btn-primary mj-status-wa-btn" href="${waUrl}" target="_blank" rel="noopener">Open WhatsApp Now \uD83D\uDE80</a>`;
         }
       }
+
+      // Background submission to Google Sheet (Apps Script Web App)
+      (async () => {
+        try {
+          const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHJ5cBxfglE4XvqopRjLvHXcDP4QlV_4OHcJDVk5P_laJjmreOdAgelso7CeXAEpYq/exec";
+          const sheetPayload = new URLSearchParams({
+            studentName,
+            parentName: '',
+            email: '',
+            mobile: mobile10,
+            whatsapp: mobile10,
+            className,
+            course,
+            targetYear: '',
+            currentCoaching: currentCoaching === 'Not Provided' ? '' : currentCoaching,
+            subject: preferredSubjects === 'Not Provided' ? '' : preferredSubjects,
+            city: '',
+            language,
+            message: `Coaching: ${currentCoaching} | Preferred Subjects: ${preferredSubjects}`,
+            website: '',
+            page: window.location.href
+          });
+          await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: sheetPayload
+          });
+        } catch (_) {}
+      })();
 
       // Background submission to API (never blocks student)
       (async () => {
