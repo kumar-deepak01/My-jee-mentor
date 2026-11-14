@@ -469,7 +469,7 @@ export function initBooking() {
   const checkHashAndOpen = () => {
     const hash = (window.location.hash || '').toLowerCase();
     const params = new URLSearchParams(window.location.search);
-    if (hash === '#book-demo' || hash === '#demo' || hash === '#booking' || params.has('demo') || params.has('booking')) {
+    if (hash === '#book-demo' || hash === '#demo' || hash === '#booking' || params.has('demo') || params.has('booking') || params.has('book')) {
       const course = params.get('course') || '';
       open(course);
     }
@@ -477,6 +477,7 @@ export function initBooking() {
 
   // Auto-open modal if visited with #book-demo or ?demo in URL
   checkHashAndOpen();
+  setTimeout(checkHashAndOpen, 250);
   window.addEventListener('hashchange', checkHashAndOpen);
   window.addEventListener('popstate', checkHashAndOpen);
 
