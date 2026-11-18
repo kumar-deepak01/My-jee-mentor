@@ -496,6 +496,9 @@
   let chipsBarEl = null;
   let inputFieldEl = null;
   let sendButtonEl = null;
+  let floatingWidgetEl = null;
+  let callBtnEl = null;
+  let perchUnitEl = null;
 
   let activeSteps = [];
   let currentStepIdx = -1;
@@ -511,40 +514,48 @@
   let consecutiveMisses = 0;
   let answeredCount = 0;
 
-  // Draggable Ollie state
-  let userCustomPos = null;
-  let userHasDraggedOllie = false;
-  let wasDragging = false;
   try {
-    const savedPos = sessionStorage.getItem('ollie_user_pos');
-    if (savedPos) {
-      userCustomPos = JSON.parse(savedPos);
-      userHasDraggedOllie = true;
-    }
-  } catch (e) {}
-
-  // Pointer position & hover chip tracking (FIX 1, FIX 2, FIX 3)
-  let lastPointerX = -1;
-  let lastPointerY = -1;
-  let hoverShowTimer = null;
-  let hoverRemoveTimer = null;
-  let activeHoverCard = null;
-  let isHoverActive = false;
-
-  try {
-    isHidden = sessionStorage.getItem('ollie-hidden') === 'true';
-    isPanelOpen = sessionStorage.getItem('ollie-panel-open') === 'true';
+    isPanelOpen = sessionStorage.getItem('ollie_panel_open') === 'true';
   } catch (e) {}
 
   function createOllieUI() {
-    if (document.getElementById('ollie-owl')) return;
+    if (document.getElementById('ollie-floating-widget') || document.getElementById('ollie-owl')) return;
 
-    // 1. Owl Floating Button
+    // 1. Floating Stack Container (Fixed at Bottom-Right Corner)
+    const widget = document.createElement('div');
+    widget.id = 'ollie-floating-widget';
+    widget.className = 'ollie-floating-widget';
+    widget.setAttribute('role', 'region');
+    widget.setAttribute('aria-label', 'Student Support & Academic Guide');
+
+    // Circular Floating Call Button (stacked directly above Ollie mascot)
+    const callBtn = document.createElement('a');
+    callBtn.id = 'ollie-call-btn';
+    callBtn.className = 'ollie-call-btn';
+    callBtn.href = 'tel:+917304256203';
+    callBtn.setAttribute('aria-label', 'Call My JEE Mentor counselor at +91 73042 56203');
+    callBtn.setAttribute('title', 'Call Counselor: +91 73042 56203');
+    callBtn.innerHTML = `
+      <svg class="ollie-call-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+      </svg>
+      <span class="ollie-call-ripple" aria-hidden="true"></span>
+    `;
+
+    // 2. Perch Unit (Ollie mascot perched directly on top of Ask Ollie button)
+    const perchUnit = document.createElement('div');
+    perchUnit.id = 'ollie-perch-unit';
+    perchUnit.className = 'ollie-perch-unit';
+    perchUnit.setAttribute('role', 'button');
+    perchUnit.setAttribute('tabindex', '0');
+    perchUnit.setAttribute('aria-label', 'Ask Ollie - Open Academic Guide');
+
+    // Ollie Mascot Button
     const owl = document.createElement('button');
     owl.id = 'ollie-owl';
     owl.className = 'ollie-owl';
     owl.type = 'button';
-    owl.setAttribute('aria-label', 'Ollie, your website guide and academic advisor');
+    owl.setAttribute('aria-label', 'Ollie the Owl - Click to open chat');
     owl.innerHTML = `
       <svg viewBox="0 0 100 110" role="img" aria-hidden="true">
         <!-- Wings -->
@@ -577,30 +588,21 @@
       </svg>
     `;
 
-    // 2. Nudge Speech Bubble
-    const bub = document.createElement('aside');
-    bub.id = 'ollie-bub';
-    bub.className = 'ollie-bub';
-    bub.setAttribute('role', 'region');
-    bub.setAttribute('aria-label', 'Guide nudge from Ollie');
-    bub.hidden = true;
-    bub.innerHTML = `
-      <div id="ollie-txt" class="ollie-txt" aria-live="polite"></div>
-      <div class="ollie-bc">
-        <button type="button" class="ollie-btn" id="ollie-act">Ask Ollie</button>
-        <button type="button" class="ollie-lnk" id="ollie-hide">Hide</button>
-      </div>
-    `;
-
-    // 3. Collapsed Bar Pill
+    // "Ask Ollie" Pill Button
     const bar = document.createElement('button');
     bar.id = 'ollie-collapsed-bar';
+    bar.className = 'ollie-collapsed-bar';
     bar.type = 'button';
-    bar.setAttribute('aria-label', 'Open Ask Ollie Panel');
-    bar.hidden = true;
-    bar.innerHTML = `<span>🦉</span> <span>Ask Ollie</span>`;
+    bar.setAttribute('aria-label', 'Open Ask Ollie Chat');
+    bar.innerHTML = `<span>Ask Ollie</span>`;
 
-    // 4. Interactive Ask Ollie Panel
+    perchUnit.appendChild(owl);
+    perchUnit.appendChild(bar);
+
+    widget.appendChild(callBtn);
+    widget.appendChild(perchUnit);
+
+    // 3. Interactive Ask Ollie Panel (Chat Window)
     const panel = document.createElement('section');
     panel.id = 'ollie-panel';
     panel.setAttribute('role', 'dialog');
@@ -613,6 +615,7 @@
           <h3 class="ollie-panel-title">Ollie <span class="ollie-panel-badge">Guide</span></h3>
         </div>
         <div class="ollie-panel-controls">
+          <a href="tel:+917304256203" class="ollie-icon-btn ollie-panel-call" title="Call Counselor: +91 73042 56203" aria-label="Call Counselor">📞</a>
           <button type="button" class="ollie-icon-btn" id="ollie-panel-min" title="Minimize panel" aria-label="Minimize panel">_</button>
           <button type="button" class="ollie-icon-btn" id="ollie-panel-close" title="Close guide" aria-label="Close guide">✕</button>
         </div>
@@ -627,14 +630,13 @@
       </form>
     `;
 
-    document.body.appendChild(bub);
-    document.body.appendChild(owl);
-    document.body.appendChild(bar);
+    document.body.appendChild(widget);
     document.body.appendChild(panel);
 
+    floatingWidgetEl = widget;
+    callBtnEl = callBtn;
+    perchUnitEl = perchUnit;
     owlEl = owl;
-    bubEl = bub;
-    txtEl = document.getElementById('ollie-txt');
     panelEl = panel;
     collapsedBarEl = bar;
     messagesListEl = document.getElementById('ollie-messages');
@@ -642,16 +644,28 @@
     inputFieldEl = document.getElementById('ollie-input');
     sendButtonEl = document.getElementById('ollie-send');
 
-    // Button Listeners
-    document.getElementById('ollie-act').onclick = function (e) {
-      e.preventDefault();
+    // Click on either Ollie mascot or Ask Ollie button opens chat window
+    const handleOpenChat = function (e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       openAskPanel();
     };
 
-    document.getElementById('ollie-hide').onclick = function (e) {
-      e.preventDefault();
-      hideGuide();
+    owl.onclick = handleOpenChat;
+    bar.onclick = handleOpenChat;
+    perchUnit.onclick = handleOpenChat;
+    perchUnit.onkeydown = function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleOpenChat(e);
+      }
     };
+
+    callBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
 
     document.getElementById('ollie-panel-min').onclick = function () {
       collapseAskPanel();
@@ -661,23 +675,11 @@
       collapseAskPanel();
     };
 
-    collapsedBarEl.onclick = function () {
-      openAskPanel();
-    };
-
-    owlEl.onclick = function (e) {
-      if (wasDragging) {
-        wasDragging = false;
-        return;
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isPanelOpen) {
+        collapseAskPanel();
       }
-      if (isHidden) {
-        showGuide();
-      } else {
-        openAskPanel();
-      }
-    };
-
-    initDraggableOllie();
+    });
 
     // Pause scroll narration while typing
     inputFieldEl.addEventListener('focus', function () {
@@ -696,144 +698,12 @@
       handleUserQuery(query);
     };
 
-    // Initial entrance position - keep on screen in safe docked area
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const isMob = vw <= 640;
-    const owlW = isMob ? 68 : (vw <= 900 ? 76 : 84);
-    const owlH = isMob ? 78 : (vw <= 900 ? 86 : 96);
-    const hasMobileBar = vw <= 900;
-    const initOwlX = Math.round(vw - owlW - (isMob ? 14 : 24));
-    const initOwlY = Math.round(vh - owlH - (hasMobileBar ? 82 : 24));
-    const bubW = isMob ? Math.min(300, vw - 24) : 310;
-    const bubH = 108;
-    const initBubX = isMob ? 12 : Math.max(12, vw - bubW - 24);
-    const initBubY = Math.max(70, initOwlY - bubH - 12);
-
-    owlEl.style.transition = 'none';
-    owlEl.style.transform = `translate(${initOwlX}px, ${initOwlY}px)`;
-    bubEl.style.transition = 'none';
-    bubEl.style.transform = `translate(${initBubX}px, ${initBubY}px)`;
-    void owlEl.offsetWidth;
-    void bubEl.offsetWidth;
-    owlEl.style.transition = '';
-    bubEl.style.transition = '';
-
-    if (!isHidden) {
-      if (isPanelOpen) {
-        openAskPanel();
-      } else {
-        collapsedBarEl.hidden = false;
-        bubEl.hidden = false;
-      }
+    if (isPanelOpen) {
+      openAskPanel();
     }
   }
 
-  // ==========================================================================
-  // DRAGGABLE OLLIE (User can drag and move Ollie anywhere on screen)
-  // ==========================================================================
-  function initDraggableOllie() {
-    if (!owlEl) return;
-
-    let isDragging = false;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let startOwlX = 0;
-    let startOwlY = 0;
-    let startBubX = 0;
-    let startBubY = 0;
-
-    owlEl.addEventListener('pointerdown', function (e) {
-      if (modalActive) return;
-
-      const oRect = owlEl.getBoundingClientRect();
-      startOwlX = oRect.left;
-      startOwlY = oRect.top;
-
-      if (bubEl && !bubEl.hidden) {
-        const bRect = bubEl.getBoundingClientRect();
-        startBubX = bRect.left;
-        startBubY = bRect.top;
-      }
-
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      isDragging = false;
-
-      try {
-        owlEl.setPointerCapture(e.pointerId);
-      } catch (err) {}
-    });
-
-    owlEl.addEventListener('pointermove', function (e) {
-      if (dragStartX === 0 && dragStartY === 0) return;
-      const dx = e.clientX - dragStartX;
-      const dy = e.clientY - dragStartY;
-
-      if (!isDragging && Math.hypot(dx, dy) > 5) {
-        isDragging = true;
-        wasDragging = true;
-        owlEl.classList.add('ollie-dragging');
-        owlEl.style.transition = 'none';
-        if (bubEl) bubEl.style.transition = 'none';
-        document.body.style.userSelect = 'none';
-      }
-
-      if (isDragging) {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const owlW = owlEl.offsetWidth || 84;
-        const owlH = owlEl.offsetHeight || 96;
-
-        const nextX = Math.max(6, Math.min(vw - owlW - 6, Math.round(startOwlX + dx)));
-        const nextY = Math.max(10, Math.min(vh - owlH - 10, Math.round(startOwlY + dy)));
-
-        owlEl.style.transform = `translate(${nextX}px, ${nextY}px)`;
-
-        if (bubEl && !bubEl.hidden) {
-          const bubW = bubEl.offsetWidth || 300;
-          const bubH = bubEl.offsetHeight || 100;
-          const nextBubX = Math.max(10, Math.min(vw - bubW - 10, Math.round(startBubX + dx)));
-          const nextBubY = Math.max(10, Math.min(vh - bubH - 10, Math.round(startBubY + dy)));
-          bubEl.style.transform = `translate(${nextBubX}px, ${nextBubY}px)`;
-        }
-      }
-    });
-
-    function finishDrag(e) {
-      if (dragStartX === 0 && dragStartY === 0) return;
-      try {
-        if (owlEl.hasPointerCapture(e.pointerId)) {
-          owlEl.releasePointerCapture(e.pointerId);
-        }
-      } catch (err) {}
-
-      dragStartX = 0;
-      dragStartY = 0;
-
-      if (isDragging) {
-        isDragging = false;
-        owlEl.classList.remove('ollie-dragging');
-        owlEl.style.transition = '';
-        if (bubEl) bubEl.style.transition = '';
-        document.body.style.userSelect = '';
-
-        const oRect = owlEl.getBoundingClientRect();
-        userCustomPos = { x: Math.round(oRect.left), y: Math.round(oRect.top) };
-        userHasDraggedOllie = true;
-        try {
-          sessionStorage.setItem('ollie_user_pos', JSON.stringify(userCustomPos));
-        } catch (err) {}
-
-        setTimeout(() => {
-          wasDragging = false;
-        }, 120);
-      }
-    }
-
-    owlEl.addEventListener('pointerup', finishDrag);
-    owlEl.addEventListener('pointercancel', finishDrag);
-  }
+  function initDraggableOllie() {}
 
   // ==========================================================================
   // 6. PANEL INTERACTION, CHAT MEMORY & TYPING FLOW
@@ -848,11 +718,9 @@
 
     panelEl.hidden = false;
     panelEl.classList.remove('ollie-minimized');
-    collapsedBarEl.hidden = true;
-    bubEl.hidden = true;
-
-    // Perch owl on panel
-    dockOwlOnPanel();
+    if (floatingWidgetEl) {
+      floatingWidgetEl.hidden = true;
+    }
 
     // Ensure panel is never empty
     if (!messagesListEl || messagesListEl.children.length === 0) {
@@ -878,25 +746,12 @@
       if (!isPanelOpen) panelEl.hidden = true;
     }, 300);
 
-    collapsedBarEl.hidden = false;
-    if (!isHidden) {
-      bubEl.hidden = false;
-      placeOllieAndBubble();
+    if (floatingWidgetEl) {
+      floatingWidgetEl.hidden = false;
     }
   }
 
-  function dockOwlOnPanel() {
-    if (!owlEl || !panelEl) return;
-    const pRect = panelEl.getBoundingClientRect();
-    const targetX = Math.round(pRect.left - (isDesktopDevice() ? 32 : 16));
-    const targetY = Math.round(pRect.top - (isDesktopDevice() ? 48 : 36));
-
-    owlEl.classList.add('ollie-fly');
-    clearTimeout(flyTimer);
-    flyTimer = setTimeout(() => owlEl.classList.remove('ollie-fly'), 800);
-
-    owlEl.style.transform = `translate(${targetX}px, ${targetY}px)`;
-  }
+  function dockOwlOnPanel() {}
 
   function saveChatHistory(item) {
     try {
@@ -2060,53 +1915,19 @@
   }
 
   // ==========================================================================
-  // 9. PERSONALIZED 4-STOP TOUR ("Show me around")
+  // 9. CHAT GUIDE ("Show me around" / Guided information inside chat)
   // ==========================================================================
   function startPersonalizedTour() {
-    isTour = true;
-    collapseAskPanel();
-
-    const exam = sessionStorage.getItem('ollie_exam') || 'JEE';
-    const cls = sessionStorage.getItem('ollie_class') || '11';
-
-    // Stop 1: Batches
-    sayMessage(`Stop 1 of 4: Here are our ${exam} batches with max 10 students and personalized mentoring.`);
-    let target = document.querySelector('.program-card, .foundation-card, .mjm-card');
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      pulseElement(target);
-    }
-
-    // Stop 2: Faculty (after 4.5s)
-    tourTimer = setTimeout(() => {
-      if (!isTour) return;
-      sayMessage(`Stop 2 of 4: Learn from premier faculty mentors with proven rank-level results.`);
-      const fac = document.querySelector('.mjm-faculty-header, .faculty-card');
-      if (fac) {
-        fac.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        pulseElement(fac);
-      }
-
-      // Stop 3: Reviews (after 4.5s)
-      tourTimer = setTimeout(() => {
-        if (!isTour) return;
-        sayMessage(`Stop 3 of 4: Real feedback from parents and students on how small batches made the difference.`);
-        const rev = document.querySelector('.mjm-reviews-header, .mjm-review-card');
-        if (rev) {
-          rev.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          pulseElement(rev);
-        }
-
-        // Stop 4: Free Demo
-        tourTimer = setTimeout(() => {
-          if (!isTour) return;
-          stopTour();
-          sayMessage(`Stop 4 of 4: Ready to try a class? Opening the free demo booking session for you!`);
-          openAskPanel();
-          startLeadFlow();
-        }, 4800);
-      }, 4800);
-    }, 4800);
+    botSay('Welcome to My JEE Mentor! 🦉 Here is a quick overview of our mentorship programs:<br><br>' +
+      '• <strong>Strictly Max 10 Students/Batch</strong> for personalized attention.<br>' +
+      '• <strong>Top IITian & NITian Mentors</strong> for complete guidance.<br>' +
+      '• <strong>Daily PYQs, Regular DPPs & Full Mock Tests</strong>.<br><br>' +
+      'Would you like to explore batch fees, see our faculty, or book a free 1-on-1 demo?', [
+      { label: 'Book Free Demo', action: () => startLeadFlow() },
+      { label: 'JEE Batches & Fees', action: () => showExamBatchesAndFees('JEE') },
+      { label: 'NEET Batches & Fees', action: () => showExamBatchesAndFees('NEET') },
+      { label: 'Call Counselor', action: () => { window.location.href = 'tel:+917304256203'; } }
+    ]);
   }
 
   function stopTour() {
@@ -2114,9 +1935,6 @@
     clearTimeout(tourTimer);
   }
 
-  // ==========================================================================
-  // 10. PLACEMENT & COLLISION ENGINE
-  // ==========================================================================
   function pulseElement(el) {
     if (highlightedEl) highlightedEl.classList.remove('ollie-hl');
     highlightedEl = el;
@@ -2127,714 +1945,29 @@
     }
   }
 
-  function calculatePlacement(activeBlock) {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const isMobile = vw <= 640;
-
-    const headerEl = document.querySelector('header.site-header, header');
-    const headerBottom = headerEl ? Math.max(0, headerEl.getBoundingClientRect().bottom) : 0;
-    const topSafeLimit = headerBottom + 10;
-
-    const mobileBarEl = document.querySelector('.mobile-bar');
-    const mobileBarVisible = (mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none') || (vw <= 900);
-    const mobileBarRect = (mobileBarEl && mobileBarVisible) ? mobileBarEl.getBoundingClientRect() : null;
-
-    let bottomSafeLimit = vh - 12;
-    if (mobileBarVisible) {
-      if (mobileBarRect && mobileBarRect.top > 0) {
-        bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
-      } else {
-        bottomSafeLimit = Math.min(bottomSafeLimit, vh - 72);
-      }
-    }
-
-    const owlW = isMobile ? 68 : (vw <= 900 ? 76 : 84);
-    const owlH = isMobile ? 78 : (vw <= 900 ? 86 : 96);
-    const bubW = bubEl.offsetWidth || (isMobile ? Math.min(300, vw - 24) : 310);
-    const bubH = bubEl.offsetHeight || 108;
-
-    const bRect = activeBlock.getBoundingClientRect();
-
-    function overlapsBlock(x, y, w, h) {
-      return !(x + w <= bRect.left || x >= bRect.right || y + h <= bRect.top || y >= bRect.bottom);
-    }
-
-    // 1. ABOVE (Owl perches on top-left outer corner, feet on top border of bubble)
-    const bubYAbove = Math.round(bRect.top - bubH - 12);
-    const owlYAbove = Math.round(bubYAbove - owlH + 14);
-    const fitsAbove = (bubYAbove >= topSafeLimit) && (owlYAbove >= topSafeLimit - 4) && (bRect.top <= vh - 40);
-
-    if (fitsAbove) {
-      let bubX = Math.round(Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20)));
-      let owlX = Math.round(Math.max(8, bubX - (owlW * 0.38)));
-      if (!overlapsBlock(bubX, bubYAbove, bubW, bubH)) {
-        return { owlX, owlY: owlYAbove, bubX, bubY: bubYAbove };
-      }
-    }
-
-    // 2. BELOW
-    const bubYBelow = Math.round(bRect.bottom + 12);
-    const owlYBelow = Math.round(bubYBelow - owlH + 14);
-    const fitsBelow = (bubYBelow + bubH <= bottomSafeLimit) && (bRect.bottom >= topSafeLimit);
-
-    if (fitsBelow) {
-      let bubX = Math.round(Math.max(12, Math.min(vw - bubW - 14, bRect.left + 20)));
-      let owlX = Math.round(Math.max(8, bubX - (owlW * 0.38)));
-      if (!overlapsBlock(bubX, bubYBelow, bubW, bubH)) {
-        return { owlX, owlY: owlYBelow, bubX, bubY: bubYBelow };
-      }
-    }
-
-    // 3. FIXED BOTTOM-CENTER
-    let fixedBubX, fixedBubY, fixedOwlX, fixedOwlY;
-    if (isMobile) {
-      fixedBubX = 12;
-      fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 4));
-      fixedOwlX = 14;
-      fixedOwlY = Math.round(fixedBubY - owlH + 18);
-    } else if (vw <= 900) {
-      fixedBubX = Math.round(Math.max(12, (vw - bubW) / 2));
-      fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 8));
-      fixedOwlX = Math.round(Math.max(8, fixedBubX - (owlW * 0.35)));
-      fixedOwlY = Math.round(fixedBubY - owlH + 14);
-    } else {
-      fixedBubX = Math.round(Math.max(12, (vw - bubW) / 2));
-      fixedBubY = Math.round(Math.max(topSafeLimit + 10, bottomSafeLimit - bubH - 10));
-      fixedOwlX = Math.round(Math.max(8, fixedBubX - (owlW * 0.38)));
-      fixedOwlY = Math.round(fixedBubY - owlH + 14);
-    }
-
-    return { owlX: fixedOwlX, owlY: fixedOwlY, bubX: fixedBubX, bubY: fixedBubY };
-  }
-
-  function placeOllieAndBubble() {
-    if (!owlEl || !bubEl) return;
-    if (isPanelOpen) {
-      dockOwlOnPanel();
-      return;
-    }
-
-    // Do not override an active hover chip with section placement
-    if (isHoverActive && activeHoverCard) {
-      return;
-    }
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const isMobile = vw <= 640;
-    const owlW = isMobile ? 68 : (vw <= 900 ? 76 : 84);
-    const owlH = isMobile ? 78 : (vw <= 900 ? 86 : 96);
-    const bubW = bubEl.offsetWidth || (isMobile ? Math.min(300, vw - 24) : 310);
-    const bubH = bubEl.offsetHeight || 108;
-
-    const headerEl = document.querySelector('header.site-header, header');
-    const headerBottom = headerEl ? Math.max(0, headerEl.getBoundingClientRect().bottom) : 0;
-    const topSafeLimit = headerBottom + 10;
-
-    const mobileBarEl = document.querySelector('.mobile-bar');
-    const mobileBarVisible = (mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none') || (vw <= 900);
-    const mobileBarRect = (mobileBarEl && mobileBarVisible) ? mobileBarEl.getBoundingClientRect() : null;
-
-    let bottomSafeLimit = vh - 12;
-    if (mobileBarVisible) {
-      if (mobileBarRect && mobileBarRect.top > 0) {
-        bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
-      } else {
-        bottomSafeLimit = Math.min(bottomSafeLimit, vh - 72);
-      }
-    }
-
-    let targetX, targetY, bubX, bubY;
-
-    if (isHidden) {
-      owlEl.classList.add('ollie-docked');
-      targetX = Math.round(vw - owlW - (isMobile ? 12 : 20));
-      targetY = Math.round(bottomSafeLimit - owlH - (isMobile ? 8 : 12));
-      bubEl.hidden = true;
-    } else {
-      owlEl.classList.remove('ollie-docked');
-      bubEl.hidden = false;
-
-      let activeBlock = null;
-      let targetEl = null;
-
-      if (modalActive) {
-        activeBlock = document.querySelector('#book-demo .booking-dialog') || document.querySelector('#book-demo');
-        targetEl = document.querySelector('#booking-form button[type="submit"]') || activeBlock;
-      } else if (currentStepIdx >= 0 && currentStepIdx < activeSteps.length) {
-        activeBlock = activeSteps[currentStepIdx].secEl;
-        targetEl = activeSteps[currentStepIdx].targetEl;
-      }
-
-      if (!activeBlock) {
-        if (userHasDraggedOllie && userCustomPos) {
-          targetX = Math.max(10, Math.min(vw - owlW - 10, userCustomPos.x));
-          targetY = Math.max(topSafeLimit + 10, Math.min(bottomSafeLimit - owlH - 10, userCustomPos.y));
-          bubX = Math.max(12, Math.min(vw - bubW - 14, targetX > vw / 2 ? targetX - bubW - 14 : targetX + owlW + 10));
-          bubY = Math.max(topSafeLimit + 10, Math.min(bottomSafeLimit - bubH - 10, targetY - bubH - 10));
-        } else {
-          if (isMobile) {
-            targetX = Math.round(vw - owlW - 14);
-            targetY = Math.round(bottomSafeLimit - owlH - 10);
-            bubX = 12;
-            bubY = Math.round(Math.max(topSafeLimit + 10, targetY - bubH - 12));
-          } else {
-            targetX = Math.round(vw - owlW - 24);
-            targetY = Math.round(bottomSafeLimit - owlH - 16);
-            bubX = Math.round(Math.max(12, vw - bubW - 28));
-            bubY = Math.round(Math.max(topSafeLimit + 10, targetY - bubH - 12));
-          }
-        }
-      } else {
-        // Auto-collapse check: If activeBlock would overlap the Ask panel, collapse it!
-        if (panelEl && !panelEl.hidden) {
-          const bRect = activeBlock.getBoundingClientRect();
-          const pRect = panelEl.getBoundingClientRect();
-          const wouldOverlap = !(bRect.right < pRect.left || bRect.left > pRect.right || bRect.bottom < pRect.top || bRect.top > pRect.bottom);
-          if (wouldOverlap) {
-            collapseAskPanel();
-          }
-        }
-
-        const coords = calculatePlacement(activeBlock);
-        targetX = coords.owlX;
-        targetY = coords.owlY;
-        bubX = coords.bubX;
-        bubY = coords.bubY;
-      }
-
-      // Hard viewport clamp: guaranteed to stay in screen
-      targetX = Math.max(8, Math.min(vw - owlW - 8, targetX));
-      targetY = Math.max(topSafeLimit - 4, Math.min(vh - owlH - 8, targetY));
-      bubX = Math.max(8, Math.min(vw - bubW - 8, bubX));
-      bubY = Math.max(topSafeLimit, Math.min(vh - bubH - 8, bubY));
-
-      bubEl.style.transform = `translate(${bubX}px, ${bubY}px)`;
-    }
-
-    owlEl.classList.add('ollie-fly');
-    clearTimeout(flyTimer);
-    flyTimer = setTimeout(() => owlEl.classList.remove('ollie-fly'), 800);
-
-    owlEl.style.transform = `translate(${targetX}px, ${targetY}px)`;
-  }
-
-  function sayMessage(text) {
-    if (!txtEl) return;
-    txtEl.innerHTML = text;
-    txtEl.classList.remove('ollie-pop');
-    void txtEl.offsetWidth;
-    txtEl.classList.add('ollie-pop');
-  }
-
-  function activateStep(index) {
-    if (index < 0 || index >= activeSteps.length) return;
-    if (isTyping || isPanelOpen) return; // Pause narration while user is interacting with panel
-
-    // A chip must never survive a section change. Clear it first!
-    if (isHoverActive) {
-      hideCardHoverChip(true);
-    }
-
-    currentStepIdx = index;
-    const step = activeSteps[index];
-
-    sayMessage(step.text);
-    pulseElement(step.targetEl || step.secEl);
-    placeOllieAndBubble();
-  }
+  function calculatePlacement() { return { owlX: 0, owlY: 0, bubX: 0, bubY: 0 }; }
+  function placeOllieAndBubble() {}
+  function sayMessage() {}
+  function activateStep() {}
+  function pickSectionByScroll() {}
+  function onScrollHandler() {}
+  function verifyHoverOnScroll() {}
+  function bindCardInteractions() {}
+  function showCardHoverChip() {}
+  function hideCardHoverChip() {}
 
   // ==========================================================================
-  // 11. SCROLL & HOVER LISTENERS
-  // ==========================================================================
-  function pickSectionByScroll() {
-    if (isHidden || isTour || modalActive || isTyping || isPanelOpen || activeSteps.length === 0) return;
-
-    const line = window.innerHeight * 0.45;
-    for (let i = 0; i < activeSteps.length; i++) {
-      const step = activeSteps[i];
-      const el = step.secEl || step.targetEl;
-      if (!el) continue;
-
-      const rect = el.getBoundingClientRect();
-      if (rect.top <= line && rect.bottom >= line) {
-        if (i !== currentStepIdx) {
-          activateStep(i);
-        } else {
-          placeOllieAndBubble();
-        }
-        return;
-      }
-    }
-    placeOllieAndBubble();
-  }
-
-  function onScrollHandler() {
-    if (isTick) return;
-    isTick = true;
-    requestAnimationFrame(() => {
-      isTick = false;
-      if (isHidden || isPanelOpen || isTyping) return;
-      verifyHoverOnScroll();
-      if (!isTour) {
-        pickSectionByScroll();
-      } else {
-        placeOllieAndBubble();
-      }
-    });
-  }
-
-  // ==========================================================================
-  // DESKTOP HOVER CHIP & CARD INTERACTIONS (FIX 1, FIX 2, FIX 3)
-  // ==========================================================================
-  const CARD_SELECTOR = '.mjm-faculty-card, .faculty-card, .program-card, .neet-program-card, .foundation-card, .mjm-card';
-
-  function rectsIntersect(r1, r2) {
-    return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
-  }
-
-  function toTitleCase(str) {
-    return (str || '').toLowerCase().replace(/(?:^|\s|\/|-|\()\w/g, c => c.toUpperCase());
-  }
-
-  // FIX 1: Resolve the hovered card from the event itself: card = event.target.closest(CARD_SELECTOR)
-  // and read its name, details and CTA from THAT element's own DOM.
-  function resolveCardInfo(card) {
-    if (!card) return null;
-    const isFaculty = card.matches('.mjm-faculty-card, .faculty-card, [data-faculty-id]');
-
-    if (isFaculty) {
-      // 1. Name from card's own DOM
-      const nameEl = card.querySelector('.faculty-name, h3, .faculty-title');
-      if (!nameEl) return null;
-      const name = nameEl.textContent.trim().replace(/\s+/g, ' ');
-
-      // Heading text check: verify card's heading text equals the name used
-      const headingText = nameEl.textContent.trim().replace(/\s+/g, ' ');
-      if (!name || headingText.toLowerCase() !== name.toLowerCase()) {
-        return null;
-      }
-
-      // 2. Subject Tag
-      const tagEl = card.querySelector('.faculty-tag, .faculty-badge');
-      let subjectTag = tagEl ? tagEl.textContent.trim().replace(/\s+/g, ' ') : '';
-      if (subjectTag) {
-        const parts = subjectTag.split(/·|•/).map(p => p.trim());
-        if (parts.length >= 2) {
-          const clean0 = toTitleCase(parts[0]);
-          const clean1 = parts.slice(1).join(' & ').toUpperCase().replace('CLASS', 'Class');
-          subjectTag = `${clean0} for ${clean1}`;
-        } else {
-          subjectTag = toTitleCase(subjectTag);
-        }
-      }
-
-      // 3. One education line, one experience line, one "known for" line from card's own DOM
-      let education = '';
-      let experience = '';
-      let knownFor = '';
-
-      card.querySelectorAll('.faculty-point, li').forEach(pt => {
-        const label = (pt.querySelector('.faculty-point-label, strong, b')?.textContent || '').toLowerCase();
-        let text = (pt.querySelector('.faculty-point-text')?.textContent || pt.textContent).replace(/^[•✔✓-]\s*/, '').trim();
-        text = text.replace(/^(?:Education|Experience|Known for|Achievement|Known\s+for)\s*:\s*/i, '').trim();
-
-        if (label.includes('education') || pt.textContent.toLowerCase().includes('education:')) {
-          if (!education) education = text;
-        } else if (label.includes('experience') || pt.textContent.toLowerCase().includes('experience:')) {
-          if (!experience) experience = text;
-        } else if (label.includes('known for') || pt.textContent.toLowerCase().includes('known for:')) {
-          if (!knownFor) knownFor = text;
-        }
-      });
-
-      // Experience line (extracted dynamically from card DOM)
-      let expLine = '';
-      if (experience) {
-        const yrMatch = experience.match(/(\d+\+?\s*years?)/i);
-        if (yrMatch) {
-          expLine = `${yrMatch[1]} of experience`;
-        } else {
-          expLine = experience;
-        }
-        expLine = expLine.charAt(0).toUpperCase() + expLine.slice(1);
-        if (!expLine.endsWith('.')) expLine += '.';
-      }
-
-      // Known for line (extracted dynamically from card DOM)
-      let knownLine = '';
-      if (knownFor) {
-        knownLine = `Known for ${knownFor.replace(/^known\s+for\s*/i, '')}`;
-        if (!knownLine.endsWith('.')) knownLine += '.';
-      }
-
-      // Faculty message format:
-      // "Meet [Name], [Subject Tag]. [Experience]. [Known for]. Click Book Free Demo to try a class." (No fee line)
-      let message = `Meet ${name}`;
-      if (subjectTag) message += `, ${subjectTag}`;
-      message += '.';
-      if (expLine) message += ` ${expLine}`;
-      if (knownLine) message += ` ${knownLine}`;
-      message += ' Click Book Free Demo to try a class.';
-      message = message.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
-
-      // Tier 4 compact line (max ~90 chars: name + one key fact)
-      let compactFact = expLine ? expLine.replace(/\.$/, '') : (knownLine ? knownLine.replace(/\.$/, '') : 'Top Mentor');
-      let compactLine = `${name} · ${subjectTag || 'Faculty'} · ${compactFact}`;
-      if (compactLine.length > 90) {
-        compactLine = compactLine.substring(0, 87) + '...';
-      }
-
-      return {
-        card,
-        name,
-        isFaculty: true,
-        headingEl: nameEl,
-        message,
-        compactLine,
-        cta: card.querySelector('button, a, .mjm-btn')
-      };
-    } else {
-      // Course / Batch card from its own DOM
-      const headingEl = card.querySelector('h3, .program-title-row, .mjm-title, .foundation-card-title, .foundation-title, .resource-title');
-      if (!headingEl) return null;
-      const name = (headingEl.childNodes[0]?.textContent?.trim() || headingEl.textContent.trim()).replace(/\s+/g, ' ');
-
-      const headingText = headingEl.textContent.trim().replace(/\s+/g, ' ');
-      if (!name || !headingText.toLowerCase().includes(name.toLowerCase())) {
-        return null;
-      }
-
-      // Fee
-      let fee = '';
-      const feeMatch = card.textContent.match(/₹\s*[\d,]+(?:\s*\/\s*(?:month|mo))?/i);
-      if (feeMatch) fee = feeMatch[0].trim();
-
-      // Details
-      const details = [];
-      card.querySelectorAll('ul li, .mjm-points span, .foundation-subject, p.program-desc, p.foundation-desc').forEach(el => {
-        const txt = el.textContent.replace(/[✔✓]/g, '').trim();
-        if (txt && details.length < 2 && !txt.includes('₹')) details.push(txt);
-      });
-
-      // CTA
-      const ctaEl = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn, a[href]');
-      const ctaText = ctaEl ? ctaEl.textContent.trim() : 'Explore Now';
-
-      let message = `${name}${fee ? ` (${fee})` : ''}. ${details.join('. ')}. Click ${ctaText} to explore.`;
-      message = message.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
-
-      let compactFact = fee || (details[0] || 'Max 10 students');
-      let compactLine = `${name}${fee ? ` · ${fee}` : ''} · ${compactFact}`;
-      if (compactLine.length > 90) {
-        compactLine = compactLine.substring(0, 87) + '...';
-      }
-
-      return {
-        card,
-        name,
-        isFaculty: false,
-        headingEl,
-        fee,
-        message,
-        compactLine,
-        cta: ctaEl
-      };
-    }
-  }
-
-  // FIX 2: 4-Tier Non-overlapping Placement
-  function calculateCardChipPlacement(card, info, minTier = 1) {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const isMobile = vw <= 640;
-
-    const headerEl = document.querySelector('header.site-header, header');
-    const headerBottom = headerEl ? Math.max(0, headerEl.getBoundingClientRect().bottom) : 0;
-    const topSafeLimit = headerBottom + 10;
-
-    const mobileBarEl = document.querySelector('.mobile-bar');
-    const mobileBarVisible = mobileBarEl && window.getComputedStyle(mobileBarEl).display !== 'none';
-    const mobileBarRect = mobileBarVisible ? mobileBarEl.getBoundingClientRect() : null;
-
-    let bottomSafeLimit = vh - 12;
-    if (mobileBarRect && mobileBarRect.top > 0) {
-      bottomSafeLimit = Math.min(bottomSafeLimit, mobileBarRect.top - 8);
-    }
-
-    const cRect = card.getBoundingClientRect();
-    const isTallCard = cRect.height > vh * 0.60;
-
-    const owlW = isMobile ? 68 : 84;
-    const owlH = isMobile ? 78 : 96;
-    const bubW = Math.min(320, Math.round(vw * 0.90));
-    const bubH = bubEl.offsetHeight || 110;
-
-    function overlapsCard(x, y, w, h) {
-      return !(x + w <= cRect.left || x >= cRect.right || y + h <= cRect.top || y >= cRect.bottom);
-    }
-
-    // FIX 3: Owl on top-left outer corner (outside chip, feet on top border of chip)
-    function getOwlCoordsForBubble(bX, bY) {
-      const oX = Math.round(bX - (owlW * 0.38));
-      const oY = Math.round(bY - owlH + 12);
-      return {
-        owlX: Math.max(6, Math.min(vw - owlW - 6, oX)),
-        owlY: Math.max(topSafeLimit - 6, oY)
-      };
-    }
-
-    // TIER 1: ABOVE card's top edge (8-12px gap)
-    if (minTier <= 1 && !isTallCard) {
-      const gap = 10;
-      const bubY = Math.round(cRect.top - bubH - gap);
-      let bubX = Math.round(cRect.left);
-      bubX = Math.max(14, Math.min(vw - bubW - 14, bubX));
-
-      const { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
-      const fitsAbove = (bubY >= topSafeLimit) && (owlY >= topSafeLimit);
-      const bubIntersects = overlapsCard(bubX, bubY, bubW, bubH);
-      const owlIntersects = overlapsCard(owlX, owlY, owlW, owlH);
-
-      if (fitsAbove && !bubIntersects && !owlIntersects) {
-        return { tier: 1, bubX, bubY, owlX, owlY };
-      }
-    }
-
-    // TIER 2: BELOW card
-    if (minTier <= 2 && !isTallCard) {
-      const gap = 10;
-      let bubY = Math.round(cRect.bottom + gap);
-      let bubX = Math.round(cRect.left);
-      bubX = Math.max(14, Math.min(vw - bubW - 14, bubX));
-
-      let { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
-
-      if (overlapsCard(owlX, owlY, owlW, owlH)) {
-        if (cRect.left >= owlW + 10) {
-          owlX = Math.round(cRect.left - owlW - 4);
-        } else {
-          bubY = Math.round(cRect.bottom + owlH - 4);
-          const coords = getOwlCoordsForBubble(bubX, bubY);
-          owlX = coords.owlX;
-          owlY = coords.owlY;
-        }
-      }
-
-      const fitsBelow = (bubY + bubH <= bottomSafeLimit);
-      const bubIntersects = overlapsCard(bubX, bubY, bubW, bubH);
-      const owlIntersects = overlapsCard(owlX, owlY, owlW, owlH);
-
-      if (fitsBelow && !bubIntersects && !owlIntersects) {
-        return { tier: 2, bubX, bubY, owlX, owlY };
-      }
-    }
-
-    // TIER 3: BESIDE card in wide gap
-    if (minTier <= 3) {
-      const freeRight = vw - cRect.right;
-      const freeLeft = cRect.left;
-
-      if (freeRight >= bubW + 24) {
-        const bubX = Math.round(cRect.right + 14);
-        let bubY = Math.round(Math.max(topSafeLimit + 20, Math.min(bottomSafeLimit - bubH, cRect.top + 10)));
-        const { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
-        if (!overlapsCard(bubX, bubY, bubW, bubH) && !overlapsCard(owlX, owlY, owlW, owlH)) {
-          return { tier: 3, bubX, bubY, owlX, owlY };
-        }
-      }
-
-      if (freeLeft >= bubW + (owlW * 0.4) + 14) {
-        const bubX = Math.round(cRect.left - bubW - 14);
-        let bubY = Math.round(Math.max(topSafeLimit + 20, Math.min(bottomSafeLimit - bubH, cRect.top + 10)));
-        const { owlX, owlY } = getOwlCoordsForBubble(bubX, bubY);
-        if (bubX >= 10 && !overlapsCard(bubX, bubY, bubW, bubH) && !overlapsCard(owlX, owlY, owlW, owlH)) {
-          return { tier: 3, bubX, bubY, owlX, owlY };
-        }
-      }
-    }
-
-    // TIER 4: Compact one-line chip docked at bottom edge of viewport
-    const collapsedBarEl = document.querySelector('#ollie-collapsed-bar');
-    let pillSafeRight = vw - 14;
-    if (collapsedBarEl && !collapsedBarEl.hidden) {
-      const pRect = collapsedBarEl.getBoundingClientRect();
-      if (pRect.top < bottomSafeLimit && pRect.bottom > bottomSafeLimit - 60) {
-        pillSafeRight = Math.round(pRect.left - 12);
-      }
-    }
-
-    const compactW = Math.min(420, Math.min(pillSafeRight - 20, vw - 28));
-    const compactH = 50;
-    const bubY = Math.round(bottomSafeLimit - compactH);
-    let bubX = Math.round(Math.max(14, Math.min(pillSafeRight - compactW, (vw - compactW) / 2)));
-    let owlX = Math.max(6, bubX - owlW + 20);
-    let owlY = Math.round(bubY + (compactH - owlH) / 2);
-
-    return { tier: 4, bubX, bubY, owlX, owlY };
-  }
-
-  function showCardHoverChip(card) {
-    if (isTour || modalActive || isHidden || isPanelOpen) return;
-    const info = resolveCardInfo(card);
-    if (!info) return;
-
-    // Heading verification check
-    if (!info.headingEl || !info.headingEl.textContent.trim().toLowerCase().includes(info.name.toLowerCase())) {
-      return;
-    }
-
-    isHoverActive = true;
-    activeHoverCard = card;
-
-    if (info.cta) pulseElement(info.cta);
-
-    bubEl.classList.add('ollie-is-hover-chip');
-    bubEl.classList.remove('ollie-chip-tier4');
-
-    sayMessage(info.message);
-
-    const placement = calculateCardChipPlacement(card, info, 1);
-
-    if (placement.tier === 4) {
-      bubEl.classList.add('ollie-chip-tier4');
-      sayMessage(info.compactLine);
-    }
-
-    bubEl.style.transform = `translate(${placement.bubX}px, ${placement.bubY}px)`;
-    owlEl.style.transform = `translate(${placement.owlX}px, ${placement.owlY}px)`;
-
-    // Post-placement verification using getBoundingClientRect
-    if (placement.tier < 4) {
-      const bRect = bubEl.getBoundingClientRect();
-      const cRect = card.getBoundingClientRect();
-      if (rectsIntersect(bRect, cRect)) {
-        const fallback = calculateCardChipPlacement(card, info, placement.tier + 1);
-        if (fallback.tier === 4) {
-          bubEl.classList.add('ollie-chip-tier4');
-          sayMessage(info.compactLine);
-        }
-        bubEl.style.transform = `translate(${fallback.bubX}px, ${fallback.bubY}px)`;
-        owlEl.style.transform = `translate(${fallback.owlX}px, ${fallback.owlY}px)`;
-      }
-    }
-  }
-
-  function hideCardHoverChip(immediate = false) {
-    clearTimeout(hoverShowTimer);
-    clearTimeout(hoverRemoveTimer);
-    if (!isHoverActive && !activeHoverCard) return;
-
-    isHoverActive = false;
-    activeHoverCard = null;
-
-    bubEl.classList.remove('ollie-is-hover-chip', 'ollie-chip-tier4');
-
-    if (currentStepIdx >= 0 && currentStepIdx < activeSteps.length) {
-      sayMessage(activeSteps[currentStepIdx].text);
-    } else {
-      sayMessage('Preparing for JEE, NEET, or Foundation? Ask me anything or explore below.');
-    }
-    placeOllieAndBubble();
-  }
-
-  function verifyHoverOnScroll() {
-    if (!isHoverActive || !activeHoverCard) return;
-    if (lastPointerX < 0 || lastPointerY < 0) {
-      hideCardHoverChip(true);
-      return;
-    }
-    const elUnder = document.elementFromPoint(lastPointerX, lastPointerY);
-    const cardUnder = elUnder ? elUnder.closest(CARD_SELECTOR) : null;
-    if (cardUnder !== activeHoverCard) {
-      hideCardHoverChip(true);
-    }
-  }
-
-  function bindCardInteractions() {
-    document.querySelectorAll(CARD_SELECTOR).forEach(card => {
-      if (card.dataset.ollieBound) return;
-      card.dataset.ollieBound = 'true';
-
-      card.addEventListener('pointerenter', function () {
-        if (!isDesktopDevice() || isTour || modalActive || isHidden || isPanelOpen) return;
-        clearTimeout(hoverRemoveTimer);
-        clearTimeout(hoverShowTimer);
-
-        hoverShowTimer = setTimeout(() => {
-          showCardHoverChip(card);
-        }, 120);
-      });
-
-      card.addEventListener('pointerleave', function () {
-        if (!isDesktopDevice()) return;
-        clearTimeout(hoverShowTimer);
-        if (isHoverActive) {
-          clearTimeout(hoverRemoveTimer);
-          hoverRemoveTimer = setTimeout(() => {
-            if (lastPointerX >= 0 && lastPointerY >= 0 && activeHoverCard) {
-              const elUnder = document.elementFromPoint(lastPointerX, lastPointerY);
-              if (elUnder && elUnder.closest(CARD_SELECTOR) === activeHoverCard) {
-                return;
-              }
-            }
-            hideCardHoverChip();
-          }, 220); // within at most 300ms
-        }
-      });
-
-      card.addEventListener('pointercancel', function () {
-        clearTimeout(hoverShowTimer);
-        hideCardHoverChip(true);
-      });
-
-      card.addEventListener('click', function (e) {
-        if (isDesktopDevice() || isTour || modalActive || isHidden || isPanelOpen) return;
-        if (e.target.closest('a, button')) return;
-        const cta = card.querySelector('.program-cta, .foundation-card-cta, .mjm-btn, .btn');
-        pulseElement(cta || card);
-      }, { passive: true });
-    });
-  }
-
-  // ==========================================================================
-  // 12. DYNAMIC SCANNER & MUTATIONOBSERVER
+  // 10. DYNAMIC SCANNER & STATE
   // ==========================================================================
   function scanAndResolveSteps() {
-    const currentPath = location.pathname || '/';
-    const resolved = [];
-
-    PASSIVE_NUDGES.forEach(nudge => {
-      if (nudge.page !== '*' && normalizePath(nudge.page) !== normalizePath(currentPath)) return;
-      const secEl = document.querySelector(nudge.section);
-      if (!secEl) return;
-      const targetEl = nudge.target ? (secEl.matches(nudge.target) ? secEl : secEl.querySelector(nudge.target)) : secEl;
-      resolved.push({ ...nudge, secEl, targetEl: targetEl || secEl });
-    });
-
-    resolved.sort((a, b) => {
-      if (a.secEl === b.secEl) return 0;
-      return a.secEl.compareDocumentPosition(b.secEl) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
-
-    activeSteps = resolved;
-    bindCardInteractions();
-
-    // Debugging summary
+    // Ollie is permanently fixed at the bottom-right corner perched on the Ask Ollie button.
+    // Dynamic batch & faculty extraction is maintained for answering in the chat window.
     if (isDebug) {
       console.group('🦉 [Ollie Debugger - Live Extraction & State]');
       console.log('Courses in Navigation:', getLiveCourses());
       console.log('Live Extracted Batches:', getLiveBatches());
       console.log('Live Extracted Faculty:', getLiveFaculty());
-      console.log('Resolved Passive Nudges:', activeSteps.length);
       console.groupEnd();
-    }
-
-    if (currentStepIdx < 0 && activeSteps.length > 0) {
-      pickSectionByScroll();
-    } else {
-      placeOllieAndBubble();
     }
   }
 
@@ -2874,94 +2007,37 @@
   function hideGuide() {
     isHidden = true;
     try { sessionStorage.setItem('ollie-hidden', 'true'); } catch (e) {}
-    if (highlightedEl) highlightedEl.classList.remove('ollie-hl');
-    stopTour();
+    if (floatingWidgetEl) floatingWidgetEl.hidden = true;
     collapseAskPanel();
-    placeOllieAndBubble();
   }
 
   function showGuide() {
     isHidden = false;
     try { sessionStorage.setItem('ollie-hidden', 'false'); } catch (e) {}
-    bubEl.hidden = false;
-    collapsedBarEl.hidden = false;
-    placeOllieAndBubble();
-    pickSectionByScroll();
+    if (floatingWidgetEl) floatingWidgetEl.hidden = false;
   }
 
   // ==========================================================================
-  // 13. INITIALIZATION
+  // 11. INITIALIZATION
   // ==========================================================================
   let rescanDebounce = null;
   function triggerRescan() {
     clearTimeout(rescanDebounce);
     rescanDebounce = setTimeout(() => {
       scanAndResolveSteps();
-      placeOllieAndBubble();
-    }, 200); // Debounced 200ms
+    }, 200);
   }
 
-  function setupVisualViewport() {
-    if (typeof window !== 'undefined' && window.visualViewport) {
-      const handleVpChange = () => {
-        if (isPanelOpen) {
-          dockOwlOnPanel();
-        } else {
-          placeOllieAndBubble();
-        }
-      };
-      window.visualViewport.addEventListener('resize', handleVpChange, { passive: true });
-      window.visualViewport.addEventListener('scroll', handleVpChange, { passive: true });
-    }
-  }
+  function setupVisualViewport() {}
 
   function initOllie() {
     createOllieUI();
     scanAndResolveSteps();
-    setupVisualViewport();
-
-    window.addEventListener('scroll', onScrollHandler, { passive: true });
-    window.addEventListener('resize', () => placeOllieAndBubble(), { passive: true });
-    window.addEventListener('pointermove', e => {
-      lastPointerX = e.clientX;
-      lastPointerY = e.clientY;
-    }, { passive: true });
-
-    ['wheel', 'touchstart', 'keydown'].forEach(evt => {
-      window.addEventListener(evt, () => {
-        if (isTour) stopTour();
-      }, { passive: true });
-    });
-
-    // MutationObserver only rescans steps and repositions owl; NEVER navigates
-    const observer = new MutationObserver(mutations => {
-      for (const m of mutations) {
-        const t = m.target;
-        if (!t) continue;
-        if (t.id === 'ollie-owl' || t.id === 'ollie-bub' || t.id === 'ollie-panel' || t.id === 'ollie-collapsed-bar') continue;
-        if (t.closest && t.closest('#ollie-panel, #ollie-owl, #ollie-bub, #ollie-collapsed-bar, .ollie-hover-chip')) continue;
-        triggerRescan();
-        break;
-      }
-    });
-
-    const rootTarget = document.getElementById('app') || document.body;
-    observer.observe(rootTarget, { childList: true, subtree: true });
 
     // Consume pending action once upon page load
     setTimeout(() => {
       handlePendingCrossPageAction();
     }, 180);
-
-    setTimeout(() => {
-      if (!isHidden && !isPanelOpen) {
-        if (activeSteps.length > 0) {
-          activateStep(0);
-        } else {
-          placeOllieAndBubble();
-        }
-      }
-    }, 600);
   }
 
   if (document.readyState === 'loading') {

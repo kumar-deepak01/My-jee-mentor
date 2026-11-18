@@ -28,52 +28,116 @@
   color-scheme: dark;
 }
 
-/* ---- Owl Guide Button ---- */
+/* ---- Widget Stack Container (Permanently fixed at bottom-right corner) ---- */
+.ollie-floating-widget {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 9999;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: none;
+}
+.ollie-floating-widget > * {
+  pointer-events: auto;
+}
+.ollie-floating-widget[hidden] {
+  display: none !important;
+}
+
+/* 1. Circular Floating Call Button */
+.ollie-call-btn {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.45), 0 2px 6px rgba(0, 0, 0, 0.12);
+  text-decoration: none;
+  cursor: pointer;
+  border: 2.5px solid #ffffff;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, background 0.2s ease;
+  z-index: 3;
+}
+.ollie-call-btn:hover {
+  transform: scale(1.12) translateY(-2px);
+  box-shadow: 0 10px 26px rgba(22, 163, 74, 0.65), 0 4px 10px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+.ollie-call-btn:active {
+  transform: scale(0.95);
+}
+.ollie-call-btn:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 3px;
+}
+.ollie-call-svg {
+  width: 23px;
+  height: 23px;
+  stroke: #ffffff;
+  fill: none;
+  transition: transform 0.2s ease;
+}
+.ollie-call-btn:hover .ollie-call-svg {
+  transform: rotate(8deg) scale(1.08);
+}
+.ollie-call-ripple {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(34, 197, 94, 0.6);
+  animation: ollie-call-pulse 2.2s infinite;
+  pointer-events: none;
+}
+@keyframes ollie-call-pulse {
+  0% { transform: scale(1); opacity: 0.85; }
+  65% { transform: scale(1.36); opacity: 0; }
+  100% { transform: scale(1.36); opacity: 0; }
+}
+
+/* 2. Ollie Perch Unit (Mascot perched directly on top of Ask Ollie button) */
+.ollie-perch-unit {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Owl Guide Button (Perched on top of Ask Ollie) */
 #ollie-owl,
 .ollie-owl {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 84px;
-  height: 96px;
+  position: relative;
+  width: 76px;
+  height: 86px;
   padding: 0;
   border: 0;
   background: none;
-  cursor: grab;
-  z-index: 9999;
-  transition: transform 0.85s cubic-bezier(0.25, 0.7, 0.25, 1);
-  will-change: transform;
+  cursor: pointer;
+  z-index: 2;
+  margin-bottom: -11px; /* Perched directly on the top rim of Ask Ollie pill! */
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   outline: none;
   user-select: none;
-  pointer-events: auto;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
+  display: block;
 }
-
-#ollie-owl:active {
-  cursor: grabbing;
+.ollie-perch-unit:hover #ollie-owl {
+  transform: translateY(-4px) scale(1.05);
 }
-
-#ollie-owl.ollie-dragging {
-  cursor: grabbing !important;
-  z-index: 10006 !important;
-  transition: none !important;
+.ollie-perch-unit:hover #ollie-owl .ollie-wl {
+  animation: ollie-fl 0.2s ease-in-out infinite alternate;
 }
-
-#ollie-owl.ollie-dragging svg {
-  animation: none !important;
-  transform: scale(1.08) rotate(4deg);
-  filter: drop-shadow(0 14px 28px rgba(234, 88, 12, 0.45));
+.ollie-perch-unit:hover #ollie-owl .ollie-wr {
+  animation: ollie-fr 0.2s ease-in-out infinite alternate;
 }
-
-#ollie-owl.ollie-dragging .ollie-wl {
-  animation: ollie-fl 0.18s ease-in-out infinite alternate !important;
-}
-
-#ollie-owl.ollie-dragging .ollie-wr {
-  animation: ollie-fr 0.18s ease-in-out infinite alternate !important;
-}
-
 #ollie-owl:focus-visible {
   outline: 2px solid var(--ollie-or);
   outline-offset: 4px;
@@ -151,29 +215,9 @@
   40%, 80% { transform: translateX(5px) rotate(5deg); }
 }
 
-/* ---- Speech Bubble / Nudge Bubble ---- */
+/* ---- Speech Bubble / Nudge Bubble (Removed) ---- */
 #ollie-bub,
 .ollie-bub {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: min(320px, calc(100vw - 28px));
-  background: var(--ollie-bg);
-  color: var(--ollie-ink);
-  border: 2px solid var(--ollie-or);
-  border-radius: 16px;
-  padding: 13px 15px;
-  z-index: 9998;
-  box-shadow: var(--ollie-shadow);
-  transition: transform 0.85s cubic-bezier(0.25, 0.7, 0.25, 1), opacity 0.25s ease;
-  will-change: transform;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  box-sizing: border-box;
-  pointer-events: auto;
-}
-
-#ollie-bub[hidden],
-.ollie-bub[hidden] {
   display: none !important;
 }
 
@@ -391,33 +435,45 @@ body.ollie-modal-active #ollie-panel {
   pointer-events: none;
 }
 
-/* Collapsed Slim Ask Ollie Bar */
-#ollie-collapsed-bar {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
+/* "Ask Ollie" Pill Button (Directly beneath Ollie owl) */
+#ollie-collapsed-bar,
+.ollie-collapsed-bar {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--ollie-bg);
-  color: var(--ollie-ink);
-  border: 2px solid var(--ollie-or);
+  justify-content: center;
+  gap: 6px;
+  background: var(--ollie-bg, #ffffff);
+  color: var(--ollie-ink, #14213d);
+  border: 2px solid var(--ollie-or, #ea580c);
   border-radius: 999px;
-  padding: 8px 16px 8px 12px;
-  box-shadow: var(--ollie-shadow);
+  padding: 7px 18px;
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.28), 0 2px 6px rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  z-index: 9997;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-weight: 750;
-  font-size: 0.88rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
 }
-
-#ollie-collapsed-bar:hover {
+.ollie-perch-unit:hover #ollie-collapsed-bar {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(234, 88, 12, 0.38);
+  background: #fff7ed;
+  color: #ea580c;
+  box-shadow: 0 8px 24px rgba(234, 88, 12, 0.38), 0 3px 8px rgba(0, 0, 0, 0.12);
 }
-
+.dark-theme #ollie-collapsed-bar,
+.dark-theme .ollie-collapsed-bar {
+  background: #111722;
+  color: #eef1f8;
+  border-color: #ea580c;
+}
+.dark-theme .ollie-perch-unit:hover #ollie-collapsed-bar {
+  background: #1c2436;
+  color: #ea580c;
+}
 #ollie-collapsed-bar[hidden] {
   display: none !important;
 }
@@ -890,9 +946,29 @@ body.ollie-modal-active #ollie-panel {
 
 /* ---- Tablet & Mobile-Bar Safe Positioning ---- */
 @media (max-width: 900px) {
-  #ollie-collapsed-bar {
+  .ollie-floating-widget {
     right: 14px;
     bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+  }
+  .ollie-call-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .ollie-call-svg {
+    width: 20px;
+    height: 20px;
+  }
+  #ollie-owl,
+  .ollie-owl {
+    width: 66px;
+    height: 76px;
+    margin-bottom: -9px;
+  }
+  #ollie-collapsed-bar,
+  .ollie-collapsed-bar {
+    font-size: 12px;
+    padding: 6px 14px;
   }
   #ollie-panel {
     right: 14px;
@@ -901,39 +977,7 @@ body.ollie-modal-active #ollie-panel {
   }
 }
 
-@media (min-width: 641px) and (max-width: 900px) {
-  #ollie-owl,
-  .ollie-owl {
-    width: 76px;
-    height: 86px;
-  }
-  #ollie-bub,
-  .ollie-bub {
-    width: min(310px, calc(100vw - 32px));
-  }
-}
-
-/* ---- Mobile Screen Specific Styling ---- */
 @media (max-width: 640px) {
-  #ollie-owl,
-  .ollie-owl {
-    width: 68px;
-    height: 78px;
-  }
-
-  #ollie-bub,
-  .ollie-bub {
-    width: min(300px, calc(100vw - 24px));
-    padding: 11px 13px;
-    border-radius: 14px;
-  }
-
-  #ollie-txt {
-    font-size: 0.88rem;
-    line-height: 1.4;
-    margin-bottom: 8px;
-  }
-
   #ollie-panel {
     right: 8px;
     left: 8px;
@@ -943,13 +987,6 @@ body.ollie-modal-active #ollie-panel {
     height: 75vh;
     max-height: min(80vh, 560px);
     border-radius: 18px;
-  }
-
-  #ollie-collapsed-bar {
-    right: 12px;
-    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
-    font-size: 0.82rem;
-    padding: 6px 14px 6px 10px;
   }
 }
 
