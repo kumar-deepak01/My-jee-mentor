@@ -2,6 +2,89 @@
  * My JEE Mentor - JEE Crash Course 5-Second Promotional Popup
  */
 
+function playPromoChime() {
+  try {
+    if (sessionStorage.getItem('mjm_promo_chime_played') === 'true') {
+      return;
+    }
+  } catch (_) {}
+
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    let played = false;
+
+    const play = () => {
+      try {
+        if (played) return;
+        const modal = document.getElementById('crash-promo-modal');
+        if (modal && modal.hidden) return;
+
+        played = true;
+        try {
+          sessionStorage.setItem('mjm_promo_chime_played', 'true');
+        } catch (_) {}
+
+        const now = ctx.currentTime;
+
+        // Subtle, low-volume master envelope (~0.12 gain with 0.45s smooth fade)
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.001, now);
+        masterGain.gain.linearRampToValueAtTime(0.12, now + 0.02);
+        masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+        masterGain.connect(ctx.destination);
+
+        // Tone 1: Warm D5 note (~587Hz) gliding softly into A5 (~880Hz)
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now);
+        osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        osc1.connect(masterGain);
+        osc1.start(now);
+        osc1.stop(now + 0.45);
+
+        // Tone 2: Harmonious resonance bell chime (~880Hz)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880, now + 0.08);
+        gain2.gain.setValueAtTime(0.001, now);
+        gain2.gain.linearRampToValueAtTime(0.08, now + 0.1);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.08);
+        osc2.stop(now + 0.45);
+
+        setTimeout(() => {
+          try {
+            if (ctx.state !== 'closed') ctx.close();
+          } catch (_) {}
+        }, 600);
+      } catch (_) {}
+    };
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(play).catch(() => {
+        // Unlock cleanly on first user interaction if browser initially restricts autoplay
+        const unlock = () => {
+          window.removeEventListener('pointerdown', unlock);
+          window.removeEventListener('keydown', unlock);
+          window.removeEventListener('scroll', unlock);
+          ctx.resume().then(play).catch(() => {});
+        };
+        window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+        window.addEventListener('keydown', unlock, { once: true, passive: true });
+        window.addEventListener('scroll', unlock, { once: true, passive: true });
+      });
+    } else {
+      play();
+    }
+  } catch (_) {}
+}
+
 export function renderCrashPromoModal() {
   return `
     <div class="crash-promo-overlay" id="crash-promo-modal" hidden>
@@ -42,6 +125,7 @@ export function initCrashPromo() {
     document.body.classList.remove('crash-promo-open');
     try {
       sessionStorage.setItem('mjm_crashcourse_dismissed', 'true');
+      sessionStorage.setItem('mjm_promo_chime_played', 'true');
     } catch (_) {}
   };
 
@@ -57,6 +141,9 @@ export function initCrashPromo() {
     modal.hidden = false;
     modal.classList.add('is-open');
     document.body.classList.add('crash-promo-open');
+
+    // Play subtle soft chime notification
+    playPromoChime();
   };
 
   // Automatically trigger 5 seconds after landing
