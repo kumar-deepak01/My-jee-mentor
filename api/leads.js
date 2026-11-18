@@ -1,7 +1,7 @@
 import {timingSafeEqual} from 'node:crypto';
 
 const allowedClasses=new Set(['7','8','9','10','11','12','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12','Dropper']);
-const allowedCourses=new Set(['JEE','NEET','Foundation']);
+const allowedCourses=new Set(['JEE','NEET','Foundation','JEE Crash Course']);
 const text=(value,max=1000)=>typeof value==='string'?value.trim().replace(/[\u0000-\u001f\u007f]/g,'').slice(0,max):'';
 const safeEqual=(a,b)=>{const left=Buffer.from(String(a||'')),right=Buffer.from(String(b||''));return left.length===right.length&&timingSafeEqual(left,right)};
 
@@ -14,7 +14,7 @@ export default async function handler(req,res){
   if(!safeEqual(cookies.csrf,req.headers['x-csrf-token']))return res.status(403).json({message:'Your form session expired. Refresh and try again.'});
   const lead={
     studentName:text(body.studentName,80),parentName:text(body.parentName,80),email:text(body.email,254),
-    mobile:text(body.mobile,18),whatsapp:text(body.whatsapp,18),className:text(body.className,20),exam:text(body.exam,20),
+    mobile:text(body.mobile,18),whatsapp:text(body.whatsapp,18),className:text(body.className,20),exam:text(body.exam,40),
     targetYear:text(body.targetYear,100),currentCoaching:text(body.currentCoaching,100),preferredSubject:text(body.preferredSubject,100),
     city:text(body.city,80),language:text(body.language,100),message:text(body.message,1000)
   };

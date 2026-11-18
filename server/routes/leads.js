@@ -13,7 +13,7 @@ router.post('/leads',limiter,
  ...fields.map(sanitize),
  body('studentName').isLength({min:2,max:80}),body('parentName').optional({checkFalsy:true}).isLength({max:80}),body('email').optional({checkFalsy:true}).isEmail().isLength({max:254}),
  body('mobile').matches(/^\+?[0-9 ()-]{8,18}$/),body('whatsapp').optional({checkFalsy:true}).matches(/^\+?[0-9 ()-]{8,18}$/),
- body('className').isIn(['7','8','9','10','11','12','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12','Dropper']),body('exam').isIn(['JEE','NEET','Foundation']),
+ body('className').isIn(['7','8','9','10','11','12','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12','Dropper']),body('exam').isIn(['JEE','NEET','Foundation','JEE Crash Course']),
  body('city').optional({checkFalsy:true}).isLength({max:80}),...['targetYear','currentCoaching','preferredSubject','language'].map(k=>body(k).optional({checkFalsy:true}).isLength({max:100})),body('message').optional({checkFalsy:true}).isLength({max:1000}),
  async(req,res)=>{
   if(req.body?.website)return res.status(200).json({ok:true});

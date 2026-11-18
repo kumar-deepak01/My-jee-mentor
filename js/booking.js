@@ -1,4 +1,4 @@
-const bookingCourses = new Set(['JEE', 'NEET', 'Foundation']);
+const bookingCourses = new Set(['JEE Crash Course', 'JEE', 'NEET', 'Foundation']);
 
 export const AVAILABLE_SUBJECTS = [
   'Physics',
@@ -21,7 +21,7 @@ export const AVAILABLE_CLASSES = [
   'Dropper'
 ];
 
-export const AVAILABLE_COURSES = ['JEE', 'NEET', 'Foundation'];
+export const AVAILABLE_COURSES = ['JEE Crash Course', 'JEE', 'NEET', 'Foundation'];
 export const AVAILABLE_LANGUAGES = ['English', 'Hindi'];
 
 export function renderLeadForm(id = 'lead-form') {
@@ -435,7 +435,15 @@ export function initBooking() {
     const form = overlay.querySelector('[data-lead-form]');
     form.reset();
     showStatus(form, '');
-    if (bookingCourses.has(course)) form.elements.course.value = course;
+    if (course) {
+      const normalized = course.trim().toLowerCase().replace(/[-_]/g, ' ');
+      const match = [...bookingCourses].find(c => {
+        const cNorm = c.toLowerCase();
+        return cNorm === normalized || (normalized.includes('crash') && cNorm.includes('crash'));
+      });
+      if (match) form.elements.course.value = match;
+      else if (bookingCourses.has(course)) form.elements.course.value = course;
+    }
 
     // Compensate scrollbar width on desktop to prevent layout shifting
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -467,9 +475,19 @@ export function initBooking() {
   };
 
   const checkHashAndOpen = () => {
-    const hash = (window.location.hash || '').toLowerCase();
+    const rawHash = (window.location.hash || '').toLowerCase();
+    const hash = rawHash.replace(/\/+$/, '');
     const params = new URLSearchParams(window.location.search);
-    if (hash === '#book-demo' || hash === '#demo' || hash === '#booking' || params.has('demo') || params.has('booking') || params.has('book')) {
+    if (
+      hash === '#book-demo' ||
+      hash === '#demo' ||
+      hash === '#booking' ||
+      hash.startsWith('#book-demo') ||
+      hash.startsWith('#demo') ||
+      params.has('demo') ||
+      params.has('booking') ||
+      params.has('book')
+    ) {
       const course = params.get('course') || '';
       open(course);
     }
