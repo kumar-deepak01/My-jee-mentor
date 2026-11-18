@@ -2914,52 +2914,52 @@ html.dark-theme .booking-success p {
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3) !important;
 }
 
-/* 3. 5-Second Promotional Floating Ad Card (Bottom-Left Corner) */
+/* 3. 5-Second Promotional Centered Ad Card (Clean, No Blur, Proper Size) */
 .crash-promo-overlay[hidden] {
   display: none !important;
 }
 .crash-promo-overlay {
   position: fixed;
-  left: 24px;
-  bottom: 24px;
-  top: auto;
-  right: auto;
+  inset: 0;
   z-index: 9990;
-  display: block;
-  padding: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
   background: transparent;
-  pointer-events: none; /* Entire website behind and around remains 100% visible, clickable & scrollable */
-  animation: crash-slide-in-left 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  pointer-events: none; /* Entire website behind and around stays 100% clear, visible, clickable & usable */
 }
 .crash-promo-dialog {
   position: relative;
-  width: 300px;
-  max-width: 300px;
+  width: 90%;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
-  border-radius: 16px;
+  border-radius: 18px;
   background: #ffffff;
   overflow: hidden;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  pointer-events: auto; /* Only the ad card captures pointer events */
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22), 0 4px 14px rgba(0, 0, 0, 0.08);
+  pointer-events: auto; /* Only the ad card captures clicks and taps */
+  animation: crash-center-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .crash-promo-dialog:hover {
   transform: translateY(-2px);
-  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.32), 0 6px 16px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(234, 88, 12, 0.3);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26), 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 .crash-promo-close {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
   z-index: 10;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.95);
   background: rgba(15, 23, 42, 0.75);
   color: #ffffff;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -2996,13 +2996,13 @@ html.dark-theme .booking-success p {
 .crash-promo-cta-bar {
   background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
   color: #ffffff;
-  padding: 8px 12px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   font-family: 'Montserrat', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 .crash-promo-cta-text {
@@ -3014,9 +3014,9 @@ html.dark-theme .booking-success p {
 .crash-promo-btn {
   background: #ffffff;
   color: #ea580c;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 850;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
@@ -3027,33 +3027,29 @@ html.dark-theme .booking-success p {
   transform: scale(1.05);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
 }
-@keyframes crash-slide-in-left {
-  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+@keyframes crash-center-fade {
+  from { opacity: 0; transform: translateY(14px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @media (max-width: 768px) {
-  .crash-promo-overlay {
-    left: 12px;
-    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
-  }
   .crash-promo-dialog {
-    width: 230px;
-    max-width: 230px;
-    border-radius: 14px;
+    width: 90%;
+    max-width: 310px;
+    border-radius: 16px;
   }
   .crash-promo-close {
-    width: 26px;
-    height: 26px;
-    font-size: 16px;
-    top: 6px;
-    right: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    top: 8px;
+    right: 8px;
   }
   .crash-promo-cta-bar {
-    padding: 6px 10px;
-    font-size: 10px;
+    padding: 8px 12px;
+    font-size: 11px;
   }
   .crash-promo-btn {
-    font-size: 9px;
-    padding: 3px 8px;
+    font-size: 10px;
+    padding: 4px 10px;
   }
 }
