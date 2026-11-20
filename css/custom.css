@@ -2914,7 +2914,7 @@ html.dark-theme .booking-success p {
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3) !important;
 }
 
-/* 3. 5-Second Promotional Centered Ad Card (Clean, No Blur, Proper Size) */
+/* 3. 5-Second Promotional Centered Ad Card (Modern SaaS UI Card) */
 .crash-promo-overlay[hidden] {
   display: none !important;
 }
@@ -2928,128 +2928,395 @@ html.dark-theme .booking-success p {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  pointer-events: none; /* Entire website behind and around stays 100% clear, visible, clickable & usable */
+  pointer-events: none; /* Entire website behind stays 100% visible, clear, clickable & usable */
 }
 .crash-promo-dialog {
   position: relative;
-  width: 90%;
-  max-width: 380px;
+  width: 92%;
+  max-width: 390px;
   display: flex;
   flex-direction: column;
-  border-radius: 18px;
+  border-radius: 22px;
   background: #ffffff;
+  border: 1.5px solid #fed7aa;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22), 0 4px 14px rgba(0, 0, 0, 0.08);
-  pointer-events: auto; /* Only the ad card captures clicks and taps */
-  animation: crash-center-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow: 0 24px 60px -12px rgba(234, 88, 12, 0.16), 0 12px 32px -4px rgba(17, 24, 39, 0.1);
+  pointer-events: auto; /* Only the card captures interaction */
+  animation: crash-center-fade 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .crash-promo-dialog:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26), 0 6px 18px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 28px 70px -12px rgba(234, 88, 12, 0.22), 0 16px 36px -4px rgba(17, 24, 39, 0.12);
 }
+
+/* Close button - clean soft peach circular button */
 .crash-promo-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   z-index: 10;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  background: rgba(15, 23, 42, 0.75);
-  color: #ffffff;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #ea580c;
   font-size: 20px;
+  font-weight: 700;
   line-height: 1;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: transform 0.18s ease, background 0.18s ease;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
   pointer-events: auto;
 }
 .crash-promo-close:hover {
   background: #ea580c;
-  transform: scale(1.1);
+  color: #ffffff;
+  border-color: #ea580c;
+  transform: scale(1.08);
 }
-.crash-promo-content {
-  cursor: pointer;
+
+/* Decorative background shapes (SaaS aesthetic) */
+.crash-promo-decorations {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  pointer-events: none;
+  z-index: 0;
+}
+.crash-promo-shape {
+  position: absolute;
+  pointer-events: none;
+}
+.shape-tl-ring {
+  top: -30px;
+  left: -30px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 14px solid #fff7ed;
+  opacity: 0.9;
+}
+.shape-tl-dot {
+  top: 36px;
+  left: 42px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fdba74;
+}
+.shape-tr-blob {
+  top: -25px;
+  right: -25px;
+  width: 85px;
+  height: 85px;
+  border-radius: 50%;
+  background: #fff7ed;
+  opacity: 0.9;
+}
+.shape-tr-box {
+  top: 20px;
+  right: 44px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 2px solid #fed7aa;
+  transform: rotate(14deg);
+}
+.shape-bl-stripes {
+  bottom: 32px;
+  left: -12px;
+  width: 40px;
+  height: 55px;
+  background: repeating-linear-gradient(45deg, #fed7aa, #fed7aa 2px, transparent 2px, transparent 6px);
+  opacity: 0.55;
+  transform: rotate(8deg);
+}
+.shape-bl-dot {
+  bottom: 40px;
+  left: 18px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f97316;
+  opacity: 0.85;
+}
+.shape-br-wedge {
+  top: 64px;
+  right: -10px;
+  width: 22px;
+  height: 38px;
+  border-radius: 50% 0 0 50%;
+  background: #fed7aa;
+  opacity: 0.55;
+}
+
+/* Card content body */
+.crash-promo-card {
+  position: relative;
+  z-index: 1;
+  padding: 24px 22px 20px;
   display: flex;
   flex-direction: column;
-  text-decoration: none;
-  outline: none;
-  pointer-events: auto;
+  align-items: center;
+  text-align: center;
 }
-.crash-promo-content:focus-visible {
-  outline: 2px solid #ea580c;
-  outline-offset: -2px;
+
+/* 1. Top Pill Badge */
+.crash-promo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(234, 88, 12, 0.08);
 }
-.crash-promo-img {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  display: block;
-  background: #0f172a;
+
+/* 2. Main Heading */
+.crash-promo-title {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 23px;
+  font-weight: 850;
+  color: #111827;
+  line-height: 1.25;
+  margin: 0 0 6px;
+  letter-spacing: -0.015em;
 }
-.crash-promo-cta-bar {
-  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
-  color: #ffffff;
-  padding: 10px 14px;
+.crash-promo-title span {
+  color: #111827;
+  display: inline-block;
+}
+
+/* 3. Subtext */
+.crash-promo-subtext {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #4b5563;
+  line-height: 1.45;
+  margin: 0 0 14px;
+  max-width: 32ch;
+}
+
+/* 4. Highlight Strip / Stat Box */
+.crash-promo-stat-box {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-bottom: 14px;
   font-family: 'Montserrat', system-ui, sans-serif;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
+  color: #9a3412;
 }
-.crash-promo-cta-text {
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.crash-promo-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
-.crash-promo-btn {
+.crash-promo-stat-item strong {
+  font-weight: 800;
+  color: #c2410c;
+}
+.crash-promo-stat-icon {
+  display: inline-block;
+  font-size: 13px;
+}
+.crash-promo-stat-sep {
+  color: #fdba74;
+  font-size: 12px;
+}
+
+/* 5. Compact 2x2 Feature Grid */
+.crash-promo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.crash-promo-feature {
   background: #ffffff;
-  color: #ea580c;
-  font-size: 11px;
-  font-weight: 850;
-  padding: 5px 12px;
-  border-radius: 999px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  white-space: nowrap;
+  border: 1px solid #ffedd5;
+  border-radius: 14px;
+  padding: 10px 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.04);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.crash-promo-feature:hover {
+  transform: translateY(-1.5px);
+  border-color: #fed7aa;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.1);
+}
+.crash-promo-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  color: #ea580c;
 }
-.crash-promo-content:hover .crash-promo-btn {
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
+.crash-promo-icon {
+  width: 17px;
+  height: 17px;
+  stroke: #ea580c;
+  fill: none;
+  flex-shrink: 0;
 }
+.crash-promo-feature-name {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.25;
+}
+
+/* 6. Bottom CTA Section */
+.crash-promo-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+.crash-promo-cta-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 800;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.38);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: 0.01em;
+}
+.crash-promo-cta-btn:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.48);
+  background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+}
+.crash-promo-cta-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+}
+.crash-promo-secondary-link {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #6b7280;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.18s ease;
+  padding: 3px;
+}
+.crash-promo-secondary-link:hover {
+  color: #ea580c;
+}
+
 @keyframes crash-center-fade {
   from { opacity: 0; transform: translateY(14px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-@media (max-width: 768px) {
+
+@media (max-width: 480px) {
   .crash-promo-dialog {
-    width: 90%;
-    max-width: 310px;
-    border-radius: 16px;
+    width: 92%;
+    max-width: 320px;
+    border-radius: 20px;
   }
   .crash-promo-close {
     width: 28px;
     height: 28px;
     font-size: 18px;
-    top: 8px;
-    right: 8px;
+    top: 10px;
+    right: 10px;
   }
-  .crash-promo-cta-bar {
-    padding: 8px 12px;
+  .crash-promo-card {
+    padding: 20px 14px 16px;
+  }
+  .crash-promo-pill {
+    font-size: 10px;
+    padding: 3px 10px;
+    margin-bottom: 8px;
+  }
+  .crash-promo-title {
+    font-size: 19px;
+    margin-bottom: 4px;
+  }
+  .crash-promo-subtext {
+    font-size: 11.5px;
+    margin-bottom: 10px;
+  }
+  .crash-promo-stat-box {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 4px 8px;
+    margin-bottom: 12px;
+  }
+  .crash-promo-stat-item {
     font-size: 11px;
   }
-  .crash-promo-btn {
-    font-size: 10px;
-    padding: 4px 10px;
+  .crash-promo-grid {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .crash-promo-feature {
+    padding: 8px 6px;
+    gap: 6px;
+    border-radius: 11px;
+  }
+  .crash-promo-icon-wrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+  .crash-promo-icon {
+    width: 15px;
+    height: 15px;
+  }
+  .crash-promo-feature-name {
+    font-size: 10.5px;
+  }
+  .crash-promo-cta-btn {
+    font-size: 13.5px;
+    padding: 11px 14px;
+    border-radius: 12px;
+  }
+  .crash-promo-secondary-link {
+    font-size: 11.5px;
   }
 }

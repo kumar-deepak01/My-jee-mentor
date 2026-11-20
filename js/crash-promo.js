@@ -129,13 +129,108 @@ function setupAudioUnlockListeners() {
 export function renderCrashPromoModal() {
   return `
     <div class="crash-promo-overlay" id="crash-promo-modal" hidden>
-      <div class="crash-promo-dialog" role="dialog" aria-modal="true" aria-label="JEE Crash Course 2027 Special Announcement">
+      <div class="crash-promo-dialog" role="dialog" aria-modal="true" aria-label="JEE Mains and Advance Crash Course 2027">
+        <!-- Close button -->
         <button type="button" class="crash-promo-close" id="crash-promo-close" aria-label="Close promotional popup">&times;</button>
-        <div class="crash-promo-content" id="crash-promo-action" role="button" tabindex="0" aria-label="Book Free Demo for JEE Crash Course">
-          <img src="/assets/crashcourse.jpeg" onerror="this.onerror=null;this.src='/crashcourse.jpeg';" alt="Online JEE Mains + Advance Crash Course for JEE 2027 - Max 10 Students per batch - Click to Book Free Demo" class="crash-promo-img" width="1024" height="1024" loading="eager">
-          <div class="crash-promo-cta-bar">
-            <span class="crash-promo-cta-text">🔥 <strong>Admissions Open</strong> • Max 10 Students/Batch</span>
-            <span class="crash-promo-btn">Book Free Demo →</span>
+
+        <!-- Decorative background shapes matching SaaS card style -->
+        <div class="crash-promo-decorations" aria-hidden="true">
+          <span class="crash-promo-shape shape-tl-ring"></span>
+          <span class="crash-promo-shape shape-tl-dot"></span>
+          <span class="crash-promo-shape shape-tr-blob"></span>
+          <span class="crash-promo-shape shape-tr-box"></span>
+          <span class="crash-promo-shape shape-bl-stripes"></span>
+          <span class="crash-promo-shape shape-bl-dot"></span>
+          <span class="crash-promo-shape shape-br-wedge"></span>
+        </div>
+
+        <!-- Main Card Content -->
+        <div class="crash-promo-card">
+          <!-- Top Pill Badge -->
+          <div class="crash-promo-pill">
+            ONLINE BATCH • JEE 2027
+          </div>
+
+          <!-- Main Heading -->
+          <h3 class="crash-promo-title">
+            JEE Mains + Advance<br>
+            <span>Crash Course</span>
+          </h3>
+
+          <!-- Subtext -->
+          <p class="crash-promo-subtext">
+            Concept First. Rank Next. Focused live preparation till April.
+          </p>
+
+          <!-- Highlight Strip / Stat Box -->
+          <div class="crash-promo-stat-box">
+            <span class="crash-promo-stat-item">
+              <span class="crash-promo-stat-icon">🔥</span>
+              <span><strong>Max 10 Students</strong> Per Batch</span>
+            </span>
+            <span class="crash-promo-stat-sep" aria-hidden="true">•</span>
+            <span class="crash-promo-stat-item">
+              <span class="crash-promo-stat-icon">⚡</span>
+              <span><strong>100% Live</strong> Interactive Classes</span>
+            </span>
+          </div>
+
+          <!-- Compact 2x2 Feature Grid -->
+          <div class="crash-promo-grid">
+            <div class="crash-promo-feature">
+              <div class="crash-promo-icon-wrap" aria-hidden="true">
+                <svg class="crash-promo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+              </div>
+              <div class="crash-promo-feature-name">Experienced Faculty</div>
+            </div>
+
+            <div class="crash-promo-feature">
+              <div class="crash-promo-icon-wrap" aria-hidden="true">
+                <svg class="crash-promo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                  <path d="m9 14 2 2 4-4"/>
+                </svg>
+              </div>
+              <div class="crash-promo-feature-name">Daily DPPs &amp; Practice</div>
+            </div>
+
+            <div class="crash-promo-feature">
+              <div class="crash-promo-icon-wrap" aria-hidden="true">
+                <svg class="crash-promo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                  <path d="m9 10 2 2 4-4"/>
+                </svg>
+              </div>
+              <div class="crash-promo-feature-name">Regular Mock Tests</div>
+            </div>
+
+            <div class="crash-promo-feature">
+              <div class="crash-promo-icon-wrap" aria-hidden="true">
+                <svg class="crash-promo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div class="crash-promo-feature-name">1-on-1 Personal Guidance</div>
+            </div>
+          </div>
+
+          <!-- Bottom CTA Section -->
+          <div class="crash-promo-footer">
+            <button type="button" class="crash-promo-cta-btn" id="crash-promo-action">
+              Book Free Demo &rarr;
+            </button>
+            <a href="tel:+917304256203" class="crash-promo-secondary-link" id="crash-promo-counselor">
+              Talk to Counselor
+            </a>
           </div>
         </div>
       </div>
@@ -220,11 +315,17 @@ export function initCrashPromo() {
     }
   };
 
+  const counselorLink = document.getElementById('crash-promo-counselor');
+
   bannerAction?.addEventListener('click', triggerBooking);
   bannerAction?.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       triggerBooking();
     }
+  });
+
+  counselorLink?.addEventListener('click', () => {
+    closePromo();
   });
 }
