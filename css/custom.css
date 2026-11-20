@@ -3429,7 +3429,7 @@ html.dark-theme .booking-success p {
   opacity: 0.88;
 }
 
-/* Real banner image: w-full h-full object-fill md:object-cover object-center */
+/* Real banner image: w-full h-full object-fill object-center (100% visible, zero cropping) */
 .mjm-banner-img {
   position: absolute;
   inset: 0;
@@ -3440,16 +3440,13 @@ html.dark-theme .booking-success p {
   display: block;
   user-select: none;
   -webkit-user-drag: none;
-  opacity: 0;
-  transition: opacity 0.25s ease;
+  opacity: 1;
+  image-rendering: -webkit-optimize-contrast;
 }
 @media (min-width: 768px) {
   .mjm-banner-img {
-    object-fit: cover;
+    object-fit: fill;
   }
-}
-.mjm-banner-img.is-loaded {
-  opacity: 1;
 }
 
 /* Left & Right Navigation Arrows (left-3 & right-3, w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-orange-500 text-gray-800 hover:text-white shadow-md flex items-center justify-center transition z-10) */

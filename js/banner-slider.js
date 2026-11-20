@@ -2,18 +2,26 @@
  * My JEE Mentor - Homepage Top Advertisement Banner Slider
  * 
  * Simple Banner Configuration:
+ * 2 featured ultra-panoramic banners (1024 × 80 px, ~13:1 aspect ratio).
  * Drop your banner image files into the /banners/ directory and list their paths below.
- * Recommended Banner Dimensions: 1920 × 150 px (or ~13:1 ultra-wide panoramic proportion).
  * 
  * When an image path is not yet present on disk or fails to load,
- * the container automatically renders a clean, subtle warm peach/orange-tinted placeholder slot
- * with the exact recommended dimensions so you can verify the layout immediately.
+ * the container automatically renders a clean, subtle warm peach/orange-tinted placeholder slot.
  */
 
 export const BANNERS = [
-  '/banners/banner-1.png',
-  '/banners/banner-2.png',
-  '/banners/banner-3.png'
+  {
+    imageUrl: '/banners/banner-1.png',
+    altText: 'MHTCET KCET WBJEE BITSAT Crash Course - 6 Months - Classes for 12th & Dropper - Max 10 Students in a Batch',
+    linkUrl: '#book-demo',
+    course: 'JEE Crash Course'
+  },
+  {
+    imageUrl: '/banners/banner-2.png',
+    altText: 'IIT-JEE Crash Course - Faculty from IIT and NIT - Only 10 Students Per Batch - Call +91 7304256203',
+    linkUrl: '#book-demo',
+    course: 'JEE Crash Course'
+  }
 ];
 
 export const HOME_BANNERS = BANNERS;
@@ -23,13 +31,14 @@ export function renderBannerSlider() {
 
   const slidesHtml = bannerList.map((banner, index) => {
     const src = typeof banner === 'string' ? banner : (banner?.imageUrl || banner?.src || '');
+    const alt = (typeof banner === 'object' && banner?.altText) || `Ad Banner Slot ${index + 1}`;
     const linkUrl = (typeof banner === 'object' && (banner?.linkUrl || banner?.link)) || '#book-demo';
     const course = (typeof banner === 'object' && banner?.course) || 'JEE Crash Course';
     const slotNum = index + 1;
 
     return `
       <div class="mjm-banner-slide" data-slide-index="${index}" role="group" aria-roledescription="slide" aria-label="Ad Slot ${slotNum} of ${bannerList.length}">
-        <a href="${linkUrl}" class="mjm-banner-link" data-course="${course}" aria-label="Ad Banner Slot ${slotNum}">
+        <a href="${linkUrl}" class="mjm-banner-link" data-course="${course}" aria-label="${alt}">
           <!-- Subtle warm peach/orange-tinted placeholder box (bg-[#FFF7ED] border-y border-orange-200/70) -->
           <div class="mjm-banner-placeholder">
             <span class="mjm-placeholder-badge">
@@ -46,9 +55,8 @@ export function renderBannerSlider() {
           ${src ? `
             <img 
               src="${src}" 
-              alt="Ad Banner Slot ${slotNum}" 
-              class="mjm-banner-img w-full h-full object-fill md:object-cover object-center" 
-              onload="this.classList.add('is-loaded')"
+              alt="${alt}" 
+              class="mjm-banner-img w-full h-full object-fill object-center" 
               onerror="this.style.display='none'"
               ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
             />
