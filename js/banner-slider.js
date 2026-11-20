@@ -5,7 +5,7 @@
  * Add, remove, or modify banners directly in the HOME_BANNERS array below.
  * 
  * Recommended Banner Dimensions:
- * Ratio: Wide & slim (1920 × 320 px or 1600 × 280 px).
+ * Ratio: 8:1 Ultra-thin panoramic (e.g. 1920 × 240 px, 1600 × 200 px, or 1200 × 150 px).
  * Format: JPG, PNG, or WebP.
  */
 
@@ -15,24 +15,21 @@ export const HOME_BANNERS = [
     imageUrl: '/assets/banners/banner-1.jpg',
     altText: 'Online JEE Mains + Advance Crash Course for JEE 2027 - Max 10 Students per batch - Click to Book Free Demo',
     linkUrl: '#book-demo',
-    course: 'JEE Crash Course',
-    bgColor: '#081226'
+    course: 'JEE Crash Course'
   },
   {
     id: 'iit-jee-crash-course-faculty',
     imageUrl: '/assets/banners/banner-2.jpg',
     altText: 'IIT-JEE Crash Course - Faculty from IIT and NIT - Only 10 Students Per Batch - Limited Seats Enroll Now',
     linkUrl: '#book-demo',
-    course: 'JEE Crash Course',
-    bgColor: '#ffffff'
+    course: 'JEE Crash Course'
   },
   {
     id: 'engineering-entrance-crash-course',
     imageUrl: '/assets/banners/banner-3.jpg',
     altText: 'MHTCET KCET WBJEE BITSAT Crash Course - Target Top Engineering Colleges - Classes for 12th & Dropper',
     linkUrl: '#book-demo',
-    course: 'JEE Crash Course',
-    bgColor: '#f8fafc'
+    course: 'JEE Crash Course'
   }
 ];
 
@@ -43,14 +40,14 @@ export function renderBannerSlider() {
 
   const slidesHtml = HOME_BANNERS.map((banner, index) => {
     return `
-      <div class="mjm-banner-slide" data-slide-index="${index}" style="background-color: ${banner.bgColor || '#ffffff'};" role="group" aria-roledescription="slide" aria-label="Slide ${index + 1} of ${HOME_BANNERS.length}">
+      <div class="mjm-banner-slide" data-slide-index="${index}" role="group" aria-roledescription="slide" aria-label="Slide ${index + 1} of ${HOME_BANNERS.length}">
         <a href="${banner.linkUrl || '#book-demo'}" class="mjm-banner-link" ${banner.course ? `data-course="${banner.course}"` : ''} aria-label="${banner.altText}">
           <img 
             src="${banner.imageUrl}" 
             alt="${banner.altText}" 
             class="mjm-banner-img" 
-            width="1024" 
-            height="434" 
+            width="1920" 
+            height="240" 
             ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
           >
         </a>
