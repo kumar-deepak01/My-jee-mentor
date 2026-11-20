@@ -1,62 +1,64 @@
 /**
- * My JEE Mentor - Homepage Top Banner Carousel Strip
+ * My JEE Mentor - Homepage Top Advertisement Banner Slider
  * 
- * Easy Banner Management:
- * Add, remove, or modify banners directly in the HOME_BANNERS array below.
- * Uses high-resolution raw banner artwork with clean edge-to-edge responsive fit.
+ * Simple Banner Configuration:
+ * Drop your banner image files into the /banners/ directory and list their paths below.
+ * Recommended Banner Dimensions: 1920 × 150 px (or ~13:1 ultra-wide panoramic proportion).
+ * 
+ * When an image path is not yet present on disk or fails to load,
+ * the container automatically renders a clean, subtle warm peach/orange-tinted placeholder slot
+ * with the exact recommended dimensions so you can verify the layout immediately.
  */
 
-export const HOME_BANNERS = [
-  {
-    id: 'jee-mains-advance-crash-course',
-    imageUrl: '/assets/banners/Gemini_Generated_Image_7f3rhw7f3rhw7f3r (2).png',
-    altText: 'Online JEE Mains + Advance Crash Course for JEE 2027 - Max 10 Students per batch - Click to Book Free Demo',
-    linkUrl: '#book-demo',
-    course: 'JEE Crash Course',
-    position: 'top center'
-  },
-  {
-    id: 'engineering-entrance-crash-course',
-    imageUrl: '/assets/banners/Gemini_Generated_Image_7f3rhw7f3rhw7f3r (1).png',
-    altText: 'MHTCET KCET WBJEE BITSAT Crash Course - Target Top Engineering Colleges - Classes for 12th & Dropper',
-    linkUrl: '#book-demo',
-    course: 'JEE Crash Course',
-    position: 'center center'
-  },
-  {
-    id: 'iit-jee-crash-course-faculty',
-    imageUrl: '/assets/banners/Gemini_Generated_Image_7f3rhw7f3rhw7f3r.png',
-    altText: 'IIT-JEE Crash Course - Faculty from IIT and NIT - Only 10 Students Per Batch - Limited Seats Enroll Now',
-    linkUrl: '#book-demo',
-    course: 'JEE Crash Course',
-    position: 'center center'
-  }
+export const BANNERS = [
+  '/banners/banner-1.png',
+  '/banners/banner-2.png',
+  '/banners/banner-3.png'
 ];
 
-export function renderBannerSlider() {
-  if (!Array.isArray(HOME_BANNERS) || HOME_BANNERS.length === 0) {
-    return '';
-  }
+export const HOME_BANNERS = BANNERS;
 
-  const slidesHtml = HOME_BANNERS.map((banner, index) => {
+export function renderBannerSlider() {
+  const bannerList = Array.isArray(BANNERS) && BANNERS.length > 0 ? BANNERS : [''];
+
+  const slidesHtml = bannerList.map((banner, index) => {
+    const src = typeof banner === 'string' ? banner : (banner?.imageUrl || banner?.src || '');
+    const linkUrl = (typeof banner === 'object' && (banner?.linkUrl || banner?.link)) || '#book-demo';
+    const course = (typeof banner === 'object' && banner?.course) || 'JEE Crash Course';
+    const slotNum = index + 1;
+
     return `
-      <div class="mjm-banner-slide" data-slide-index="${index}" role="group" aria-roledescription="slide" aria-label="Slide ${index + 1} of ${HOME_BANNERS.length}">
-        <a href="${banner.linkUrl || '#book-demo'}" class="mjm-banner-link" ${banner.course ? `data-course="${banner.course}"` : ''} aria-label="${banner.altText}">
-          <img 
-            src="${banner.imageUrl}" 
-            alt="${banner.altText}" 
-            class="mjm-banner-img" 
-            style="object-position: ${banner.position || 'center'};"
-            width="3168" 
-            height="1344" 
-            ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
-          >
+      <div class="mjm-banner-slide" data-slide-index="${index}" role="group" aria-roledescription="slide" aria-label="Ad Slot ${slotNum} of ${bannerList.length}">
+        <a href="${linkUrl}" class="mjm-banner-link" data-course="${course}" aria-label="Ad Banner Slot ${slotNum}">
+          <!-- Subtle warm peach/orange-tinted placeholder box (bg-[#FFF7ED] border-y border-orange-200/70) -->
+          <div class="mjm-banner-placeholder">
+            <span class="mjm-placeholder-badge">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="14" height="12" rx="2"></rect>
+                <circle cx="8" cy="8" r="1.5"></circle>
+                <path d="M17 13l-4-4-5 5"></path>
+              </svg>
+              Ad Banner Slot ${slotNum}
+            </span>
+            <span class="mjm-placeholder-hint">(Recommended: 1920 × 150 px)</span>
+          </div>
+
+          ${src ? `
+            <img 
+              src="${src}" 
+              alt="Ad Banner Slot ${slotNum}" 
+              class="mjm-banner-img w-full h-full object-fill md:object-cover object-center" 
+              onload="this.classList.add('is-loaded')"
+              onerror="this.style.display='none'"
+              ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
+            />
+          ` : ''}
         </a>
       </div>
     `;
   }).join('');
 
-  const dotsHtml = HOME_BANNERS.map((_, index) => {
+  const dotsHtml = bannerList.map((_, index) => {
     return `
       <button 
         type="button" 
@@ -64,42 +66,40 @@ export function renderBannerSlider() {
         data-dot-index="${index}" 
         role="tab" 
         aria-selected="${index === 0 ? 'true' : 'false'}" 
-        aria-label="Go to banner slide ${index + 1}"
+        aria-label="Go to banner slot ${index + 1}"
       ></button>
     `;
   }).join('');
 
   return `
-    <section class="mjm-banner-slider-section" aria-label="Featured Promotional Announcements">
-      <div class="mjm-banner-slider-container" id="mjm-banner-slider">
-        <!-- Banner Slides Track Window -->
-        <div class="mjm-banner-track-wrap" id="mjm-banner-track-wrap">
+    <section class="mjm-banner-slider-section mt-0 w-full relative overflow-hidden" aria-label="Featured Advertisement Banners">
+      <div class="mjm-banner-slider-container w-full relative overflow-hidden" id="mjm-banner-slider">
+        <!-- Banner Slides Track Window: h-[60px] sm:h-[80px] md:h-[95px] lg:h-[110px] -->
+        <div class="mjm-banner-track-wrap w-full relative overflow-hidden" id="mjm-banner-track-wrap">
           <div class="mjm-banner-track" id="mjm-banner-track">
             ${slidesHtml}
           </div>
         </div>
 
-        ${HOME_BANNERS.length > 1 ? `
-          <!-- Navigation Arrows -->
-          <button type="button" class="mjm-banner-arrow mjm-banner-prev" id="mjm-banner-prev" aria-label="Previous slide">
+        ${bannerList.length > 1 ? `
+          <!-- Left & Right Navigation Arrows -->
+          <button type="button" class="mjm-banner-arrow mjm-banner-prev left-3" id="mjm-banner-prev" aria-label="Previous banner">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
           </button>
-          <button type="button" class="mjm-banner-arrow mjm-banner-next" id="mjm-banner-next" aria-label="Next slide">
+          <button type="button" class="mjm-banner-arrow mjm-banner-next right-3" id="mjm-banner-next" aria-label="Next banner">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
+
+          <!-- Centered Pagination Dots (overlaid cleanly at bottom edge) -->
+          <div class="mjm-banner-dots" id="mjm-banner-dots" role="tablist" aria-label="Banner slots pagination">
+            ${dotsHtml}
+          </div>
         ` : ''}
       </div>
-
-      ${HOME_BANNERS.length > 1 ? `
-        <!-- Pagination Dots Strip -->
-        <div class="mjm-banner-dots" id="mjm-banner-dots" role="tablist" aria-label="Banner slides pagination">
-          ${dotsHtml}
-        </div>
-      ` : ''}
     </section>
   `;
 }
@@ -114,7 +114,7 @@ export function initBannerSlider() {
   const nextBtn = document.getElementById('mjm-banner-next');
   const dotsContainer = document.getElementById('mjm-banner-dots');
   const dots = dotsContainer ? Array.from(dotsContainer.querySelectorAll('.mjm-banner-dot')) : [];
-  const slideCount = HOME_BANNERS.length;
+  const slideCount = BANNERS.length;
 
   if (slideCount <= 1 || !track) {
     return;
@@ -160,7 +160,7 @@ export function initBannerSlider() {
     startAutoSlide();
   }
 
-  // Arrow button listeners
+  // Arrow navigation buttons
   prevBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     prevSlide();
@@ -173,7 +173,7 @@ export function initBannerSlider() {
     resetTimer();
   });
 
-  // Dots click listeners
+  // Dots navigation
   dots.forEach((dot, index) => {
     dot.addEventListener('click', (e) => {
       e.preventDefault();
@@ -224,7 +224,7 @@ export function initBannerSlider() {
     startAutoSlide();
   });
 
-  // Banner Click Handler: Open booking modal when linkUrl is '#book-demo'
+  // Click Handler: Open booking modal when linkUrl is '#book-demo'
   const links = container.querySelectorAll('.mjm-banner-link');
   links.forEach(link => {
     link.addEventListener('click', (e) => {
