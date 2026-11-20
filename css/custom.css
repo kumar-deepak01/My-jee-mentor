@@ -3322,7 +3322,7 @@ html.dark-theme .booking-success p {
 }
 
 /* ==========================================================================
-   Homepage Top Banner Carousel Strip (8:1 Slim Panoramic Slider ~130px-145px)
+   Homepage Top Banner Carousel Strip (Full-Width Balanced Height ~130px-245px)
    ========================================================================== */
 .mjm-banner-slider-section {
   width: 100%;
@@ -3343,22 +3343,22 @@ html.dark-theme .booking-success p {
   width: 100%;
   position: relative;
   overflow: hidden;
-  /* Exact compact height: h-[80px] sm:h-[110px] md:h-[135px] lg:h-[145px] */
-  height: 80px;
+  /* Balanced responsive height: h-[130px] sm:h-[175px] md:h-[215px] lg:h-[245px] */
+  height: 130px;
 }
 @media (min-width: 640px) {
   .mjm-banner-track-wrap {
-    height: 110px;
+    height: 175px;
   }
 }
 @media (min-width: 768px) {
   .mjm-banner-track-wrap {
-    height: 135px;
+    height: 215px;
   }
 }
 @media (min-width: 1024px) {
   .mjm-banner-track-wrap {
-    height: 145px;
+    height: 245px;
   }
 }
 
@@ -3392,14 +3392,15 @@ html.dark-theme .booking-success p {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: top center;
   display: block;
   user-select: none;
   -webkit-user-drag: none;
   image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
-/* Compact Navigation Arrows (w-7 h-7 sm:w-8 sm:h-8 at left-2 / right-2) */
+/* Left & Right Navigation Arrows (left-3 & right-3, w-8 h-8 sm:w-9 sm:h-9) */
 .mjm-banner-arrow {
   position: absolute;
   top: 50%;
@@ -3411,9 +3412,9 @@ html.dark-theme .booking-success p {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  border: 1px solid #ffedd5; /* border-orange-100 */
+  border: 1px solid rgba(254, 215, 170, 0.85);
   color: #1f2937; /* text-gray-800 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); /* shadow-md */
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12); /* shadow-md */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3422,41 +3423,47 @@ html.dark-theme .booking-success p {
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
+@media (min-width: 640px) {
+  .mjm-banner-arrow {
+    width: 36px;
+    height: 36px;
+  }
+}
 .mjm-banner-arrow svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   stroke: currentColor;
 }
 .mjm-banner-arrow:hover {
   background: #f97316; /* hover:bg-orange-500 */
   color: #ffffff; /* hover:text-white */
   border-color: #f97316;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
-  transform: translateY(-50%) scale(1.06);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+  transform: translateY(-50%) scale(1.08);
 }
 .mjm-banner-arrow:active {
-  transform: translateY(-50%) scale(0.95);
+  transform: translateY(-50%) scale(0.96);
 }
 .mjm-banner-prev {
-  left: 8px; /* left-2 */
+  left: 12px; /* left-3 */
 }
 .mjm-banner-next {
-  right: 8px; /* right-2 */
+  right: 12px; /* right-3 */
 }
 
-/* Pagination Dots Strip - subtle py-1.5 spacing before hero section starts */
+/* Pagination Dots Strip - neat dots right below the banner strip */
 .mjm-banner-dots {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 6px;
-  padding: 6px 0; /* py-1.5 */
+  gap: 7px;
+  padding: 7px 0 9px;
   background: #ffffff;
   margin: 0;
 }
 .mjm-banner-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 9999px;
   background: #e2e8f0;
   border: none;
@@ -3470,7 +3477,7 @@ html.dark-theme .booking-success p {
   background: #cbd5e1;
 }
 .mjm-banner-dot.is-active {
-  width: 18px;
+  width: 22px;
   background: #f97316;
   box-shadow: 0 2px 5px rgba(249, 115, 22, 0.35);
 }
@@ -3512,30 +3519,30 @@ html.dark-theme .mjm-banner-dot.is-active {
 
 @media (max-width: 640px) {
   .mjm-banner-arrow {
-    width: 28px;
-    height: 28px;
-    left: 6px;
-    right: 6px;
+    width: 30px;
+    height: 30px;
+    left: 8px;
+    right: 8px;
   }
   .mjm-banner-arrow svg {
-    width: 13px;
-    height: 13px;
+    width: 14px;
+    height: 14px;
   }
   .mjm-banner-prev {
-    left: 6px;
+    left: 8px;
   }
   .mjm-banner-next {
-    right: 6px;
+    right: 8px;
   }
   .mjm-banner-dots {
-    padding: 5px 0;
-    gap: 5px;
+    padding: 6px 0 8px;
+    gap: 6px;
   }
   .mjm-banner-dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
   .mjm-banner-dot.is-active {
-    width: 15px;
+    width: 18px;
   }
 }

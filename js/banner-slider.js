@@ -3,33 +3,33 @@
  * 
  * Easy Banner Management:
  * Add, remove, or modify banners directly in the HOME_BANNERS array below.
- * 
- * Recommended Banner Dimensions:
- * Ratio: 8:1 Ultra-thin panoramic (e.g. 1920 × 240 px, 1600 × 200 px, or 1200 × 150 px).
- * Format: JPG, PNG, or WebP.
+ * Uses high-resolution raw banner artwork with clean edge-to-edge responsive fit.
  */
 
 export const HOME_BANNERS = [
   {
     id: 'jee-mains-advance-crash-course',
-    imageUrl: '/assets/banners/banner-1.jpg',
+    imageUrl: '/assets/banners/Gemini_Generated_Image_7f3rhw7f3rhw7f3r (2).png',
     altText: 'Online JEE Mains + Advance Crash Course for JEE 2027 - Max 10 Students per batch - Click to Book Free Demo',
     linkUrl: '#book-demo',
-    course: 'JEE Crash Course'
-  },
-  {
-    id: 'iit-jee-crash-course-faculty',
-    imageUrl: '/assets/banners/banner-2.jpg',
-    altText: 'IIT-JEE Crash Course - Faculty from IIT and NIT - Only 10 Students Per Batch - Limited Seats Enroll Now',
-    linkUrl: '#book-demo',
-    course: 'JEE Crash Course'
+    course: 'JEE Crash Course',
+    position: 'top center'
   },
   {
     id: 'engineering-entrance-crash-course',
-    imageUrl: '/assets/banners/banner-3.jpg',
+    imageUrl: '/assets/banners/Gemini_Generated_Image_7f3rhw7f3rhw7f3r (1).png',
     altText: 'MHTCET KCET WBJEE BITSAT Crash Course - Target Top Engineering Colleges - Classes for 12th & Dropper',
     linkUrl: '#book-demo',
-    course: 'JEE Crash Course'
+    course: 'JEE Crash Course',
+    position: 'center center'
+  },
+  {
+    id: 'iit-jee-crash-course-faculty',
+    imageUrl: '/assets/banners/Gemini_Generated_Image_7f3rhw7f3rhw7f3r.png',
+    altText: 'IIT-JEE Crash Course - Faculty from IIT and NIT - Only 10 Students Per Batch - Limited Seats Enroll Now',
+    linkUrl: '#book-demo',
+    course: 'JEE Crash Course',
+    position: 'center center'
   }
 ];
 
@@ -46,8 +46,9 @@ export function renderBannerSlider() {
             src="${banner.imageUrl}" 
             alt="${banner.altText}" 
             class="mjm-banner-img" 
-            width="1920" 
-            height="240" 
+            style="object-position: ${banner.position || 'center'};"
+            width="3168" 
+            height="1344" 
             ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
           >
         </a>
