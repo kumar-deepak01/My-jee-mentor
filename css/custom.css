@@ -3322,7 +3322,7 @@ html.dark-theme .booking-success p {
 }
 
 /* ==========================================================================
-   Homepage Top Banner Carousel Strip (PW-style slim slider)
+   Homepage Top Banner Carousel Strip (Clean, Uncropped, Crisp Rendering)
    ========================================================================== */
 .mjm-banner-slider-section {
   width: 100%;
@@ -3336,35 +3336,17 @@ html.dark-theme .booking-success p {
 .mjm-banner-slider-container {
   position: relative;
   width: 100%;
-  overflow: hidden;
-  background: #fff8f2;
+  max-width: 1440px;
+  margin: 0 auto;
 }
 .mjm-banner-track-wrap {
   width: 100%;
-  overflow: hidden;
   position: relative;
-  /* Dimensions & Fit: h-[110px] sm:h-[140px] md:h-[165px] */
-  height: 110px;
-}
-@media (min-width: 640px) {
-  .mjm-banner-track-wrap {
-    height: 140px;
-  }
-}
-@media (min-width: 768px) {
-  .mjm-banner-track-wrap {
-    height: 165px;
-  }
-}
-@media (min-width: 1024px) {
-  .mjm-banner-track-wrap {
-    height: 185px;
-  }
-}
-@media (min-width: 1440px) {
-  .mjm-banner-track-wrap {
-    height: 210px;
-  }
+  overflow: hidden;
+  height: auto;
+  aspect-ratio: 1024 / 434; /* Natural ~2.36:1 (12/5) ratio matching banners */
+  max-height: 280px; /* Slim, compact profile on large desktop */
+  background: #fdfaf7;
 }
 
 .mjm-banner-track {
@@ -3381,11 +3363,16 @@ html.dark-theme .booking-success p {
   height: 100%;
   position: relative;
   overflow: hidden;
-  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
 }
 
 .mjm-banner-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
   text-decoration: none;
@@ -3396,28 +3383,33 @@ html.dark-theme .booking-success p {
 .mjm-banner-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   object-position: center;
   display: block;
   user-select: none;
   -webkit-user-drag: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: none;
 }
 
-/* Slider Navigation Arrows (clean circular white/translucent buttons with subtle shadow and orange hover) */
+/* Slider Navigation Arrows (circular translucent buttons with subtle shadow and orange hover) */
 .mjm-banner-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(254, 215, 170, 0.85);
-  color: #1f2937;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border: 1px solid #ffedd5; /* border-orange-100 */
+  color: #1f2937; /* text-gray-800 */
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12); /* shadow-lg */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3432,10 +3424,10 @@ html.dark-theme .booking-success p {
   stroke: currentColor;
 }
 .mjm-banner-arrow:hover {
-  background: #f97316;
-  color: #ffffff;
-  border-color: #f97316;
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+  background: #ea580c; /* hover:bg-orange-500 */
+  color: #ffffff; /* hover:text-white */
+  border-color: #ea580c;
+  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.45);
   transform: translateY(-50%) scale(1.08);
 }
 .mjm-banner-arrow:active {
@@ -3448,20 +3440,21 @@ html.dark-theme .booking-success p {
   right: 12px;
 }
 
-/* Pagination Dots */
+/* Pagination Dots Strip - clean, compact with subtle py-2 spacing before the hero section */
 .mjm-banner-dots {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 7px;
-  padding: 6px 0 8px;
+  padding: 8px 0; /* py-2 */
   background: #ffffff;
+  margin: 0;
 }
 .mjm-banner-dot {
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background: #e5e7eb;
+  background: #e2e8f0;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -3473,12 +3466,12 @@ html.dark-theme .booking-success p {
   background: #cbd5e1;
 }
 .mjm-banner-dot.is-active {
-  width: 22px;
+  width: 24px;
   background: #f97316;
   box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
 }
 
-/* Dark mode support */
+/* Dark mode adjustments */
 html.dark-theme .mjm-banner-slider-section {
   background: #0f172a;
   border-bottom-color: rgba(254, 215, 170, 0.15);
@@ -3486,19 +3479,19 @@ html.dark-theme .mjm-banner-slider-section {
 html.dark-theme .mjm-banner-slider-container {
   background: #0b1120;
 }
-html.dark-theme .mjm-banner-slide {
+html.dark-theme .mjm-banner-track-wrap {
   background: #0b1120;
 }
 html.dark-theme .mjm-banner-arrow {
-  background: rgba(30, 41, 59, 0.9);
+  background: rgba(30, 41, 59, 0.95);
   color: #f1f5f9;
   border-color: rgba(254, 215, 170, 0.25);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
 }
 html.dark-theme .mjm-banner-arrow:hover {
-  background: #f97316;
+  background: #ea580c;
   color: #ffffff;
-  border-color: #f97316;
+  border-color: #ea580c;
 }
 html.dark-theme .mjm-banner-dots {
   background: #0f172a;
@@ -3515,12 +3508,12 @@ html.dark-theme .mjm-banner-dot.is-active {
 
 @media (max-width: 640px) {
   .mjm-banner-arrow {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
   }
   .mjm-banner-arrow svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
   }
   .mjm-banner-prev {
     left: 8px;
@@ -3529,7 +3522,7 @@ html.dark-theme .mjm-banner-dot.is-active {
     right: 8px;
   }
   .mjm-banner-dots {
-    padding: 5px 0 6px;
+    padding: 6px 0;
     gap: 6px;
   }
   .mjm-banner-dot {
