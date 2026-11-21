@@ -981,3 +981,394 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   Financial Reports & Professional PDF Generator Styles
+   ========================================================================== */
+
+.fn-report-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fn-report-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--fn-card-bg);
+  border: 1px solid var(--fn-border-dark);
+  border-radius: var(--fn-radius);
+  padding: 16px 20px;
+  box-shadow: var(--fn-shadow-sm);
+}
+
+.fn-report-period-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fn-period-pill {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid var(--fn-border-dark);
+  background: #f8fafc;
+  color: var(--fn-navy);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fn-period-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.fn-period-pill.is-active {
+  background: var(--fn-navy);
+  color: #ffffff;
+  border-color: var(--fn-navy);
+}
+
+.fn-report-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-fn-download-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: var(--fn-orange);
+  color: #ffffff;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+}
+
+.btn-fn-download-pdf:hover {
+  background: var(--fn-orange-hover);
+  transform: translateY(-1px);
+}
+
+.btn-fn-download-pdf.secondary {
+  background: var(--fn-navy);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
+.btn-fn-download-pdf.secondary:hover {
+  background: #1e293b;
+}
+
+.btn-fn-download-pdf.outline {
+  background: #ffffff;
+  color: var(--fn-navy);
+  border: 1px solid var(--fn-border-dark);
+  box-shadow: none;
+}
+
+.btn-fn-download-pdf.outline:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Institutional Report Paper Preview on Screen */
+.fn-report-paper {
+  background: #ffffff;
+  border: 1px solid var(--fn-border-dark);
+  border-radius: var(--fn-radius);
+  padding: 36px 40px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.fn-report-brand-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--fn-navy);
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+}
+
+.fn-report-brand-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fn-report-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.fn-report-brand-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--fn-navy);
+  margin: 0 0 2px 0;
+  letter-spacing: -0.02em;
+}
+
+.fn-report-brand-sub {
+  font-size: 0.78rem;
+  color: var(--fn-text-muted);
+  margin: 0;
+}
+
+.fn-report-meta-box {
+  background: #f8fafc;
+  border: 1px solid var(--fn-border-dark);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.fn-meta-item-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--fn-text-muted);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.fn-meta-item-val {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--fn-navy);
+}
+
+.fn-report-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0 14px 0;
+  border-bottom: 1px solid var(--fn-border-dark);
+  padding-bottom: 8px;
+}
+
+.fn-report-section-head h2 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--fn-navy);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.fn-report-section-bar {
+  width: 4px;
+  height: 18px;
+  background: var(--fn-orange);
+  border-radius: 2px;
+}
+
+.fn-report-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--fn-border-dark);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.fn-report-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  color: var(--fn-navy);
+}
+
+.fn-report-data-table th {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 9px 12px;
+  font-weight: 700;
+  text-align: left;
+  border-bottom: 1px solid #1e293b;
+}
+
+.fn-report-data-table th.num,
+.fn-report-data-table td.num {
+  text-align: right;
+}
+
+.fn-report-data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fn-report-data-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.fn-report-data-table tbody tr:hover {
+  background: #f1f5f9;
+}
+
+.fn-report-data-table tr.total-row td {
+  background: #f1f5f9;
+  font-weight: 800;
+  border-top: 2px solid var(--fn-navy);
+  border-bottom: 2px solid var(--fn-navy);
+}
+
+.fn-report-audit-notes {
+  background: #f8fafc;
+  border: 1px solid var(--fn-border-dark);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-top: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.fn-report-notes-list {
+  font-size: 0.76rem;
+  color: var(--fn-text-muted);
+  line-height: 1.6;
+  margin: 6px 0 0 0;
+  padding-left: 18px;
+}
+
+.fn-report-sign-box {
+  text-align: center;
+  min-width: 180px;
+}
+
+.fn-sign-line {
+  width: 160px;
+  height: 1px;
+  background: var(--fn-navy);
+  margin: 0 auto 6px auto;
+}
+
+.fn-sign-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--fn-navy);
+}
+
+/* ==========================================================================
+   Clean Print Stylesheet (Hides all site & portal chrome completely)
+   ========================================================================== */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 8mm 12mm 8mm;
+  }
+
+  *, *:before, *:after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 9pt !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  /* SUPPRESS ALL WEBSITE & PORTAL CHROME */
+  header, footer, nav,
+  .main-header, .site-header, .site-footer, .footer,
+  .mobile-nav, .career-modal, .booking-modal, #book-demo,
+  .finance-sidebar, .finance-topbar, .finance-bottom-notice,
+  .finance-view-header, .fn-report-toolbar, .fn-report-actions,
+  .btn-fn-sync, .btn-fn-primary, .btn-fn-export, .btn-fn-download-pdf,
+  button, input, select, form, .fn-form-group, .finance-alert,
+  [data-view-btn], [data-fn-user-toggle],
+  .fn-view-panel:not(#view-reports) {
+    display: none !important;
+  }
+
+  #view-reports {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .fn-report-paper {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  .fn-report-meta-box,
+  .fn-report-audit-notes {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  .fn-report-table-wrap {
+    border: 1px solid #cbd5e1 !important;
+    overflow: visible !important;
+  }
+
+  .fn-report-data-table th {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .fn-report-data-table tr.total-row td {
+    background: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .fn-print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .fn-print-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  table {
+    page-break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+}

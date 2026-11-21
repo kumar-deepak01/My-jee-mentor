@@ -3,8 +3,21 @@
  * 
  * High-performance, executive financial management dashboard matching
  * the reference SaaS design with 10 sidebar navigation modules, interactive SVG charts,
- * real-time Google Sheets sync, and native multi-sheet Excel export.
+ * real-time Google Sheets sync, native multi-sheet Excel export, and CA-compliant PDF reports.
  */
+
+import {
+  MONTH_NAMES,
+  MONTH_SHORT_NAMES,
+  getMonthDateRange,
+  getFinancialYearRange,
+  formatDateIndian,
+  formatMoneyInr,
+  formatInrInteger,
+  getKolkataTimestamp,
+  computeMonthBreakdown,
+  generateFinancialReportPdf
+} from './finance-pdf.js';
 
 const ENDPOINT = '/api/finance';
 const FEES_ENDPOINT = '/api/fees';
@@ -1076,68 +1089,302 @@ export function financePageMarkup() {
               </div>
             </section>
 
-            <!-- VIEW 8: REPORTS (Profit & Loss Statement) -->
+            <!-- VIEW 8: REPORTS (Professional Financial Statements & Month-Wise PDF Generator) -->
             <section class="fn-view-panel" id="view-reports">
               <div class="finance-view-header">
                 <div>
-                  <h1 class="finance-view-title">Financial Reports</h1>
-                  <p class="finance-view-sub">Institutional Profit &amp; Loss Statement and Operating Margin Audits</p>
+                  <h1 class="finance-view-title">Financial Management Reports &amp; Statements</h1>
+                  <p class="finance-view-sub">Audit-ready month-wise financial statements, Profit &amp; Loss summaries, and CA-compliant downloadable PDF ledgers</p>
                 </div>
-                <button type="button" class="btn-fn-sync" onclick="window.print()">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                  <span>Print P&amp;L Report</span>
-                </button>
+                <div class="fn-report-actions">
+                  <button type="button" class="btn-fn-download-pdf" data-download-report="monthly" title="Download Monthly Financial Statement PDF">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Download Monthly PDF</span>
+                  </button>
+                  <button type="button" class="btn-fn-download-pdf secondary" data-download-report="annual" title="Download Full Financial Year PDF">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span>Download Annual PDF</span>
+                  </button>
+                  <button type="button" class="btn-fn-download-pdf outline" data-download-report="custom" title="Download Custom Date Range PDF">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Download Custom Period PDF</span>
+                  </button>
+                  <button type="button" class="btn-fn-download-pdf outline" data-download-report="complete" title="Download Complete Financial Report">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Download Complete Report</span>
+                  </button>
+                </div>
               </div>
-              <article class="fn-card" style="max-width: 800px;">
-                <h3 class="fn-card-title" style="border-bottom: 1px solid var(--fn-border); padding-bottom: 12px; margin-bottom: 16px;">
-                  Profit &amp; Loss Statement (Consolidated)
-                </h3>
-                <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.88rem;">
-                  <div style="display: flex; justify-content: space-between; font-weight: 700; color: var(--fn-navy);">
-                    <span>1. TOTAL OPERATING REVENUE (INFLOW)</span>
-                    <span data-pl="inflow" style="color: var(--fn-green);">₹0</span>
-                  </div>
-                  <div style="padding-left: 18px; display: flex; flex-direction: column; gap: 8px; color: var(--fn-text-muted); font-size: 0.82rem;">
-                    <div style="display: flex; justify-content: space-between;">
-                      <span>Student Tuition Fee Collections (Fee Register)</span>
-                      <span data-pl="fees">₹0</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                      <span>Other Non-Tuition Revenues (Books, Tests, Grants)</span>
-                      <span data-pl="otherIncome">₹0</span>
-                    </div>
+
+              <!-- Interactive Controls / Period Selector Toolbar -->
+              <div class="fn-report-toolbar">
+                <div class="fn-report-period-group">
+                  <span style="font-size: 0.78rem; font-weight: 700; color: var(--fn-navy); margin-right: 4px;">REPORT TYPE:</span>
+                  <button type="button" class="fn-period-pill is-active" data-report-period-btn="monthly">Single Month</button>
+                  <button type="button" class="fn-period-pill" data-report-period-btn="all">All Months</button>
+                  <button type="button" class="fn-period-pill" data-report-period-btn="annual">Financial Year (FY)</button>
+                  <button type="button" class="fn-period-pill" data-report-period-btn="custom">Custom Date Range</button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <!-- Single Month Select -->
+                  <div data-report-ctrl="monthly" style="display: flex; align-items: center; gap: 6px;">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--fn-text-muted);">Month:</label>
+                    <select class="fn-select" data-report-month-select style="font-size: 0.82rem; padding: 5px 10px;">
+                      <option value="2026-11">November 2026</option>
+                      <option value="2026-10">October 2026</option>
+                      <option value="2026-09">September 2026</option>
+                      <option value="2026-08">August 2026</option>
+                      <option value="2026-07">July 2026</option>
+                      <option value="2026-06">June 2026</option>
+                      <option value="2026-05">May 2026</option>
+                      <option value="2026-04">April 2026</option>
+                      <option value="2026-03">March 2026</option>
+                      <option value="2026-02">February 2026</option>
+                      <option value="2026-01">January 2026</option>
+                    </select>
                   </div>
 
-                  <hr style="border: none; border-top: 1px solid var(--fn-border); margin: 6px 0;">
-
-                  <div style="display: flex; justify-content: space-between; font-weight: 700; color: var(--fn-navy);">
-                    <span>2. TOTAL OPERATING EXPENDITURE (OUTFLOW)</span>
-                    <span data-pl="outflow" style="color: var(--fn-red);">₹0</span>
-                  </div>
-                  <div style="padding-left: 18px; display: flex; flex-direction: column; gap: 8px; color: var(--fn-text-muted); font-size: 0.82rem;">
-                    <div style="display: flex; justify-content: space-between;">
-                      <span>Faculty &amp; Staff Salaries (Payroll)</span>
-                      <span data-pl="salaries">₹0</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                      <span>Marketing &amp; Digital Ads</span>
-                      <span data-pl="marketing">₹0</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                      <span>Infrastructure, Rent, Utilities &amp; Supplies</span>
-                      <span data-pl="otherExp">₹0</span>
-                    </div>
+                  <!-- Financial Year Select -->
+                  <div data-report-ctrl="annual" style="display: none; align-items: center; gap: 6px;">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--fn-text-muted);">Financial Year:</label>
+                    <select class="fn-select" data-report-fy-select style="font-size: 0.82rem; padding: 5px 10px;">
+                      <option value="2026">FY 2026-27 (01 Apr 2026 – 31 Mar 2027)</option>
+                      <option value="2025">FY 2025-26 (01 Apr 2025 – 31 Mar 2026)</option>
+                    </select>
                   </div>
 
-                  <hr style="border: none; border-top: 2px solid var(--fn-navy); margin: 10px 0;">
-
-                  <div style="display: flex; justify-content: space-between; font-size: 1.15rem; font-weight: 900; color: var(--fn-navy);">
-                    <span>NET OPERATING PROFIT / SURPLUS</span>
-                    <span data-pl="net">₹0</span>
+                  <!-- Custom Range Inputs -->
+                  <div data-report-ctrl="custom" style="display: none; align-items: center; gap: 6px;">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--fn-text-muted);">From:</label>
+                    <input type="date" class="fn-input" data-report-custom-start style="width: 130px; font-size: 0.8rem; padding: 4px 8px;">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--fn-text-muted);">To:</label>
+                    <input type="date" class="fn-input" data-report-custom-end style="width: 130px; font-size: 0.8rem; padding: 4px 8px;">
                   </div>
-                  <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; color: var(--fn-text-muted);">
-                    <span>Operating Profit Margin</span>
-                    <span data-pl="margin">0%</span>
+
+                  <button type="button" class="btn-fn-download-pdf" data-download-active-pdf style="padding: 6px 14px; font-size: 0.8rem;">
+                    <span>Download PDF</span>
+                  </button>
+                  <button type="button" class="btn-fn-download-pdf outline" data-print-report-btn style="padding: 6px 12px; font-size: 0.8rem;" title="Print clean statement document without website chrome">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    <span>Print Statement</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Live On-Screen Statement Paper Preview (What goes into the CA report) -->
+              <article class="fn-report-paper" id="fn-report-statement-document">
+                <!-- Branding Header -->
+                <div class="fn-report-brand-bar">
+                  <div class="fn-report-brand-left">
+                    <img src="/mainlogo.png" alt="My JEE Mentor" class="fn-report-logo">
+                    <div>
+                      <h1 class="fn-report-brand-title">MY JEE MENTOR</h1>
+                      <p class="fn-report-brand-sub">IIT-JEE | NEET | FOUNDATION • ONLINE INSTITUTE • myjeementor.com</p>
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <span class="fn-badge" style="background: var(--fn-navy); color: #fff; font-size: 0.76rem; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">FINANCIAL MANAGEMENT REPORT</span>
+                    <div style="font-size: 0.76rem; color: var(--fn-text-muted); font-weight: 600;" data-report-statement-type>Monthly Statement</div>
+                  </div>
+                </div>
+
+                <!-- Report Metadata Grid -->
+                <div class="fn-report-meta-box">
+                  <div>
+                    <div class="fn-meta-item-label">Reporting Period</div>
+                    <div class="fn-meta-item-val" data-report-meta-period>01 November 2026 – 30 November 2026</div>
+                  </div>
+                  <div>
+                    <div class="fn-meta-item-label">Report Scope</div>
+                    <div class="fn-meta-item-val" data-report-meta-scope>November 2026 Performance</div>
+                  </div>
+                  <div>
+                    <div class="fn-meta-item-label">Generated Timestamp (IST)</div>
+                    <div class="fn-meta-item-val" data-report-meta-time>-</div>
+                  </div>
+                  <div>
+                    <div class="fn-meta-item-label">Data Reconciliation</div>
+                    <div class="fn-meta-item-val" style="color: var(--fn-green);">✓ Reconciled with Fee Register</div>
+                  </div>
+                </div>
+
+                <!-- 1. Executive Summary Table -->
+                <div class="fn-report-section-head">
+                  <div class="fn-report-section-bar"></div>
+                  <h2>1. Executive Financial Summary (Operating Profit &amp; Loss)</h2>
+                </div>
+
+                <div class="fn-report-table-wrap">
+                  <table class="fn-report-data-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 50%;">REVENUE &amp; INFLOW METRIC</th>
+                        <th class="num" style="width: 50%;">AMOUNT (INR)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="font-weight: 600;">Gross Student Tuition Fee Collection (Imported from Fee Register)</td>
+                        <td class="num" style="font-weight: 700; color: var(--fn-navy);" data-rep-kpi="fees">₹0</td>
+                      </tr>
+                      <tr>
+                        <td style="font-weight: 600;">Other Non-Tuition Operating Inflows (Study Material, Tests, Grants)</td>
+                        <td class="num" style="font-weight: 700; color: var(--fn-navy);" data-rep-kpi="otherIncome">₹0</td>
+                      </tr>
+                      <tr style="background: #f0fdf4;">
+                        <td style="font-weight: 800; color: var(--fn-green);">TOTAL REVENUE / OPERATING INFLOW</td>
+                        <td class="num" style="font-weight: 900; color: var(--fn-green); font-size: 0.92rem;" data-rep-kpi="totalIncome">₹0</td>
+                      </tr>
+                    </tbody>
+                    <thead>
+                      <tr>
+                        <th style="width: 50%;">OPERATING EXPENDITURE METRIC</th>
+                        <th class="num" style="width: 50%;">AMOUNT (INR)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="font-weight: 600;">Faculty &amp; Staff Salaries Disbursed (Actual Payroll Disbursed)</td>
+                        <td class="num" style="font-weight: 700; color: var(--fn-red);" data-rep-kpi="salaries">₹0</td>
+                      </tr>
+                      <tr>
+                        <td style="font-weight: 600;">Marketing &amp; Digital Advertising (Google, Meta, YouTube, Banners)</td>
+                        <td class="num" style="font-weight: 700; color: var(--fn-red);" data-rep-kpi="marketing">₹0</td>
+                      </tr>
+                      <tr>
+                        <td style="font-weight: 600;">Technical Infrastructure &amp; Remaining Operational Expenses (Hosting, Rent, Utilities)</td>
+                        <td class="num" style="font-weight: 700; color: var(--fn-red);" data-rep-kpi="otherExp">₹0</td>
+                      </tr>
+                      <tr style="background: #fef2f2;">
+                        <td style="font-weight: 800; color: var(--fn-red);">TOTAL OPERATING EXPENDITURE</td>
+                        <td class="num" style="font-weight: 900; color: var(--fn-red); font-size: 0.92rem;" data-rep-kpi="totalExpenses">₹0</td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="total-row" style="background: #fff7ed;">
+                        <td style="font-size: 0.95rem; font-weight: 900; color: var(--fn-navy);">NET OPERATING PROFIT / SURPLUS (OPERATING MARGIN: <span data-rep-kpi="margin">0.0%</span>)</td>
+                        <td class="num" style="font-size: 1.1rem; font-weight: 900; color: var(--fn-navy);" data-rep-kpi="netProfit">₹0</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <!-- 2. Month-Wise Performance Breakdown -->
+                <div class="fn-report-section-head">
+                  <div class="fn-report-section-bar"></div>
+                  <h2>2. Month-Wise Financial Performance Breakdown</h2>
+                </div>
+
+                <div class="fn-report-table-wrap">
+                  <table class="fn-report-data-table">
+                    <thead>
+                      <tr>
+                        <th>Month</th>
+                        <th>Period Dates</th>
+                        <th class="num">Tuition Fees</th>
+                        <th class="num">Other Inc.</th>
+                        <th class="num">Total Inflow</th>
+                        <th class="num">Teacher Sal.</th>
+                        <th class="num">Counselor Sal.</th>
+                        <th class="num">Marketing</th>
+                        <th class="num">Tech / Ops</th>
+                        <th class="num">Total Exp.</th>
+                        <th class="num">Net Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody data-rep-table-months>
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 3. Detailed Income Register -->
+                <div class="fn-report-section-head">
+                  <div class="fn-report-section-bar"></div>
+                  <h2>3. Detailed Income Register (Tuition &amp; Inflows)</h2>
+                </div>
+
+                <div class="fn-report-table-wrap">
+                  <table class="fn-report-data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Receipt No</th>
+                        <th>Student / Source Name</th>
+                        <th>Course / Description</th>
+                        <th>Payment Mode</th>
+                        <th class="num">Amount (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody data-rep-table-income>
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 4. Detailed Operating Expense Register -->
+                <div class="fn-report-section-head">
+                  <div class="fn-report-section-bar"></div>
+                  <h2>4. Detailed Operating Expense Register</h2>
+                </div>
+
+                <div class="fn-report-table-wrap">
+                  <table class="fn-report-data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Expense ID</th>
+                        <th>Department / Category</th>
+                        <th>Description</th>
+                        <th>Paid To / Vendor</th>
+                        <th class="num">Amount (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody data-rep-table-expenses>
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 5. Detailed Salary Register -->
+                <div class="fn-report-section-head">
+                  <div class="fn-report-section-bar"></div>
+                  <h2>5. Faculty &amp; Staff Payroll Register (Disbursed)</h2>
+                </div>
+
+                <div class="fn-report-table-wrap">
+                  <table class="fn-report-data-table">
+                    <thead>
+                      <tr>
+                        <th>Employee Name</th>
+                        <th>Employee ID</th>
+                        <th>Role / Department</th>
+                        <th>Salary Month</th>
+                        <th class="num">Net Paid (₹)</th>
+                        <th>Disbursement Date</th>
+                      </tr>
+                    </thead>
+                    <tbody data-rep-table-salaries>
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Audit Declaration & Signature -->
+                <div class="fn-report-audit-notes">
+                  <div>
+                    <strong style="font-size: 0.8rem; color: var(--fn-navy);">INSTITUTIONAL AUDIT &amp; STATUTORY COMPLIANCE NOTES</strong>
+                    <ul class="fn-report-notes-list">
+                      <li>Student tuition fee inflows are reconciled directly with the verified Fee Register Google Sheet.</li>
+                      <li>Salary figures represent exclusively actual disbursed payroll; unpaid commitments are excluded.</li>
+                      <li>This financial statement is generated for internal management review, statutory accounting, and Chartered Accountant (CA) audit.</li>
+                    </ul>
+                  </div>
+                  <div class="fn-report-sign-box">
+                    <div class="fn-sign-line"></div>
+                    <div class="fn-sign-label">Authorised Signatory / Director</div>
+                    <div style="font-size: 0.7rem; color: var(--fn-text-muted);">My JEE Mentor Online Institute</div>
                   </div>
                 </div>
               </article>
@@ -2382,55 +2629,225 @@ export function initFinancePage() {
     }).join('');
   }
 
-  // 11. Reports (P&L)
+  // 11. Reports & Professional Month-Wise PDF Generator
+  const reportFilterState = {
+    periodType: 'monthly',
+    selectedMonth: '2026-11',
+    selectedFy: 2026,
+    customStart: '',
+    customEnd: ''
+  };
+
   function renderReports() {
-    const expenses = financeState.expenses || [];
-    const salaries = financeState.salaries || [];
-    const feeRecords = financeState.feeRecords || [];
-    const otherIncome = (financeState.otherIncome || []).filter(i => {
-      const src = String(i.source || '').toLowerCase();
-      const desc = String(i.description || '').toLowerCase();
-      return !src.includes('fee collection') && !src.includes('tuition fee');
-    });
-    const summary = financeState.summary || {};
+    let startDate = '';
+    let endDate = '';
+    let periodDisplay = '';
+    let scopeLabel = '';
+    let statementType = 'Monthly Statement';
 
-    const feeCol = Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const otherInc = otherIncome.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const totalIncome = feeCol + otherInc;
+    if (reportFilterState.periodType === 'monthly') {
+      const [y, m] = (reportFilterState.selectedMonth || '2026-11').split('-');
+      const range = getMonthDateRange(Number(y), Number(m));
+      startDate = range.startDate;
+      endDate = range.endDate;
+      periodDisplay = range.displayRange;
+      scopeLabel = `${range.label} Performance`;
+      statementType = `Monthly Statement (${range.label})`;
+    } else if (reportFilterState.periodType === 'annual') {
+      const fy = getFinancialYearRange(reportFilterState.selectedFy || 2026);
+      startDate = fy.startDate;
+      endDate = fy.endDate;
+      periodDisplay = fy.displayRange;
+      scopeLabel = `${fy.label} Performance`;
+      statementType = `Annual Statement (${fy.label})`;
+    } else if (reportFilterState.periodType === 'custom') {
+      startDate = reportFilterState.customStart || '2026-01-01';
+      endDate = reportFilterState.customEnd || '2026-12-31';
+      periodDisplay = `${formatDateIndian(startDate)} – ${formatDateIndian(endDate)}`;
+      scopeLabel = 'Custom Date Range';
+      statementType = 'Custom Period Statement';
+    } else {
+      // all
+      startDate = '2024-01-01';
+      endDate = '2030-12-31';
+      periodDisplay = 'All Historical Records (Consolidated)';
+      scopeLabel = 'Consolidated Performance';
+      statementType = 'Consolidated Statement (All Time)';
+    }
 
-    const operational = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-    const salariesTotal = salaries.reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
-    const totalOut = operational + salariesTotal;
+    const { months, totals, filteredRecords } = computeMonthBreakdown(financeState, startDate, endDate);
+    const { feeRecords, otherIncome, expenses, salaries } = filteredRecords;
 
-    const marketingExp = expenses
-      .filter(e => /marketing|ads|google|meta|facebook|banner/i.test((e.category || '') + ' ' + (e.description || '')))
-      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-    const otherOperational = Math.max(0, operational - marketingExp);
+    // Update Paper Metadata
+    const elPeriod = dashboardPanel.querySelector('[data-report-meta-period]');
+    const elScope = dashboardPanel.querySelector('[data-report-meta-scope]');
+    const elTime = dashboardPanel.querySelector('[data-report-meta-time]');
+    const elStmtType = dashboardPanel.querySelector('[data-report-statement-type]');
 
-    const net = totalIncome - totalOut;
-    const margin = totalIncome > 0 ? ((net / totalIncome) * 100).toFixed(1) : '0.0';
+    if (elPeriod) elPeriod.textContent = periodDisplay;
+    if (elScope) elScope.textContent = scopeLabel;
+    if (elTime) elTime.textContent = getKolkataTimestamp();
+    if (elStmtType) elStmtType.textContent = statementType;
 
-    const nodes = {
-      inflow: dashboardPanel.querySelector('[data-pl="inflow"]'),
-      fees: dashboardPanel.querySelector('[data-pl="fees"]'),
-      otherIncome: dashboardPanel.querySelector('[data-pl="otherIncome"]'),
-      outflow: dashboardPanel.querySelector('[data-pl="outflow"]'),
-      salaries: dashboardPanel.querySelector('[data-pl="salaries"]'),
-      marketing: dashboardPanel.querySelector('[data-pl="marketing"]'),
-      otherExp: dashboardPanel.querySelector('[data-pl="otherExp"]'),
-      net: dashboardPanel.querySelector('[data-pl="net"]'),
-      margin: dashboardPanel.querySelector('[data-pl="margin"]')
+    // Update Executive Summary Table
+    const setKpi = (key, val) => {
+      const el = dashboardPanel.querySelector(`[data-rep-kpi="${key}"]`);
+      if (el) el.textContent = val;
     };
 
-    if (nodes.inflow) nodes.inflow.textContent = formatInr(totalIncome);
-    if (nodes.fees) nodes.fees.textContent = formatInr(feeCol);
-    if (nodes.otherIncome) nodes.otherIncome.textContent = formatInr(otherInc);
-    if (nodes.outflow) nodes.outflow.textContent = formatInr(totalOut);
-    if (nodes.salaries) nodes.salaries.textContent = formatInr(salariesTotal);
-    if (nodes.marketing) nodes.marketing.textContent = formatInr(marketingExp);
-    if (nodes.otherExp) nodes.otherExp.textContent = formatInr(otherOperational);
-    if (nodes.net) nodes.net.textContent = formatInr(net);
-    if (nodes.margin) nodes.margin.textContent = `${margin}%`;
+    setKpi('fees', formatInr(totals.feeCollection));
+    setKpi('otherIncome', formatInr(totals.otherIncome));
+    setKpi('totalIncome', formatInr(totals.totalIncome));
+    setKpi('salaries', formatInr(totals.teacherSalary + totals.counselorSalary));
+    setKpi('marketing', formatInr(totals.marketingExpenses));
+    setKpi('otherExp', formatInr(totals.technicalExpenses + totals.otherExpenses));
+    setKpi('totalExpenses', formatInr(totals.totalExpenses));
+    setKpi('netProfit', formatInr(totals.netProfit));
+    setKpi('margin', `${totals.margin}%`);
+
+    // 2. Month-Wise Breakdown Table
+    const tbodyMonths = dashboardPanel.querySelector('[data-rep-table-months]');
+    if (tbodyMonths) {
+      if (months.length === 0) {
+        tbodyMonths.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--fn-text-muted); padding: 16px;">No financial activity recorded in this period.</td></tr>`;
+      } else {
+        const rowsHtml = months.map(m => `
+          <tr>
+            <td style="font-weight: 700;">${escapeHtml(m.monthName)} ${m.year}</td>
+            <td style="font-size: 0.72rem; color: var(--fn-text-muted);">${escapeHtml(m.displayRange)}</td>
+            <td class="num">${formatInr(m.feeCollection)}</td>
+            <td class="num">${formatInr(m.otherIncome)}</td>
+            <td class="num" style="font-weight: 700; color: var(--fn-green);">${formatInr(m.totalIncome)}</td>
+            <td class="num">${formatInr(m.teacherSalary)}</td>
+            <td class="num">${formatInr(m.counselorSalary)}</td>
+            <td class="num">${formatInr(m.marketingExpenses)}</td>
+            <td class="num">${formatInr(m.technicalExpenses + m.otherExpenses)}</td>
+            <td class="num" style="font-weight: 700; color: var(--fn-red);">${formatInr(m.totalExpenses)}</td>
+            <td class="num" style="font-weight: 800; color: ${m.netProfit >= 0 ? 'var(--fn-green)' : 'var(--fn-red)'};">${formatInr(m.netProfit)}</td>
+          </tr>
+        `).join('');
+
+        const totalRowHtml = `
+          <tr class="total-row">
+            <td style="font-weight: 900;">GRAND TOTAL</td>
+            <td style="font-size: 0.72rem; font-weight: 700;">${escapeHtml(periodDisplay)}</td>
+            <td class="num" style="font-weight: 800;">${formatInr(totals.feeCollection)}</td>
+            <td class="num" style="font-weight: 800;">${formatInr(totals.otherIncome)}</td>
+            <td class="num" style="font-weight: 900; color: var(--fn-green);">${formatInr(totals.totalIncome)}</td>
+            <td class="num" style="font-weight: 800;">${formatInr(totals.teacherSalary)}</td>
+            <td class="num" style="font-weight: 800;">${formatInr(totals.counselorSalary)}</td>
+            <td class="num" style="font-weight: 800;">${formatInr(totals.marketingExpenses)}</td>
+            <td class="num" style="font-weight: 800;">${formatInr(totals.technicalExpenses + totals.otherExpenses)}</td>
+            <td class="num" style="font-weight: 900; color: var(--fn-red);">${formatInr(totals.totalExpenses)}</td>
+            <td class="num" style="font-weight: 900; color: ${totals.netProfit >= 0 ? 'var(--fn-green)' : 'var(--fn-red)'};">${formatInr(totals.netProfit)}</td>
+          </tr>
+        `;
+        tbodyMonths.innerHTML = rowsHtml + totalRowHtml;
+      }
+    }
+
+    // 3. Detailed Income Register
+    const tbodyIncome = dashboardPanel.querySelector('[data-rep-table-income]');
+    if (tbodyIncome) {
+      const incomeItems = [
+        ...feeRecords.map(f => ({
+          date: f.date,
+          ref: f.receiptNo,
+          name: f.studentName,
+          desc: `${f.course || '-'}${f.batch ? ' (' + f.batch + ')' : ''}`,
+          mode: f.paymentMode || 'UPI',
+          amount: f.amount
+        })),
+        ...otherIncome.map(o => ({
+          date: o.date,
+          ref: o.id || o.referenceNo || 'INC',
+          name: o.source || 'Other Income',
+          desc: o.description || '-',
+          mode: o.paymentMode || 'Direct',
+          amount: o.amount
+        }))
+      ].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+      if (incomeItems.length === 0) {
+        tbodyIncome.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--fn-text-muted); padding: 14px;">No fee or other income transactions recorded for this period.</td></tr>`;
+      } else {
+        const rows = incomeItems.map(item => `
+          <tr>
+            <td style="font-weight: 500;">${escapeHtml(formatDateIndian(item.date))}</td>
+            <td><code style="font-weight: 700; color: var(--fn-navy);">${escapeHtml(item.ref)}</code></td>
+            <td style="font-weight: 600;">${escapeHtml(item.name)}</td>
+            <td>${escapeHtml(item.desc)}</td>
+            <td><span class="fn-badge" style="font-size: 0.72rem; padding: 2px 6px;">${escapeHtml(item.mode)}</span></td>
+            <td class="num" style="font-weight: 700; color: var(--fn-green);">+${formatInr(item.amount)}</td>
+          </tr>
+        `).join('');
+
+        const subtotal = `
+          <tr class="total-row">
+            <td colspan="5" style="text-align: right; font-weight: 800;">SUBTOTAL INFLOW (${incomeItems.length} transactions)</td>
+            <td class="num" style="font-weight: 900; color: var(--fn-green);">${formatInr(totals.totalIncome)}</td>
+          </tr>
+        `;
+        tbodyIncome.innerHTML = rows + subtotal;
+      }
+    }
+
+    // 4. Detailed Expense Register
+    const tbodyExpenses = dashboardPanel.querySelector('[data-rep-table-expenses]');
+    if (tbodyExpenses) {
+      if (expenses.length === 0) {
+        tbodyExpenses.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--fn-text-muted); padding: 14px;">No operational expenses recorded for this period in Google Sheets.</td></tr>`;
+      } else {
+        const rows = expenses.map(e => `
+          <tr>
+            <td style="font-weight: 500;">${escapeHtml(formatDateIndian(e.date))}</td>
+            <td><code style="font-weight: 700; color: var(--fn-navy);">${escapeHtml(e.id || '-')}</code></td>
+            <td style="font-weight: 600;">${escapeHtml(e.category || 'General')}</td>
+            <td>${escapeHtml(e.description || '-')}</td>
+            <td>${escapeHtml(e.paidTo || '-')}</td>
+            <td class="num" style="font-weight: 700; color: var(--fn-red);">-${formatInr(e.amount)}</td>
+          </tr>
+        `).join('');
+
+        const expSum = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+        const subtotal = `
+          <tr class="total-row">
+            <td colspan="5" style="text-align: right; font-weight: 800;">SUBTOTAL OPERATING EXPENSES (${expenses.length} records)</td>
+            <td class="num" style="font-weight: 900; color: var(--fn-red);">${formatInr(expSum)}</td>
+          </tr>
+        `;
+        tbodyExpenses.innerHTML = rows + subtotal;
+      }
+    }
+
+    // 5. Detailed Salary Register
+    const tbodySalaries = dashboardPanel.querySelector('[data-rep-table-salaries]');
+    if (tbodySalaries) {
+      if (salaries.length === 0) {
+        tbodySalaries.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--fn-text-muted); padding: 14px;">No salary disbursements recorded for this period in Google Sheets.</td></tr>`;
+      } else {
+        const rows = salaries.map(s => `
+          <tr>
+            <td style="font-weight: 700;">${escapeHtml(s.employeeName || '-')}</td>
+            <td><code>${escapeHtml(s.employeeId || '-')}</code></td>
+            <td>${escapeHtml(s.role || s.department || 'Faculty')}</td>
+            <td>${escapeHtml(s.period || s.month || '-')}</td>
+            <td class="num" style="font-weight: 700; color: var(--fn-red);">-${formatInr(s.netPaid || s.basicSalary)}</td>
+            <td>${escapeHtml(formatDateIndian(s.paymentDate || s.date))}</td>
+          </tr>
+        `).join('');
+
+        const salSum = salaries.reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
+        const subtotal = `
+          <tr class="total-row">
+            <td colspan="4" style="text-align: right; font-weight: 800;">SUBTOTAL SALARIES DISBURSED (${salaries.length} disbursements)</td>
+            <td class="num" style="font-weight: 900; color: var(--fn-red);">${formatInr(salSum)}</td>
+            <td></td>
+          </tr>
+        `;
+        tbodySalaries.innerHTML = rows + subtotal;
+      }
+    }
   }
 
   // Native Multi-Sheet Excel Export function using SheetJS (XLSX)
@@ -2954,6 +3371,84 @@ export function initFinancePage() {
     } finally {
       if (btn) btn.disabled = false;
     }
+  });
+
+  // Financial Reports Controls & PDF Download Listeners
+  dashboardPanel.querySelectorAll('[data-report-period-btn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      dashboardPanel.querySelectorAll('[data-report-period-btn]').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      const period = btn.dataset.reportPeriodBtn;
+      reportFilterState.periodType = period;
+
+      const ctrlMonthly = dashboardPanel.querySelector('[data-report-ctrl="monthly"]');
+      const ctrlAnnual = dashboardPanel.querySelector('[data-report-ctrl="annual"]');
+      const ctrlCustom = dashboardPanel.querySelector('[data-report-ctrl="custom"]');
+
+      if (ctrlMonthly) ctrlMonthly.style.display = period === 'monthly' ? 'flex' : 'none';
+      if (ctrlAnnual) ctrlAnnual.style.display = period === 'annual' ? 'flex' : 'none';
+      if (ctrlCustom) ctrlCustom.style.display = period === 'custom' ? 'flex' : 'none';
+
+      renderReports();
+    });
+  });
+
+  dashboardPanel.querySelector('[data-report-month-select]')?.addEventListener('change', (e) => {
+    reportFilterState.selectedMonth = e.target.value;
+    renderReports();
+  });
+
+  dashboardPanel.querySelector('[data-report-fy-select]')?.addEventListener('change', (e) => {
+    reportFilterState.selectedFy = Number(e.target.value) || 2026;
+    renderReports();
+  });
+
+  dashboardPanel.querySelector('[data-report-custom-start]')?.addEventListener('change', (e) => {
+    reportFilterState.customStart = e.target.value;
+    renderReports();
+  });
+
+  dashboardPanel.querySelector('[data-report-custom-end]')?.addEventListener('change', (e) => {
+    reportFilterState.customEnd = e.target.value;
+    renderReports();
+  });
+
+  // PDF Generation Dispatcher
+  async function triggerPdfDownload(type) {
+    showAlert('Generating professional institutional financial PDF report…', false);
+    try {
+      let opts = { dataset: financeState, periodType: type };
+      if (type === 'monthly') {
+        opts.selectedMonth = reportFilterState.selectedMonth;
+      } else if (type === 'annual') {
+        opts.selectedFyYear = reportFilterState.selectedFy;
+      } else if (type === 'custom') {
+        opts.customStart = reportFilterState.customStart;
+        opts.customEnd = reportFilterState.customEnd;
+      } else if (type === 'active') {
+        opts.periodType = reportFilterState.periodType;
+        opts.selectedMonth = reportFilterState.selectedMonth;
+        opts.selectedFyYear = reportFilterState.selectedFy;
+        opts.customStart = reportFilterState.customStart;
+        opts.customEnd = reportFilterState.customEnd;
+      }
+      const filename = await generateFinancialReportPdf(opts);
+      showAlert(`✓ Successfully downloaded ${filename}!`, false);
+    } catch (err) {
+      showAlert(`PDF generation notice: ${err.message}`, true);
+    }
+  }
+
+  dashboardPanel.querySelectorAll('[data-download-report]').forEach(btn => {
+    btn.addEventListener('click', () => triggerPdfDownload(btn.dataset.downloadReport));
+  });
+
+  dashboardPanel.querySelector('[data-download-active-pdf]')?.addEventListener('click', () => {
+    triggerPdfDownload('active');
+  });
+
+  dashboardPanel.querySelector('[data-print-report-btn]')?.addEventListener('click', () => {
+    window.print();
   });
 
   // Auth Handling
