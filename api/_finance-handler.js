@@ -49,10 +49,16 @@ export async function handleFinanceRequest(request) {
 
     // 1. Auth Status check (public: tells frontend if setup is needed or if already logged in)
     if (method === 'GET' && action === 'auth-status') {
+      const hasEnvPassword = Boolean(process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim());
+      const hasDbPassword = Boolean(getSetting('admin_password_hash') && getSetting('admin_password_salt'));
+      const isConfigured = isPasswordConfigured();
       return json({
         ok: true,
-        isSetupRequired: !isPasswordConfigured(),
-        authenticated: hasAdminSession(request)
+        isSetupRequired: !isConfigured,
+        authenticated: hasAdminSession(request),
+        authSource: hasEnvPassword ? 'environment' : (hasDbPassword ? 'database' : 'none'),
+        hasEnvPassword,
+        hasDbPassword
       });
     }
 

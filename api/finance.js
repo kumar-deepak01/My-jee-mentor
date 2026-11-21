@@ -11,13 +11,26 @@ export default async function financeHandler(req, res) {
     }
     const method = req.method || 'GET';
     const hasBody = !['GET', 'HEAD'].includes(method);
-    const parsedBody = req.body;
-    const requestBody = parsedBody !== undefined ? typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody) : req;
+    let requestBody = undefined;
+
+    if (hasBody) {
+      if (req.body !== undefined) {
+        requestBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      } else {
+        const chunks = [];
+        for await (const chunk of req) {
+          chunks.push(chunk);
+        }
+        requestBody = Buffer.concat(chunks).toString('utf8');
+      }
+    }
+
     const request = new Request(requestUrl, {
       method,
       headers,
-      ...(hasBody ? (parsedBody !== undefined ? { body: requestBody } : { body: requestBody, duplex: 'half' }) : {})
+      ...(hasBody && requestBody !== undefined ? { body: requestBody } : {})
     });
+
     const response = await handleFinanceRequest(request);
     response.headers.forEach((value, name) => res.setHeader(name, value));
     res.statusCode = response.status;
@@ -27,6 +40,6 @@ export default async function financeHandler(req, res) {
     res.statusCode = 500;
     res.setHeader('cache-control', 'no-store');
     res.setHeader('content-type', 'application/json; charset=utf-8');
-    res.end(JSON.stringify({ message: 'The finance service is temporarily unavailable.' }));
+    res.end(JSON.stringify({ ok: false, message: error.message || 'The finance service is temporarily unavailable.' }));
   }
 }

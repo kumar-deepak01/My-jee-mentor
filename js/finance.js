@@ -57,6 +57,7 @@ export function financePageMarkup() {
           <div data-finance-login-view>
             <span class="eyebrow">FINANCE ADMIN LOGIN</span>
             <h2>Enter Admin Password</h2>
+            <p data-auth-note hidden style="font-size: 0.82rem; color: #64748b; margin-top: -4px; margin-bottom: 14px; line-height: 1.4;"></p>
             <form data-finance-login>
               <label for="financePassword">Admin Password</label>
               <div class="fees-login-row">
@@ -513,6 +514,11 @@ export function initFinancePage() {
         showSetupView();
       } else {
         showLogin();
+        const authNote = authPanel.querySelector('[data-auth-note]');
+        if (authNote && authRes.authSource === 'environment') {
+          authNote.textContent = '🔒 Master password is set in server environment variables (ADMIN_PASSWORD).';
+          authNote.hidden = false;
+        }
       }
     } catch {
       showLogin();

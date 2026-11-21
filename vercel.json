@@ -12,9 +12,13 @@
     },
     "api/fees.js": {
       "maxDuration": 30
+    },
+    "api/finance.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/fees", "destination": "/fees.html" }
+    { "source": "/fees", "destination": "/fees.html" },
+    { "source": "/finance", "destination": "/finance.html" }
   ]
 }

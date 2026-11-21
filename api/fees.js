@@ -5,9 +5,17 @@ export default async function feesHandler(req,res){
     const protocol=String(req.headers['x-forwarded-proto']||'https').split(',')[0],host=req.headers.host||'localhost';
     const requestUrl=new URL(req.url||'/api/fees',`${protocol}://${host}`).toString(),headers=new Headers();
     for(const name of ['cookie','content-type','origin','x-forwarded-for','x-real-ip'])if(req.headers[name])headers.set(name,req.headers[name]);
-    const method=req.method||'GET',hasBody=!['GET','HEAD'].includes(method),parsedBody=req.body;
-    const requestBody=parsedBody!==undefined?typeof parsedBody==='string'?parsedBody:JSON.stringify(parsedBody):req;
-    const request=new Request(requestUrl,{method,headers,...(hasBody?parsedBody!==undefined?{body:requestBody}:{body:requestBody,duplex:'half'}:{})});
+    const method=req.method||'GET',hasBody=!['GET','HEAD'].includes(method);
+    let requestBody=undefined;
+    if(hasBody){
+      if(req.body!==undefined){
+        requestBody=typeof req.body==='string'?req.body:JSON.stringify(req.body);
+      }else{
+        const chunks=[];for await(const chunk of req)chunks.push(chunk);
+        requestBody=Buffer.concat(chunks).toString('utf8');
+      }
+    }
+    const request=new Request(requestUrl,{method,headers,...(hasBody&&requestBody!==undefined?{body:requestBody}:{})});
     const response=await handleFeesRequest(request);response.headers.forEach((value,name)=>res.setHeader(name,value));res.statusCode=response.status;res.end(Buffer.from(await response.arrayBuffer()));
-  }catch(error){logFeesError('Fees API adapter error:',error);res.statusCode=500;res.setHeader('cache-control','no-store');res.setHeader('content-type','application/json; charset=utf-8');res.end(JSON.stringify({message:'The fee service is temporarily unavailable.'}))}
+  }catch(error){logFeesError('Fees API adapter error:',error);res.statusCode=500;res.setHeader('cache-control','no-store');res.setHeader('content-type','application/json; charset=utf-8');res.end(JSON.stringify({ok:false,message:error.message||'The fee service is temporarily unavailable.'}))}
 }
