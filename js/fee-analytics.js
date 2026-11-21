@@ -28,6 +28,51 @@ export function formatCount(count) {
   return new Intl.NumberFormat('en-IN').format(Number(count) || 0);
 }
 
+/**
+ * Returns current YYYY-MM-DD in Asia/Kolkata (Indian Standard Time).
+ */
+export function getKolkataYmd(date = new Date()) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(date);
+    const y = parts.find(p => p.type === 'year')?.value;
+    const m = parts.find(p => p.type === 'month')?.value;
+    const d = parts.find(p => p.type === 'day')?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {
+    // Fallback if timezone not supported
+  }
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const ist = new Date(utc + (3600000 * 5.5));
+  const y = ist.getFullYear();
+  const m = String(ist.getMonth() + 1).padStart(2, '0');
+  const d = String(ist.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Returns formatted date string in Asia/Kolkata (e.g. "21 Nov 2026").
+ */
+export function formatKolkataDate(date = new Date()) {
+  try {
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(date);
+  } catch {
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    const ist = new Date(utc + (3600000 * 5.5));
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${ist.getDate()} ${months[ist.getMonth()]} ${ist.getFullYear()}`;
+  }
+}
+
 const MONTH_MAP = {
   jan: 0, january: 0,
   feb: 1, february: 1,
@@ -208,7 +253,7 @@ export function renderFeeAnalyticsMarkup() {
       <!-- Live Notification / Status Banner -->
       <div class="fees-analytics-status" data-analytics-status role="status" aria-live="polite" hidden></div>
 
-      <!-- Row 1: Six Compact KPI Cards -->
+      <!-- Row 1: Five Compact KPI Cards -->
       <div class="fees-kpi-grid" data-analytics-kpi-grid>
         <!-- Card 1: Total Fee Collection -->
         <article class="fees-kpi-card kpi-total">
@@ -234,16 +279,22 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-kpi-sub" data-kpi-sub="totalTransactions">Successful receipts</div>
         </article>
 
-        <!-- Card 3: Unique Paying Students -->
-        <article class="fees-kpi-card kpi-students">
+        <!-- Card 3: Today's Collection -->
+        <article class="fees-kpi-card kpi-today">
           <div class="fees-kpi-top">
-            <span class="fees-kpi-label">Unique Paying Students</span>
-            <span class="fees-kpi-icon icon-students" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path></svg>
+            <span class="fees-kpi-label">Today's Collection</span>
+            <span class="fees-kpi-icon icon-today" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <circle cx="12" cy="15" r="2" fill="currentColor"></circle>
+              </svg>
             </span>
           </div>
-          <div class="fees-kpi-value" data-kpi="uniqueStudents">0</div>
-          <div class="fees-kpi-sub" data-kpi-sub="uniqueStudents">Installments deduplicated</div>
+          <div class="fees-kpi-value" data-kpi="todayCollection">₹0</div>
+          <div class="fees-kpi-sub" data-kpi-sub="todayCollection">0 successful transactions today</div>
         </article>
 
         <!-- Card 4: Average Payment -->
@@ -258,19 +309,7 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-kpi-sub" data-kpi-sub="avgPayment">Per receipt average</div>
         </article>
 
-        <!-- Card 5: Highest Single Payment -->
-        <article class="fees-kpi-card kpi-highest">
-          <div class="fees-kpi-top">
-            <span class="fees-kpi-label">Highest Single Payment</span>
-            <span class="fees-kpi-icon icon-highest" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-            </span>
-          </div>
-          <div class="fees-kpi-value" data-kpi="highestPayment">₹0</div>
-          <div class="fees-kpi-sub" data-kpi-sub="highestPayment">Peak single installment</div>
-        </article>
-
-        <!-- Card 6: Current Month Collection -->
+        <!-- Card 5: Current Month Collection -->
         <article class="fees-kpi-card kpi-month">
           <div class="fees-kpi-top">
             <span class="fees-kpi-label">Current Month</span>
@@ -382,18 +421,16 @@ export class FeeAnalyticsController {
     this.kpiNodes = {
       totalCollection: this.container.querySelector('[data-kpi="totalCollection"]'),
       totalTransactions: this.container.querySelector('[data-kpi="totalTransactions"]'),
-      uniqueStudents: this.container.querySelector('[data-kpi="uniqueStudents"]'),
+      todayCollection: this.container.querySelector('[data-kpi="todayCollection"]'),
       avgPayment: this.container.querySelector('[data-kpi="avgPayment"]'),
-      highestPayment: this.container.querySelector('[data-kpi="highestPayment"]'),
       currentMonthCollection: this.container.querySelector('[data-kpi="currentMonthCollection"]')
     };
 
     this.kpiSubNodes = {
       totalCollection: this.container.querySelector('[data-kpi-sub="totalCollection"]'),
       totalTransactions: this.container.querySelector('[data-kpi-sub="totalTransactions"]'),
-      uniqueStudents: this.container.querySelector('[data-kpi-sub="uniqueStudents"]'),
+      todayCollection: this.container.querySelector('[data-kpi-sub="todayCollection"]'),
       avgPayment: this.container.querySelector('[data-kpi-sub="avgPayment"]'),
-      highestPayment: this.container.querySelector('[data-kpi-sub="highestPayment"]'),
       currentMonthCollection: this.container.querySelector('[data-kpi-sub="currentMonthCollection"]')
     };
 
@@ -666,28 +703,32 @@ export class FeeAnalyticsController {
   }
 
   /**
-   * Calculates and renders the 6 KPI cards with clear scopes.
+   * Calculates and renders the 5 KPI cards.
    */
   renderKpiCards() {
     const records = this.filteredRecords;
     const totalAmount = records.reduce((sum, r) => sum + r._amount, 0);
     const totalTx = records.length;
 
-    // Distinct unique students by Phone or clean Name
-    const uniqueStudentKeys = new Set();
-    records.forEach(r => {
-      if (r._studentKey) uniqueStudentKeys.add(r._studentKey);
+    // Today's Collection (Asia/Kolkata timezone)
+    const todayYmd = getKolkataYmd();
+    let todayAmount = 0;
+    let todayTx = 0;
+
+    this.masterRecords.forEach(r => {
+      if (!r._isValid || !r._parsedDate) return;
+      if (r._ymd === todayYmd) {
+        if (this.currentCourse !== 'all') {
+          if (this.currentCourse === 'Unspecified' && r._course !== 'Unspecified') return;
+          if (this.currentCourse !== 'Unspecified' && r._course !== this.currentCourse) return;
+        }
+        todayAmount += r._amount;
+        todayTx += 1;
+      }
     });
-    const uniqueStudents = uniqueStudentKeys.size;
 
     // Average Payment
     const avgPayment = totalTx > 0 ? totalAmount / totalTx : 0;
-
-    // Highest Single Payment
-    let highestPayment = 0;
-    records.forEach(r => {
-      if (r._amount > highestPayment) highestPayment = r._amount;
-    });
 
     // Current Month Collection: ALWAYS actual current calendar month (November 2026)
     // Filtered by course if selected, but independent of the date range dropdown
@@ -712,21 +753,27 @@ export class FeeAnalyticsController {
     // Update DOM nodes
     if (this.kpiNodes.totalCollection) this.kpiNodes.totalCollection.textContent = formatInr(totalAmount);
     if (this.kpiNodes.totalTransactions) this.kpiNodes.totalTransactions.textContent = formatCount(totalTx);
-    if (this.kpiNodes.uniqueStudents) this.kpiNodes.uniqueStudents.textContent = formatCount(uniqueStudents);
+    if (this.kpiNodes.todayCollection) this.kpiNodes.todayCollection.textContent = formatInr(todayAmount);
     if (this.kpiNodes.avgPayment) this.kpiNodes.avgPayment.textContent = formatInr(avgPayment);
-    if (this.kpiNodes.highestPayment) this.kpiNodes.highestPayment.textContent = formatInr(highestPayment);
     if (this.kpiNodes.currentMonthCollection) this.kpiNodes.currentMonthCollection.textContent = formatInr(currentMonthCollection);
 
     // Update subtitles
-    const monthName = MONTH_NAMES_FULL[currentMonth];
-    if (this.kpiSubNodes.currentMonthCollection) {
-      this.kpiSubNodes.currentMonthCollection.textContent = `${monthName} ${currentYear} (${currentMonthTx} receipts) • Independent of filter`;
-    }
     if (this.kpiSubNodes.totalCollection) {
       this.kpiSubNodes.totalCollection.textContent = `${totalTx} receipt${totalTx === 1 ? '' : 's'} recorded`;
     }
+    if (this.kpiSubNodes.todayCollection) {
+      if (todayTx > 0) {
+        this.kpiSubNodes.todayCollection.textContent = `${todayTx} successful ${todayTx === 1 ? 'transaction' : 'transactions'} today`;
+      } else {
+        this.kpiSubNodes.todayCollection.textContent = `0 successful transactions today`;
+      }
+    }
     if (this.kpiSubNodes.avgPayment) {
       this.kpiSubNodes.avgPayment.textContent = totalTx > 0 ? `Across ${totalTx} payments` : 'No payments';
+    }
+    const monthName = MONTH_NAMES_FULL[currentMonth];
+    if (this.kpiSubNodes.currentMonthCollection) {
+      this.kpiSubNodes.currentMonthCollection.textContent = `${monthName} ${currentYear} (${currentMonthTx} receipts) • Independent of filter`;
     }
   }
 
