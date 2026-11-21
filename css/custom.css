@@ -3321,4 +3321,717 @@ html.dark-theme .booking-success p {
   }
 }
 
+/* ==========================================================================
+   Fee Collection Analytics Dashboard Styles
+   ========================================================================== */
+.fees-analytics-panel {
+  position: relative;
+  margin-bottom: 24px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid #f0dfd2;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 14px 38px #39200e0c;
+}
+
+.fees-analytics-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.fees-analytics-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fees-analytics-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fees-analytics-source-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  letter-spacing: 0.02em;
+}
+
+.fees-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: fees-pulse 2s infinite ease-out;
+}
+
+@keyframes fees-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.fees-analytics-heading {
+  font-size: clamp(1.35rem, 2.5vw, 1.7rem);
+  font-weight: 900;
+  color: #111827;
+  margin: 4px 0 2px;
+  letter-spacing: -0.015em;
+}
+
+.fees-analytics-sub {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.fees-analytics-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fees-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fees-filter-field label {
+  font-size: 0.73rem;
+  font-weight: 750;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fees-filter-select,
+.fees-filter-input {
+  min-height: 40px;
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #d6dbe2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fees-filter-select:focus,
+.fees-filter-input:focus {
+  outline: 3px solid rgba(244, 119, 33, 0.2);
+  border-color: #ea580c;
+}
+
+.fees-filter-custom-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.fees-filter-custom-wrap[hidden] {
+  display: none !important;
+}
+
+.fees-analytics-btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  min-height: 40px;
+  padding: 8px 15px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  border-radius: 10px;
+  border: 1px solid #fed7aa;
+  color: #ea580c;
+  background: #fff7ed;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fees-analytics-btn-refresh:hover {
+  background: #ffedd5;
+  border-color: #ea580c;
+  color: #c2410c;
+  transform: translateY(-1px);
+}
+
+.fees-analytics-btn-refresh svg {
+  width: 14px;
+  height: 14px;
+}
+
+.fees-analytics-status {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.fees-analytics-status[hidden] {
+  display: none !important;
+}
+
+.fees-analytics-status.is-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.fees-analytics-status.is-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* 6 KPI Cards Grid */
+.fees-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.fees-kpi-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  min-height: 110px;
+}
+
+.fees-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.1);
+  border-color: rgba(234, 88, 12, 0.35);
+}
+
+.fees-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+}
+
+.fees-kpi-card.kpi-total::before {
+  background: linear-gradient(90deg, #ea580c, #f97316);
+}
+
+.fees-kpi-card.kpi-transactions::before {
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+
+.fees-kpi-card.kpi-students::before {
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+}
+
+.fees-kpi-card.kpi-average::before {
+  background: linear-gradient(90deg, #9333ea, #c084fc);
+}
+
+.fees-kpi-card.kpi-highest::before {
+  background: linear-gradient(90deg, #e11d48, #fb7185);
+}
+
+.fees-kpi-card.kpi-month::before {
+  background: linear-gradient(90deg, #d97706, #fbbf24);
+}
+
+.fees-kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fees-kpi-label {
+  font-size: 0.74rem;
+  font-weight: 750;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+
+.fees-kpi-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.fees-kpi-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.kpi-total .fees-kpi-icon {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.kpi-transactions .fees-kpi-icon {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.kpi-students .fees-kpi-icon {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.kpi-average .fees-kpi-icon {
+  background: #faf5ff;
+  color: #9333ea;
+}
+
+.kpi-highest .fees-kpi-icon {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.kpi-month .fees-kpi-icon {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.fees-kpi-value {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.fees-kpi-sub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Skeleton Loading */
+.fees-skeleton-pill {
+  display: inline-block;
+  width: 85px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: fees-shimmer 1.5s infinite;
+}
+
+.fees-skeleton-chart {
+  width: 100%;
+  height: 230px;
+  border-radius: 12px;
+  background: #f8fafc;
+  position: relative;
+  overflow: hidden;
+}
+
+.fees-skeleton-wave {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: fees-shimmer 1.5s infinite;
+}
+
+@keyframes fees-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Charts Rows */
+.fees-charts-row-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.fees-charts-row-three {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin-bottom: 8px;
+}
+
+.fees-chart-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.fees-chart-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.fees-chart-title {
+  font-size: 1.05rem;
+  font-weight: 850;
+  color: #1e293b;
+  margin: 0 0 3px;
+  letter-spacing: -0.01em;
+}
+
+.fees-chart-sub {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.fees-chart-badge {
+  font-size: 0.7rem;
+  font-weight: 750;
+  color: #ea580c;
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.fees-chart-viewport {
+  width: 100%;
+  height: 230px;
+  position: relative;
+  overflow: hidden;
+}
+
+.fees-analytics-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+
+.fees-bar-group {
+  cursor: pointer;
+}
+
+.fees-bar-group:hover .fees-bar-rect,
+.fees-bar-group:focus .fees-bar-rect {
+  filter: brightness(1.1);
+}
+
+.fees-bar-rect {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.fees-interactive-chart {
+  cursor: crosshair;
+}
+
+.fees-tracker-line,
+.fees-tracker-dot {
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.fees-tracker-dot {
+  filter: drop-shadow(0 2px 4px rgba(234, 88, 12, 0.45));
+}
+
+/* Course Breakdown List */
+.fees-course-breakdown-wrap {
+  padding-top: 4px;
+}
+
+.fees-course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fees-course-row {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+}
+
+.fees-course-row:hover,
+.fees-course-row:focus {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  transform: translateX(2px);
+}
+
+.fees-course-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.fees-course-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fees-course-pill {
+  font-size: 0.75rem;
+  font-weight: 850;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+.fees-course-tx-count {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.fees-course-figures {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.fees-course-amount {
+  font-size: 0.95rem;
+  font-weight: 850;
+  color: #0f172a;
+}
+
+.fees-course-pct {
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: #ea580c;
+  min-width: 44px;
+  text-align: right;
+}
+
+.fees-course-track {
+  width: 100%;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.fees-course-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fees-analytics-empty-card {
+  padding: 36px 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Floating Tooltip */
+.fees-analytics-tooltip {
+  position: absolute;
+  z-index: 60;
+  transform: translate(-50%, -115%);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  pointer-events: none;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  transition: opacity 0.12s ease;
+}
+
+.fees-analytics-tooltip[hidden] {
+  display: none !important;
+}
+
+.fees-analytics-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #0f172a;
+}
+
+.fees-tooltip-title {
+  font-weight: 800;
+  margin-bottom: 5px;
+  color: #fdba74;
+  font-size: 0.82rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 4px;
+}
+
+.fees-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 3px;
+}
+
+.fees-tooltip-key {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.fees-tooltip-val {
+  color: #ffffff;
+  font-weight: 750;
+}
+
+/* Dark Theme Support */
+html.dark-theme .fees-analytics-panel {
+  background: #1b222d;
+  border-color: #36404d;
+  color: #edf1f6;
+  box-shadow: 0 14px 38px #00000030;
+}
+
+html.dark-theme .fees-analytics-heading {
+  color: #f3f4f6;
+}
+
+html.dark-theme .fees-analytics-sub {
+  color: #94a3b8;
+}
+
+html.dark-theme .fees-filter-select,
+html.dark-theme .fees-filter-input {
+  background: #151b24;
+  border-color: #46505f;
+  color: #f3f4f6;
+}
+
+html.dark-theme .fees-kpi-card {
+  background: #151b24;
+  border-color: #334155;
+}
+
+html.dark-theme .fees-kpi-value {
+  color: #f8fafc;
+}
+
+html.dark-theme .fees-chart-card {
+  background: #151b24;
+  border-color: #334155;
+}
+
+html.dark-theme .fees-chart-title {
+  color: #f8fafc;
+}
+
+html.dark-theme .fees-course-row {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+html.dark-theme .fees-course-amount {
+  color: #f8fafc;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1200px) {
+  .fees-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 991px) {
+  .fees-charts-row-two {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .fees-analytics-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .fees-analytics-filters {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .fees-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .fees-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .fees-analytics-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fees-filter-custom-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fees-filter-select,
+  .fees-filter-input,
+  .fees-analytics-btn-refresh {
+    width: 100%;
+  }
+}
+
+
 
