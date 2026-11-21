@@ -150,6 +150,7 @@ export function getFinanceSheetSecret() {
   const secret = (
     process.env.FINANCE_SHEET_SECRET ||
     getSetting('finance_sheet_secret') ||
+    process.env.SHEET_SECRET ||
     ''
   ).trim();
   return secret;

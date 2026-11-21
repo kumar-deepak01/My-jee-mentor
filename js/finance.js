@@ -2864,6 +2864,12 @@ export function initFinancePage() {
   dashboardPanel.querySelector('[data-filter-master-type]')?.addEventListener('change', renderMasterTransactions);
   dashboardPanel.querySelector('[data-search-master-tx]')?.addEventListener('input', renderMasterTransactions);
 
+  // Status Pill Click Handler -> Navigate to Settings
+  if (statusPill) {
+    statusPill.style.cursor = 'pointer';
+    statusPill.addEventListener('click', () => switchView('settings'));
+  }
+
   // Sync Now Button
   syncBtn?.addEventListener('click', async () => {
     if (financeState.isSyncing) return;
