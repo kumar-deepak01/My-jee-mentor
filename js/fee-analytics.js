@@ -122,7 +122,7 @@ export function renderFeeAnalyticsMarkup() {
       <!-- Live Notification / Status Banner -->
       <div class="fees-analytics-status" data-analytics-status role="status" aria-live="polite" hidden></div>
 
-      <!-- Row 1: Six Compact KPI Cards -->
+      <!-- Row 1: Four Compact KPI Cards -->
       <div class="fees-kpi-grid" data-analytics-kpi-grid>
         <!-- Card 1: Total Fee Collection -->
         <article class="fees-kpi-card kpi-total">
@@ -148,31 +148,7 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-kpi-sub" data-kpi-sub="totalTransactions">Successful receipts</div>
         </article>
 
-        <!-- Card 3: Unique Paying Students -->
-        <article class="fees-kpi-card kpi-students">
-          <div class="fees-kpi-top">
-            <span class="fees-kpi-label">Unique Paying Students</span>
-            <span class="fees-kpi-icon icon-students" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path></svg>
-            </span>
-          </div>
-          <div class="fees-kpi-value" data-kpi="uniqueStudents">0</div>
-          <div class="fees-kpi-sub" data-kpi-sub="uniqueStudents">Installments deduplicated</div>
-        </article>
-
-        <!-- Card 4: Average Payment -->
-        <article class="fees-kpi-card kpi-average">
-          <div class="fees-kpi-top">
-            <span class="fees-kpi-label">Average Payment</span>
-            <span class="fees-kpi-icon icon-average" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-4-4-3 3"></path></svg>
-            </span>
-          </div>
-          <div class="fees-kpi-value" data-kpi="avgPayment">₹0</div>
-          <div class="fees-kpi-sub" data-kpi-sub="avgPayment">Per receipt average</div>
-        </article>
-
-        <!-- Card 5: Highest Single Payment -->
+        <!-- Card 3: Highest Single Payment -->
         <article class="fees-kpi-card kpi-highest">
           <div class="fees-kpi-top">
             <span class="fees-kpi-label">Highest Single Payment</span>
@@ -184,7 +160,7 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-kpi-sub" data-kpi-sub="highestPayment">Peak single installment</div>
         </article>
 
-        <!-- Card 6: Current Month Collection -->
+        <!-- Card 4: Current Month Collection -->
         <article class="fees-kpi-card kpi-month">
           <div class="fees-kpi-top">
             <span class="fees-kpi-label">Current Month</span>
@@ -292,8 +268,6 @@ export class FeeAnalyticsController {
     this.kpiNodes = {
       totalCollection: this.container.querySelector('[data-kpi="totalCollection"]'),
       totalTransactions: this.container.querySelector('[data-kpi="totalTransactions"]'),
-      uniqueStudents: this.container.querySelector('[data-kpi="uniqueStudents"]'),
-      avgPayment: this.container.querySelector('[data-kpi="avgPayment"]'),
       highestPayment: this.container.querySelector('[data-kpi="highestPayment"]'),
       currentMonthCollection: this.container.querySelector('[data-kpi="currentMonthCollection"]')
     };
@@ -301,8 +275,6 @@ export class FeeAnalyticsController {
     this.kpiSubNodes = {
       totalCollection: this.container.querySelector('[data-kpi-sub="totalCollection"]'),
       totalTransactions: this.container.querySelector('[data-kpi-sub="totalTransactions"]'),
-      uniqueStudents: this.container.querySelector('[data-kpi-sub="uniqueStudents"]'),
-      avgPayment: this.container.querySelector('[data-kpi-sub="avgPayment"]'),
       highestPayment: this.container.querySelector('[data-kpi-sub="highestPayment"]'),
       currentMonthCollection: this.container.querySelector('[data-kpi-sub="currentMonthCollection"]')
     };
@@ -539,8 +511,6 @@ export class FeeAnalyticsController {
     // Update DOM nodes
     if (this.kpiNodes.totalCollection) this.kpiNodes.totalCollection.textContent = formatInr(totalAmount);
     if (this.kpiNodes.totalTransactions) this.kpiNodes.totalTransactions.textContent = formatCount(totalTx);
-    if (this.kpiNodes.uniqueStudents) this.kpiNodes.uniqueStudents.textContent = formatCount(uniqueStudents);
-    if (this.kpiNodes.avgPayment) this.kpiNodes.avgPayment.textContent = formatInr(avgPayment);
     if (this.kpiNodes.highestPayment) this.kpiNodes.highestPayment.textContent = formatInr(highestPayment);
     if (this.kpiNodes.currentMonthCollection) this.kpiNodes.currentMonthCollection.textContent = formatInr(currentMonthCollection);
 
