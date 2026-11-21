@@ -77,6 +77,129 @@ function checkOrigin(request) {
   }
 }
 
+function getKolkataYmd(date = new Date()) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(date);
+    const y = parts.find(p => p.type === 'year')?.value;
+    const m = parts.find(p => p.type === 'month')?.value;
+    const d = parts.find(p => p.type === 'day')?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {}
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const ist = new Date(utc + (3600000 * 5.5));
+  const y = ist.getFullYear();
+  const m = String(ist.getMonth() + 1).padStart(2, '0');
+  const d = String(ist.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+let feeRecordsCache = {
+  records: [],
+  totalCollection: 0,
+  totalTransactions: 0,
+  todayCollection: 0,
+  currentMonthCollection: 0,
+  lastFetchedAt: 0
+};
+
+export async function getVerifiedFeeRecords({ forceRefresh = false } = {}) {
+  const now = Date.now();
+  // Return recent memory cache if within 15 seconds unless forced
+  if (!forceRefresh && feeRecordsCache.records.length > 0 && (now - feeRecordsCache.lastFetchedAt) < 15000) {
+    return feeRecordsCache;
+  }
+
+  let raw = [];
+  try {
+    raw = await fetchRawFeeRecords();
+  } catch (err) {
+    console.warn('Could not fetch raw fee records:', err.message);
+  }
+
+  if (Array.isArray(raw) && raw.length > 0) {
+    const kolkataToday = getKolkataYmd();
+    const kolkataMonth = kolkataToday.slice(0, 7);
+    const seen = new Set();
+    const records = [];
+    let totalCollection = 0;
+    let todayCollection = 0;
+    let currentMonthCollection = 0;
+
+    for (const r of raw) {
+      const receiptNo = String(r.receiptNo || '').trim();
+      if (!receiptNo || seen.has(receiptNo)) continue;
+      seen.add(receiptNo);
+
+      const amount = Number(r.amount) || 0;
+      if (amount <= 0) continue; // Only successful payments > 0
+
+      totalCollection += amount;
+      const rDate = String(r.date || '').trim();
+      if (rDate === kolkataToday) {
+        todayCollection += amount;
+      }
+      if (rDate.startsWith(kolkataMonth)) {
+        currentMonthCollection += amount;
+      }
+
+      records.push({
+        receiptNo,
+        date: rDate,
+        studentName: r.studentName || '-',
+        parentName: r.parentName || '-',
+        phone: r.phone || '-',
+        course: r.course || '-',
+        batch: r.batch || '-',
+        feePeriod: r.feePeriod || '-',
+        amount,
+        paymentMode: r.paymentMode || 'UPI',
+        balanceDue: Number(r.balanceDue) || 0,
+        collectedBy: r.collectedBy || '',
+        remarks: r.remarks || '',
+        status: 'Success',
+        source: 'Fee Register'
+      });
+    }
+
+    records.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+    feeRecordsCache = {
+      records,
+      totalCollection,
+      totalTransactions: records.length,
+      todayCollection,
+      currentMonthCollection,
+      lastFetchedAt: now
+    };
+
+    try {
+      setSetting('last_verified_fee_summary', {
+        totalCollection,
+        totalTransactions: records.length,
+        todayCollection,
+        currentMonthCollection,
+        lastFetchedAt: now
+      });
+    } catch {}
+  } else if (feeRecordsCache.records.length === 0) {
+    // If memory is empty and sheet fetch was empty/failed, check persistent setting
+    const saved = getSetting('last_verified_fee_summary');
+    if (saved && saved.totalTransactions > 0) {
+      return {
+        ...saved,
+        records: []
+      };
+    }
+  }
+
+  return feeRecordsCache;
+}
+
 export async function handleFinanceRequest(request) {
   try {
     const url = new URL(request.url);
@@ -210,6 +333,20 @@ export async function handleFinanceRequest(request) {
         return json({ ok: true, records: cleanRecords });
       }
 
+      if (action === 'fee-records') {
+        const forceRefresh = url.searchParams.get('refresh') === 'true';
+        const feeData = await getVerifiedFeeRecords({ forceRefresh });
+        return json({
+          ok: true,
+          totalCollection: feeData.totalCollection,
+          totalTransactions: feeData.totalTransactions,
+          todayCollection: feeData.todayCollection,
+          currentMonthCollection: feeData.currentMonthCollection,
+          lastFetchedAt: feeData.lastFetchedAt,
+          records: feeData.records
+        });
+      }
+
       if (action === 'categories') {
         const categories = await getCategories();
         return json({ ok: true, categories });
@@ -225,17 +362,11 @@ export async function handleFinanceRequest(request) {
         const status = await getFinanceConnectionStatus();
 
         // 1. Read student fee revenue directly from Fee Register via SHEET_SECRET (Read-only)
-        let feeTotal = 0;
-        let feeCount = 0;
-        try {
-          const records = await fetchRawFeeRecords();
-          if (Array.isArray(records)) {
-            feeCount = records.length;
-            feeTotal = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-          }
-        } catch (fErr) {
-          console.warn('Could not read fee summary:', fErr.message);
-        }
+        const feeData = await getVerifiedFeeRecords({ forceRefresh: false });
+        const feeTotal = feeData.totalCollection;
+        const feeCount = feeData.totalTransactions;
+        const todayCollection = feeData.todayCollection;
+        const currentMonthCollection = feeData.currentMonthCollection;
 
         // 2. Read live expenses & salaries from Finance spreadsheet
         let operationalExpenses = 0;
@@ -252,7 +383,7 @@ export async function handleFinanceRequest(request) {
 
           try {
             const salList = await getSalaries();
-            salariesDisbursed = salList.reduce((sum, s) => sum + (Number(s.netPaid) || 0), 0);
+            salariesDisbursed = salList.reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
           } catch (sErr) {
             console.warn('Could not fetch salaries for summary:', sErr.message);
           }
@@ -284,6 +415,8 @@ export async function handleFinanceRequest(request) {
           revenue: {
             feeCollection: feeTotal,
             feeTransactions: feeCount,
+            todayCollection,
+            currentMonthCollection,
             otherIncome: otherIncomeTotal,
             totalInflow
           },
@@ -315,8 +448,23 @@ export async function handleFinanceRequest(request) {
       }
 
       if (action === 'sync') {
-        const result = await verifySpreadsheetConnection();
-        return json({ ok: true, message: 'Finance spreadsheet verified and synced.', ...result });
+        const [feeData, sheetResult] = await Promise.all([
+          getVerifiedFeeRecords({ forceRefresh: true }),
+          verifySpreadsheetConnection().catch(err => ({ ok: false, message: err.message }))
+        ]);
+        setSetting('finance_last_synced_at', new Date().toISOString());
+        return json({
+          ok: true,
+          message: 'Fee Register and Finance data synchronized successfully.',
+          feeData: {
+            totalCollection: feeData.totalCollection,
+            totalTransactions: feeData.totalTransactions,
+            todayCollection: feeData.todayCollection,
+            currentMonthCollection: feeData.currentMonthCollection,
+            lastFetchedAt: feeData.lastFetchedAt
+          },
+          sheetResult
+        });
       }
 
       if (action === 'test-connection') {

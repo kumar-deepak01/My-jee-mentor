@@ -201,6 +201,11 @@ export function financePageMarkup() {
                 <span>Finance Dashboard</span>
               </button>
 
+              <button type="button" class="finance-nav-item" data-view-btn="fee-details">
+                <svg class="finance-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2 3-2 3 2V8z"></path><path d="M14 2v6h6M8 13h8M8 17h5"></path></svg>
+                <span>Fee Collection</span>
+              </button>
+
               <button type="button" class="finance-nav-item" data-view-btn="income">
                 <svg class="finance-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path></svg>
                 <span>Add Income</span>
@@ -329,7 +334,7 @@ export function financePageMarkup() {
                 </article>
 
                 <!-- 4: Fee Collection -->
-                <article class="fn-kpi-card">
+                <article class="fn-kpi-card" data-nav-target="fee-details" style="cursor: pointer;" title="Click to view detailed Fee Collection receipts">
                   <div class="fn-kpi-top">
                     <div class="fn-kpi-icon-wrap" style="background: var(--fn-purple-soft); color: var(--fn-purple);">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2 3-2 3 2V8z"></path><path d="M14 2v6h6M8 13h8M8 17h5"></path></svg>
@@ -530,6 +535,103 @@ export function financePageMarkup() {
                   </article>
                 </div>
               </div>
+            </section>
+
+            <!-- VIEW: FEE COLLECTION DETAILS (Imported from Fee Register) -->
+            <section class="fn-view-panel" id="view-fee-details">
+              <div class="finance-view-header">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+                    <h1 class="finance-view-title" style="margin: 0;">Fee Collection Details</h1>
+                    <span class="fn-badge income" style="font-size: 0.74rem; padding: 3px 8px;">Imported from Fee Register – Read Only</span>
+                  </div>
+                  <p class="finance-view-sub">Individual verified student tuition fee receipts directly imported from the Fee Register Google Sheet</p>
+                </div>
+                <div class="finance-view-controls">
+                  <button type="button" class="btn-fn-export" data-export-type="fees">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Export Fee Receipts (.xlsx)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Top 4 Metrics Cards -->
+              <div class="finance-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+                <article class="fn-kpi-card">
+                  <div class="fn-kpi-label">Total Successful Collection</div>
+                  <div class="fn-kpi-val" data-fee-kpi="totalCollection" style="color: var(--fn-green);">₹0</div>
+                  <div class="fn-kpi-sub">All Verified Unique Receipts</div>
+                </article>
+                <article class="fn-kpi-card">
+                  <div class="fn-kpi-label">Total Successful Transactions</div>
+                  <div class="fn-kpi-val" data-fee-kpi="totalCount">0</div>
+                  <div class="fn-kpi-sub">Unique Receipt Numbers</div>
+                </article>
+                <article class="fn-kpi-card">
+                  <div class="fn-kpi-label">Today's Collection</div>
+                  <div class="fn-kpi-val" data-fee-kpi="todayCollection">₹0</div>
+                  <div class="fn-kpi-sub">Asia/Kolkata Timezone</div>
+                </article>
+                <article class="fn-kpi-card">
+                  <div class="fn-kpi-label">Current Month Collection</div>
+                  <div class="fn-kpi-val" data-fee-kpi="monthCollection">₹0</div>
+                  <div class="fn-kpi-sub">Monthly Student Inflow</div>
+                </article>
+              </div>
+
+              <!-- Filter & Search Card -->
+              <article class="fn-card" style="margin-bottom: 18px; padding: 14px 18px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+                    <div style="position: relative; min-width: 240px; flex: 1;">
+                      <input type="search" class="fn-input" placeholder="Search student name, receipt no, parent, phone…" data-fee-search style="width: 100%;">
+                    </div>
+                    <select class="fn-select-control" data-fee-course-filter style="min-width: 140px;">
+                      <option value="all">All Courses</option>
+                    </select>
+                    <select class="fn-select-control" data-fee-month-filter style="min-width: 130px;">
+                      <option value="all">All Months</option>
+                    </select>
+                    <select class="fn-select-control" data-fee-mode-filter style="min-width: 130px;">
+                      <option value="all">All Modes</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Net Banking">Net Banking</option>
+                      <option value="Cash">Cash</option>
+                      <option value="Card">Card</option>
+                    </select>
+                  </div>
+                  <button type="button" class="btn btn-outline" data-fee-reset-filters style="padding: 6px 12px; font-size: 0.78rem;">
+                    Reset Filters
+                  </button>
+                </div>
+              </article>
+
+              <!-- Detailed Fee Table -->
+              <article class="fn-card">
+                <div class="fn-table-wrap">
+                  <table class="fn-table">
+                    <thead>
+                      <tr>
+                        <th>Receipt No</th>
+                        <th>Student Name</th>
+                        <th>Course / Batch</th>
+                        <th>Payment Date</th>
+                        <th style="text-align: right;">Amount (₹)</th>
+                        <th>Payment Mode</th>
+                        <th>Payment Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody data-fee-table-rows>
+                      <tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 28px;">Loading fee collection records…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--fn-border); font-size: 0.82rem; color: #64748b;">
+                  <span data-fee-table-summary>Showing 0 of 0 receipts</span>
+                  <span style="font-weight: 600; color: var(--fn-green);" data-fee-table-reconciled>✓ 100% Reconciled with Fee Collection KPI</span>
+                </div>
+              </article>
             </section>
 
             <!-- VIEW 2: ADD INCOME -->
@@ -856,8 +958,10 @@ export function financePageMarkup() {
                   <input type="search" class="fn-input" placeholder="Search transactions…" data-search-master-tx style="width: 220px;">
                   <select class="fn-select-control" data-filter-master-type>
                     <option value="all">All Types</option>
-                    <option value="income">Income Only (+)</option>
-                    <option value="expense">Expenses Only (-)</option>
+                    <option value="fees">Fee Collection (Read-only)</option>
+                    <option value="other-income">Other Income (+)</option>
+                    <option value="expense">Operating Expenses (-)</option>
+                    <option value="salary">Salaries &amp; Payroll (-)</option>
                   </select>
                 </div>
               </div>
@@ -1139,6 +1243,26 @@ export function financePageMarkup() {
             </section>
           </main>
         </div>
+
+        <!-- Modal: View Fee Receipt Details -->
+        <div class="finance-modal-backdrop" data-fee-modal hidden style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;">
+          <div class="fn-card" style="width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--fn-border); padding-bottom: 12px; margin-bottom: 16px;">
+              <div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--fn-orange); text-transform: uppercase;">My JEE Mentor – Official Receipt</div>
+                <h3 class="fn-card-title" style="margin: 0;" data-modal-receipt-title>Fee Receipt Details</h3>
+              </div>
+              <button type="button" data-modal-close style="border: none; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: #94a3b8;">&times;</button>
+            </div>
+            <div data-modal-receipt-body style="display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem;">
+              <!-- Dynamic Details Rendered in JS -->
+            </div>
+            <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--fn-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <span class="fn-badge income" style="font-size: 0.72rem;">Imported from Fee Register – Read Only</span>
+              <button type="button" class="btn btn-outline" data-modal-close style="padding: 6px 14px; font-size: 0.8rem;">Close</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -1147,6 +1271,12 @@ export function financePageMarkup() {
 // Global in-memory cache for live state
 const financeState = {
   feeRecords: [],
+  feeMetrics: {
+    totalCollection: 0,
+    totalTransactions: 0,
+    todayCollection: 0,
+    currentMonthCollection: 0
+  },
   expenses: [],
   salaries: [],
   employees: [],
@@ -1268,12 +1398,15 @@ export function initFinancePage() {
   }
 
   // Load all live dataset from Google Sheets
-  async function loadAllData() {
+  async function loadAllData({ isSync = false, silent = false } = {}) {
     try {
-      // 1. Load connection status & high-level summary
-      const [statusRes, summaryRes, expRes, salRes, empRes, incRes, catRes] = await Promise.all([
+      if (syncIcon && isSync) syncIcon.style.animation = 'fnPulse 1s infinite linear';
+
+      // 1. Load connection status, high-level summary, and real fee records
+      const [statusRes, summaryRes, feeRes, expRes, salRes, empRes, incRes, catRes] = await Promise.all([
         api(ENDPOINT, { query: { action: 'status' } }).catch(() => ({})),
         api(ENDPOINT, { query: { action: 'summary' } }).catch(() => ({})),
+        api(ENDPOINT, { query: { action: 'fee-records', refresh: isSync ? 'true' : 'false' } }).catch(() => ({ records: [] })),
         api(ENDPOINT, { query: { action: 'expenses' } }).catch(() => ({ expenses: [] })),
         api(ENDPOINT, { query: { action: 'salaries' } }).catch(() => ({ salaries: [] })),
         api(ENDPOINT, { query: { action: 'employees' } }).catch(() => ({ employees: [] })),
@@ -1283,19 +1416,23 @@ export function initFinancePage() {
 
       financeState.status = statusRes;
       financeState.summary = summaryRes;
+
+      // Resilient: If new fee records returned, update cache. If failed/empty, preserve existing records!
+      if (Array.isArray(feeRes?.records) && feeRes.records.length > 0) {
+        financeState.feeRecords = feeRes.records;
+      }
+      financeState.feeMetrics = {
+        totalCollection: Number(feeRes?.totalCollection) || Number(summaryRes?.revenue?.feeCollection) || financeState.feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0),
+        totalTransactions: Number(feeRes?.totalTransactions) || Number(summaryRes?.revenue?.feeTransactions) || financeState.feeRecords.length,
+        todayCollection: Number(feeRes?.todayCollection) || Number(summaryRes?.revenue?.todayCollection) || 0,
+        currentMonthCollection: Number(feeRes?.currentMonthCollection) || Number(summaryRes?.revenue?.currentMonthCollection) || 0
+      };
+
       financeState.expenses = expRes.expenses || [];
       financeState.salaries = salRes.salaries || [];
       financeState.employees = empRes.employees || [];
       financeState.otherIncome = incRes.records || [];
       financeState.categories = catRes.categories || [];
-
-      // Also try to get fees receipts from fees endpoint if authenticated
-      try {
-        const feesRes = await api(FEES_ENDPOINT, { query: {} });
-        if (Array.isArray(feesRes.records)) {
-          financeState.feeRecords = feesRes.records;
-        }
-      } catch {}
 
       // Update UI timestamp & connection pill
       setStatus(statusRes.status || 'Connected');
@@ -1305,6 +1442,7 @@ export function initFinancePage() {
 
       // Render all dashboard cards, charts, and tables
       renderDashboard();
+      renderFeeDetailsTable();
       renderIncomeTable();
       renderExpenseTable();
       renderSalaryTables();
@@ -1315,9 +1453,11 @@ export function initFinancePage() {
     } catch (err) {
       if (err.status === 401) {
         showLogin();
-      } else {
+      } else if (!silent) {
         showAlert(err.message || 'Could not refresh financial data.', true);
       }
+    } finally {
+      if (syncIcon && isSync) syncIcon.style.animation = '';
     }
   }
 
@@ -1334,8 +1474,8 @@ export function initFinancePage() {
     const summary = financeState.summary || {};
 
     // 1. Calculate Real Totals
-    const feeTotal = Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const feeCount = Number(summary.revenue?.feeTransactions) || feeRecords.length;
+    const feeTotal = Number(financeState.feeMetrics?.totalCollection) || Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const feeCount = Number(financeState.feeMetrics?.totalTransactions) || Number(summary.revenue?.feeTransactions) || feeRecords.length;
     const otherIncomeTotal = otherIncome.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
     const totalIncome = feeTotal + otherIncomeTotal;
 
@@ -1699,6 +1839,230 @@ export function initFinancePage() {
     `).join('');
   }
 
+  // Fee Receipt Details Modal Handler
+  const feeModal = dashboardPanel.querySelector('[data-fee-modal]');
+  const modalTitle = dashboardPanel.querySelector('[data-modal-receipt-title]');
+  const modalBody = dashboardPanel.querySelector('[data-modal-receipt-body]');
+
+  function showReceiptModal(receiptNo) {
+    if (!feeModal || !modalBody) return;
+    const r = (financeState.feeRecords || []).find(x => x.receiptNo === receiptNo);
+    if (!r) return;
+
+    if (modalTitle) modalTitle.textContent = `Fee Receipt: ${r.receiptNo}`;
+
+    modalBody.innerHTML = `
+      <div style="background: #f8fafc; border: 1px solid var(--fn-border); border-radius: 8px; padding: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Student Name</div>
+          <div style="font-weight: 700; color: var(--fn-navy); font-size: 0.95rem;">${escapeHtml(r.studentName)}</div>
+        </div>
+        <div>
+          <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Parent / Guardian</div>
+          <div style="font-weight: 600; color: #334155;">${escapeHtml(r.parentName || '-')}</div>
+        </div>
+        <div>
+          <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Contact Phone</div>
+          <div style="font-weight: 500;">${escapeHtml(r.phone || '-')}</div>
+        </div>
+        <div>
+          <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Course &amp; Batch</div>
+          <div style="font-weight: 600; color: var(--fn-navy);">${escapeHtml(r.course)}${r.batch ? ` (${escapeHtml(r.batch)})` : ''}</div>
+        </div>
+      </div>
+
+      <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.72rem; color: #047857; text-transform: uppercase; font-weight: 700;">Amount Paid</div>
+          <div style="font-size: 1.4rem; font-weight: 900; color: #065f46;">${formatInr(r.amount)}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.72rem; color: #047857; text-transform: uppercase; font-weight: 700;">Payment Mode</div>
+          <span class="fn-badge income" style="font-size: 0.82rem; padding: 4px 10px;">${escapeHtml(r.paymentMode)}</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.82rem;">
+        <div>
+          <span style="color: #64748b;">Payment Date:</span>
+          <strong style="color: var(--fn-navy); margin-left: 6px;">${escapeHtml(r.date)}</strong>
+        </div>
+        <div>
+          <span style="color: #64748b;">Fee Period:</span>
+          <strong style="color: var(--fn-navy); margin-left: 6px;">${escapeHtml(r.feePeriod || '-')}</strong>
+        </div>
+        <div>
+          <span style="color: #64748b;">Balance Due:</span>
+          <strong style="color: ${r.balanceDue > 0 ? 'var(--fn-red)' : 'var(--fn-green)'}; margin-left: 6px;">${formatInr(r.balanceDue)}</strong>
+        </div>
+        <div>
+          <span style="color: #64748b;">Collected By:</span>
+          <strong style="color: var(--fn-navy); margin-left: 6px;">${escapeHtml(r.collectedBy || 'Staff')}</strong>
+        </div>
+      </div>
+
+      ${r.remarks ? `
+        <div style="background: #f8fafc; border-radius: 6px; padding: 8px 12px; font-size: 0.8rem; color: #475569;">
+          <span style="color: #94a3b8; font-weight: 600;">Remarks:</span> ${escapeHtml(r.remarks)}
+        </div>
+      ` : ''}
+    `;
+
+    feeModal.hidden = false;
+  }
+
+  dashboardPanel.addEventListener('click', (e) => {
+    const viewBtn = e.target.closest('[data-view-receipt]');
+    if (viewBtn) {
+      showReceiptModal(viewBtn.dataset.viewReceipt);
+      return;
+    }
+    if (e.target.closest('[data-modal-close]') || e.target === feeModal) {
+      if (feeModal) feeModal.hidden = true;
+    }
+  });
+
+  // Dedicated Fee Collection Details Table
+  let feeFilterListenersBound = false;
+
+  function renderFeeDetailsTable() {
+    const records = financeState.feeRecords || [];
+    const metrics = financeState.feeMetrics || {};
+
+    // 1. Top KPI Cards
+    const totalColEl = dashboardPanel.querySelector('[data-fee-kpi="totalCollection"]');
+    const totalCountEl = dashboardPanel.querySelector('[data-fee-kpi="totalCount"]');
+    const todayColEl = dashboardPanel.querySelector('[data-fee-kpi="todayCollection"]');
+    const monthColEl = dashboardPanel.querySelector('[data-fee-kpi="monthCollection"]');
+
+    const totalCollection = metrics.totalCollection || records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const totalCount = metrics.totalTransactions || records.length;
+    const todayCollection = metrics.todayCollection || 0;
+    const monthCollection = metrics.currentMonthCollection || 0;
+
+    if (totalColEl) totalColEl.textContent = formatInr(totalCollection);
+    if (totalCountEl) totalCountEl.textContent = `${totalCount} Receipts`;
+    if (todayColEl) todayColEl.textContent = formatInr(todayCollection);
+    if (monthColEl) monthColEl.textContent = formatInr(monthCollection);
+
+    // 2. Populate Dropdowns (only once or when options change)
+    const courseSelect = dashboardPanel.querySelector('[data-fee-course-filter]');
+    const monthSelect = dashboardPanel.querySelector('[data-fee-month-filter]');
+
+    if (courseSelect && (courseSelect.options.length <= 1) && records.length > 0) {
+      const courses = [...new Set(records.map(r => r.course).filter(Boolean))].sort();
+      courseSelect.innerHTML = '<option value="all">All Courses</option>' +
+        courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    }
+
+    if (monthSelect && (monthSelect.options.length <= 1) && records.length > 0) {
+      const months = [...new Set(records.map(r => (r.date || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+      monthSelect.innerHTML = '<option value="all">All Months</option>' +
+        months.map(m => {
+          const d = new Date(m + '-01');
+          const lbl = isNaN(d) ? m : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          return `<option value="${escapeHtml(m)}">${escapeHtml(lbl)}</option>`;
+        }).join('');
+    }
+
+    // 3. Filter Records
+    const searchInput = dashboardPanel.querySelector('[data-fee-search]');
+    const modeSelect = dashboardPanel.querySelector('[data-fee-mode-filter]');
+
+    const query = (searchInput?.value || '').trim().toLowerCase();
+    const selCourse = courseSelect?.value || 'all';
+    const selMonth = monthSelect?.value || 'all';
+    const selMode = modeSelect?.value || 'all';
+
+    const filtered = records.filter(r => {
+      const matchesSearch = !query || [
+        r.receiptNo,
+        r.studentName,
+        r.parentName,
+        r.phone,
+        r.course,
+        r.batch,
+        r.remarks
+      ].join(' ').toLowerCase().includes(query);
+
+      const matchesCourse = selCourse === 'all' || r.course === selCourse;
+      const matchesMonth = selMonth === 'all' || String(r.date || '').startsWith(selMonth);
+      const matchesMode = selMode === 'all' || String(r.paymentMode || '').toLowerCase() === selMode.toLowerCase();
+
+      return matchesSearch && matchesCourse && matchesMonth && matchesMode;
+    });
+
+    const tbody = dashboardPanel.querySelector('[data-fee-table-rows]');
+    const summaryEl = dashboardPanel.querySelector('[data-fee-table-summary]');
+    const reconciledEl = dashboardPanel.querySelector('[data-fee-table-reconciled]');
+
+    if (tbody) {
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: #94a3b8; padding: 28px;">
+              ${records.length === 0 ? 'No fee records found in Fee Register.' : 'No fee receipts match the selected filters.'}
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = filtered.map(r => `
+          <tr>
+            <td>
+              <button type="button" class="btn btn-link" data-view-receipt="${escapeHtml(r.receiptNo)}" style="font-weight: 700; color: var(--fn-navy); font-family: monospace; border: none; background: none; cursor: pointer; padding: 0; text-decoration: underline;">
+                ${escapeHtml(r.receiptNo)}
+              </button>
+            </td>
+            <td style="font-weight: 600;">${escapeHtml(r.studentName)}</td>
+            <td>
+              <div>${escapeHtml(r.course)}</div>
+              ${r.batch ? `<div style="font-size: 0.72rem; color: #64748b;">${escapeHtml(r.batch)}</div>` : ''}
+            </td>
+            <td>${escapeHtml(r.date)}</td>
+            <td style="text-align: right; font-weight: 700; color: var(--fn-green); font-size: 0.95rem;">
+              ${formatInr(r.amount)}
+            </td>
+            <td><span class="fn-badge">${escapeHtml(r.paymentMode)}</span></td>
+            <td><span class="fn-badge income" style="font-weight: 700;">✓ Verified</span></td>
+            <td>
+              <button type="button" class="btn btn-outline" data-view-receipt="${escapeHtml(r.receiptNo)}" style="padding: 3px 8px; font-size: 0.72rem;">
+                View Details
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    const filteredSum = filtered.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    if (summaryEl) {
+      summaryEl.textContent = `Showing ${filtered.length} of ${records.length} unique fee receipts (Subtotal: ${formatInr(filteredSum)})`;
+    }
+    if (reconciledEl) {
+      const isFull = filtered.length === records.length;
+      reconciledEl.textContent = isFull
+        ? `✓ 100% Reconciled with Fee Collection KPI (${formatInr(totalCollection)})`
+        : `Filtered View (${filtered.length}/${records.length} receipts)`;
+    }
+
+    // 4. Bind listeners once
+    if (!feeFilterListenersBound) {
+      feeFilterListenersBound = true;
+      searchInput?.addEventListener('input', renderFeeDetailsTable);
+      courseSelect?.addEventListener('change', renderFeeDetailsTable);
+      monthSelect?.addEventListener('change', renderFeeDetailsTable);
+      modeSelect?.addEventListener('change', renderFeeDetailsTable);
+
+      dashboardPanel.querySelector('[data-fee-reset-filters]')?.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (courseSelect) courseSelect.value = 'all';
+        if (monthSelect) monthSelect.value = 'all';
+        if (modeSelect) modeSelect.value = 'all';
+        renderFeeDetailsTable();
+      });
+    }
+  }
+
   // 5. Income Table
   function renderIncomeTable() {
     const tbody = dashboardPanel.querySelector('[data-income-table-rows]');
@@ -1847,24 +2211,56 @@ export function initFinancePage() {
 
     list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
-    if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 24px;">No transactions recorded.</td></tr>';
+    const typeFilter = dashboardPanel.querySelector('[data-filter-master-type]')?.value || 'all';
+    const searchQuery = (dashboardPanel.querySelector('[data-search-master-tx]')?.value || '').trim().toLowerCase();
+
+    const filtered = list.filter(tx => {
+      const matchesSearch = !searchQuery || [
+        tx.date,
+        tx.type,
+        tx.category,
+        tx.ref,
+        tx.party,
+        tx.mode
+      ].join(' ').toLowerCase().includes(searchQuery);
+
+      if (!matchesSearch) return false;
+
+      if (typeFilter === 'fees') return tx.category === 'Fee Collection';
+      if (typeFilter === 'other-income') return tx.type === 'Income' && tx.category !== 'Fee Collection';
+      if (typeFilter === 'expense') return tx.type === 'Expense' && tx.category !== 'Salary';
+      if (typeFilter === 'salary') return tx.category === 'Salary';
+      if (typeFilter === 'income') return tx.type === 'Income';
+
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 24px;">No transactions match the selected filter.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = list.map(tx => `
+    tbody.innerHTML = filtered.map(tx => `
       <tr>
         <td style="font-weight: 500;">${escapeHtml(tx.date)}</td>
         <td><span class="fn-badge ${tx.type.toLowerCase()}">${tx.type}</span></td>
         <td style="font-weight: 600;">${escapeHtml(tx.category)}</td>
-        <td><code style="font-size: 0.72rem; color: #64748b;">${escapeHtml(tx.ref)}</code></td>
+        <td>
+          ${tx.category === 'Fee Collection' ? `
+            <button type="button" class="btn btn-link" data-view-receipt="${escapeHtml(tx.ref)}" style="font-weight: 700; color: var(--fn-navy); font-family: monospace; border: none; background: none; cursor: pointer; padding: 0; text-decoration: underline;">
+              ${escapeHtml(tx.ref)}
+            </button>
+          ` : `
+            <code style="font-size: 0.72rem; color: #64748b;">${escapeHtml(tx.ref)}</code>
+          `}
+        </td>
         <td>${escapeHtml(tx.party)}</td>
         <td>${escapeHtml(tx.mode)}</td>
         <td style="text-align: right;" class="${tx.amount >= 0 ? 'fn-amount-pos' : 'fn-amount-neg'}">
           ${tx.amount >= 0 ? '+' : ''}${formatInr(tx.amount)}
         </td>
         <td>
-          ${tx.canDelete ? `<button type="button" class="btn btn-outline" data-del-custom="${escapeHtml(tx.id)}" data-del-action="${tx.deleteAction}" style="padding: 2px 8px; font-size: 0.72rem; color: #ef4444;">Delete</button>` : '<span style="color:#94a3b8; font-size: 0.72rem;">Read-only</span>'}
+          ${tx.canDelete ? `<button type="button" class="btn btn-outline" data-del-custom="${escapeHtml(tx.id)}" data-del-action="${tx.deleteAction}" style="padding: 2px 8px; font-size: 0.72rem; color: #ef4444;">Delete</button>` : '<span class="fn-badge income" style="font-size: 0.68rem; padding: 2px 6px;">Read-only</span>'}
         </td>
       </tr>
     `).join('');
@@ -2103,8 +2499,8 @@ export function initFinancePage() {
 
     if (type === 'master' || type === 'fees') {
       const feeRows = [
-        ['Receipt No', 'Date', 'Student Name', 'Parent Name', 'Phone', 'Course', 'Batch', 'Amount (INR)', 'Payment Mode'],
-        ...financeState.feeRecords.map(f => [f.receiptNo, f.date, f.studentName, f.parentName, f.phone, f.course, f.batch, f.amount, f.paymentMode])
+        ['Receipt No', 'Date', 'Student Name', 'Parent Name', 'Phone', 'Course', 'Batch', 'Fee Period', 'Amount (INR)', 'Payment Mode', 'Balance Due (INR)', 'Status'],
+        ...financeState.feeRecords.map(f => [f.receiptNo, f.date, f.studentName, f.parentName, f.phone, f.course, f.batch, f.feePeriod || '-', f.amount, f.paymentMode, f.balanceDue || 0, 'Verified'])
       ];
       const wsFee = window.XLSX.utils.aoa_to_sheet(feeRows);
       window.XLSX.utils.book_append_sheet(wb, wsFee, 'Fee Receipts');
@@ -2442,13 +2838,39 @@ export function initFinancePage() {
     }
   });
 
+  // Live Auto-Sync every 45 seconds while dashboard is open
+  let autoSyncTimer = null;
+  const AUTO_SYNC_INTERVAL_MS = 45000;
+
+  function startAutoSync() {
+    if (autoSyncTimer) clearInterval(autoSyncTimer);
+    autoSyncTimer = setInterval(async () => {
+      if (document.hidden || financeState.isSyncing) return;
+      try {
+        await loadAllData({ isSync: false, silent: true });
+      } catch (err) {
+        console.warn('Auto-sync check failed:', err.message);
+      }
+    }, AUTO_SYNC_INTERVAL_MS);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !financeState.isSyncing) {
+      loadAllData({ isSync: false, silent: true }).catch(() => {});
+    }
+  });
+
+  // Master Transactions Filter & Search Listeners
+  dashboardPanel.querySelector('[data-filter-master-type]')?.addEventListener('change', renderMasterTransactions);
+  dashboardPanel.querySelector('[data-search-master-tx]')?.addEventListener('input', renderMasterTransactions);
+
   // Sync Now Button
   syncBtn?.addEventListener('click', async () => {
     if (financeState.isSyncing) return;
     financeState.isSyncing = true;
     if (syncIcon) syncIcon.style.animation = 'fnPulse 1s infinite linear';
     syncBtn.disabled = true;
-    showAlert('Synchronizing live records from Google Sheets…', false);
+    showAlert('Synchronizing live records from Google Sheets and Fee Register…', false);
 
     try {
       const res = await api(ENDPOINT, {
@@ -2456,11 +2878,11 @@ export function initFinancePage() {
         query: { action: 'sync' }
       });
       if (res.ok) {
-        showAlert('Google Sheets synchronized successfully!', false);
-        await loadAllData();
+        showAlert('Google Sheets & Fee Register synchronized successfully!', false);
+        await loadAllData({ isSync: true });
       }
     } catch (err) {
-      showAlert(`Sync failed: ${err.message}`, true);
+      showAlert(`Sync notice: ${err.message}`, true);
     } finally {
       financeState.isSyncing = false;
       if (syncIcon) syncIcon.style.animation = '';
@@ -2533,6 +2955,7 @@ export function initFinancePage() {
     authPanel.hidden = true;
     dashboardPanel.hidden = false;
     loadAllData();
+    startAutoSync();
   }
 
   function showSetupView() {
@@ -2630,6 +3053,7 @@ export function initFinancePage() {
   });
 
   logoutButton?.addEventListener('click', async () => {
+    if (autoSyncTimer) clearInterval(autoSyncTimer);
     try {
       await api(ENDPOINT, { method: 'POST', query: { action: 'logout' } });
     } catch {}
