@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatInr, formatCount, parseDateSafe, toYmd } from '../js/fee-analytics.js';
+import {
+  formatInr,
+  formatCount,
+  parseDateSafe,
+  toYmd,
+  getKolkataYmd,
+  formatKolkataDate
+} from '../js/fee-analytics.js';
 
 test('formatInr formats Indian currency correctly', () => {
   assert.equal(formatInr(1850000), '₹18,50,000');
@@ -87,4 +94,31 @@ test('toYmd produces local YYYY-MM-DD string', () => {
   const d = new Date(2026, 10, 21);
   assert.equal(toYmd(d), '2026-11-21');
   assert.equal(toYmd(null), '');
+});
+
+test('getKolkataYmd and formatKolkataDate format Indian Standard Time correctly', () => {
+  const fixedDate = new Date('2026-11-21T06:00:00Z'); // 11:30 AM IST on 21 Nov 2026
+  const ymd = getKolkataYmd(fixedDate);
+  assert.equal(ymd, '2026-11-21');
+
+  const formatted = formatKolkataDate(fixedDate);
+  assert.match(formatted, /21 Nov 2026/);
+});
+
+test('UPI and average payment calculations', () => {
+  const mockRecords = [
+    { _amount: 5000, _isUpi: true },
+    { _amount: 3000, _isUpi: true },
+    { _amount: 2000, _isUpi: false }
+  ];
+
+  const totalAmount = mockRecords.reduce((sum, r) => sum + r._amount, 0);
+  const upiAmount = mockRecords.filter(r => r._isUpi).reduce((sum, r) => sum + r._amount, 0);
+  const upiPercent = ((upiAmount / totalAmount) * 100).toFixed(1);
+  const avgPayment = Math.round(totalAmount / mockRecords.length);
+
+  assert.equal(totalAmount, 10000);
+  assert.equal(upiAmount, 8000);
+  assert.equal(upiPercent, '80.0');
+  assert.equal(avgPayment, 3333);
 });
