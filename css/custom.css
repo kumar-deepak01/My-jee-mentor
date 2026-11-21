@@ -3504,10 +3504,32 @@ html.dark-theme .booking-success p {
   border: 1px solid #fecaca;
 }
 
-/* 4 KPI Cards Grid */
+.fees-sync-control-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fees-analytics-synced-at {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fees-sync-icon.is-spinning {
+  animation: fees-spin 0.8s linear infinite;
+}
+
+@keyframes fees-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 6 KPI Cards Grid */
 .fees-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
@@ -3549,6 +3571,14 @@ html.dark-theme .booking-success p {
 
 .fees-kpi-card.kpi-transactions::before {
   background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+
+.fees-kpi-card.kpi-students::before {
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+}
+
+.fees-kpi-card.kpi-average::before {
+  background: linear-gradient(90deg, #9333ea, #c084fc);
 }
 
 .fees-kpi-card.kpi-highest::before {
@@ -3599,6 +3629,16 @@ html.dark-theme .booking-success p {
 .kpi-transactions .fees-kpi-icon {
   background: #f0f9ff;
   color: #0284c7;
+}
+
+.kpi-students .fees-kpi-icon {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.kpi-average .fees-kpi-icon {
+  background: #faf5ff;
+  color: #9333ea;
 }
 
 .kpi-highest .fees-kpi-icon {

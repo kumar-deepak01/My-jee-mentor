@@ -29,7 +29,62 @@ test('parseDateSafe parses YYYY-MM-DD safely without timezone shifts', () => {
   assert.equal(parseDateSafe(null), null);
 });
 
+test('parseDateSafe handles named month formats', () => {
+  const d1 = parseDateSafe('21 Nov 2026');
+  assert.ok(d1 instanceof Date);
+  assert.equal(d1.getFullYear(), 2026);
+  assert.equal(d1.getMonth(), 10);
+  assert.equal(d1.getDate(), 21);
+
+  const d2 = parseDateSafe('31 Oct 2026');
+  assert.ok(d2 instanceof Date);
+  assert.equal(d2.getFullYear(), 2026);
+  assert.equal(d2.getMonth(), 9); // October
+  assert.equal(d2.getDate(), 31);
+
+  const d3 = parseDateSafe('01-November-2026');
+  assert.ok(d3 instanceof Date);
+  assert.equal(d3.getFullYear(), 2026);
+  assert.equal(d3.getMonth(), 10);
+  assert.equal(d3.getDate(), 1);
+
+  const d4 = parseDateSafe('Nov 21, 2026');
+  assert.ok(d4 instanceof Date);
+  assert.equal(d4.getFullYear(), 2026);
+  assert.equal(d4.getMonth(), 10);
+  assert.equal(d4.getDate(), 21);
+});
+
+test('parseDateSafe handles Indian DD-MM-YYYY and DD/MM/YYYY formats', () => {
+  const d1 = parseDateSafe('21-11-2026');
+  assert.ok(d1 instanceof Date);
+  assert.equal(d1.getFullYear(), 2026);
+  assert.equal(d1.getMonth(), 10);
+  assert.equal(d1.getDate(), 21);
+
+  const d2 = parseDateSafe('31/10/2026');
+  assert.ok(d2 instanceof Date);
+  assert.equal(d2.getFullYear(), 2026);
+  assert.equal(d2.getMonth(), 9);
+  assert.equal(d2.getDate(), 31);
+});
+
+test('parseDateSafe handles Date objects and Google Sheets serial numbers', () => {
+  const now = new Date(2026, 10, 21, 15, 30, 0);
+  const d1 = parseDateSafe(now);
+  assert.equal(d1.getFullYear(), 2026);
+  assert.equal(d1.getMonth(), 10);
+  assert.equal(d1.getDate(), 21);
+  assert.equal(d1.getHours(), 0);
+
+  // Serial date 46347 (approx Nov 2026)
+  const d2 = parseDateSafe(46347);
+  assert.ok(d2 instanceof Date);
+  assert.equal(d2.getFullYear(), 2026);
+});
+
 test('toYmd produces local YYYY-MM-DD string', () => {
   const d = new Date(2026, 10, 21);
   assert.equal(toYmd(d), '2026-11-21');
+  assert.equal(toYmd(null), '');
 });

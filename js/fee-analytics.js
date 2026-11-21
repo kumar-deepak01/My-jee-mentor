@@ -28,14 +28,97 @@ export function formatCount(count) {
   return new Intl.NumberFormat('en-IN').format(Number(count) || 0);
 }
 
-// Timezone-safe date parser for 'YYYY-MM-DD' strings
-export function parseDateSafe(dateStr) {
-  if (!dateStr || typeof dateStr !== 'string') return null;
-  const match = dateStr.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (!match) return null;
-  const y = Number(match[1]), m = Number(match[2]), d = Number(match[3]);
-  const date = new Date(y, m - 1, d, 0, 0, 0, 0);
-  return Number.isNaN(date.getTime()) ? null : date;
+const MONTH_MAP = {
+  jan: 0, january: 0,
+  feb: 1, february: 1,
+  mar: 2, march: 2,
+  apr: 3, april: 3,
+  may: 4,
+  jun: 5, june: 5,
+  jul: 6, july: 6,
+  aug: 7, august: 7,
+  sep: 8, sept: 8, september: 8,
+  oct: 9, october: 9,
+  nov: 10, november: 10,
+  dec: 11, december: 11
+};
+
+/**
+ * Bulletproof, timezone-safe date parser with Indian context handling.
+ * Supports:
+ * - '21 Nov 2026', '31 Oct 2026', '01-Nov-2026'
+ * - '21-11-2026', '21/11/2026', '31/10/2026' (DD-MM-YYYY)
+ * - '2026-11-21', '2026-11-21T00:00:00Z' (ISO)
+ * - Serialized Google Sheets dates (e.g. 46347)
+ * - Date objects
+ */
+export function parseDateSafe(val) {
+  if (val == null) return null;
+  if (val instanceof Date) {
+    return Number.isNaN(val.getTime()) ? null : new Date(val.getFullYear(), val.getMonth(), val.getDate(), 0, 0, 0, 0);
+  }
+  if (typeof val === 'number') {
+    if (val > 30000 && val < 70000) {
+      // Serial date offset from 1899-12-30
+      const ms = Math.round((val - 25569) * 86400 * 1000);
+      const d = new Date(ms);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+    }
+    return null;
+  }
+  const str = String(val).trim();
+  if (!str) return null;
+
+  // 1. ISO: YYYY-MM-DD or YYYY/MM/DD
+  const isoMatch = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (isoMatch) {
+    const y = Number(isoMatch[1]), m = Number(isoMatch[2]) - 1, d = Number(isoMatch[3]);
+    const dt = new Date(y, m, d, 0, 0, 0, 0);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  }
+
+  // 2. Named month: '21 Nov 2026', '31 Oct 2026', '21-Nov-2026', '01 Nov 2026'
+  const namedMatch = str.match(/^(\d{1,2})[\s\-\/]+([a-zA-Z]{3,9})[\s\-\/]+(\d{4})/);
+  if (namedMatch) {
+    const d = Number(namedMatch[1]);
+    const mStr = namedMatch[2].toLowerCase();
+    const y = Number(namedMatch[3]);
+    if (mStr in MONTH_MAP) {
+      const dt = new Date(y, MONTH_MAP[mStr], d, 0, 0, 0, 0);
+      return Number.isNaN(dt.getTime()) ? null : dt;
+    }
+  }
+
+  // 3. Reverse named month: 'Nov 21, 2026', 'October 31 2026'
+  const revNamedMatch = str.match(/^([a-zA-Z]{3,9})[\s\-\/]+(\d{1,2}),?[\s\-\/]+(\d{4})/);
+  if (revNamedMatch) {
+    const mStr = revNamedMatch[1].toLowerCase();
+    const d = Number(revNamedMatch[2]);
+    const y = Number(revNamedMatch[3]);
+    if (mStr in MONTH_MAP) {
+      const dt = new Date(y, MONTH_MAP[mStr], d, 0, 0, 0, 0);
+      return Number.isNaN(dt.getTime()) ? null : dt;
+    }
+  }
+
+  // 4. DD-MM-YYYY or DD/MM/YYYY (Indian Standard)
+  const dmyMatch = str.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if (dmyMatch) {
+    let p1 = Number(dmyMatch[1]), p2 = Number(dmyMatch[2]), y = Number(dmyMatch[3]);
+    let d = p1, m = p2 - 1;
+    if (p1 > 12 && p2 <= 12) { d = p1; m = p2 - 1; }
+    else if (p2 > 12 && p1 <= 12) { d = p2; m = p1 - 1; }
+    const dt = new Date(y, m, d, 0, 0, 0, 0);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  }
+
+  // 5. Fallback Date.parse
+  const parsed = new Date(str);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0);
+  }
+
+  return null;
 }
 
 // Format date to local 'YYYY-MM-DD'
@@ -76,11 +159,11 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-filter-field">
             <label for="feesAnalyticsRange">Date Range</label>
             <select id="feesAnalyticsRange" class="fees-filter-select" data-analytics-range>
-              <option value="7d">Last 7 Days</option>
+              <option value="12m" selected>Last 12 Months</option>
               <option value="30d">Last 30 Days</option>
+              <option value="7d">Last 7 Days</option>
               <option value="3m">Last 3 Months</option>
               <option value="6m">Last 6 Months</option>
-              <option value="12m" selected>Last 12 Months</option>
               <option value="all">All Time</option>
               <option value="custom">Custom Range</option>
             </select>
@@ -109,20 +192,23 @@ export function renderFeeAnalyticsMarkup() {
             </select>
           </div>
 
-          <!-- Refresh Button -->
-          <button type="button" class="btn btn-outline fees-analytics-btn-refresh" data-analytics-refresh title="Refresh analytics from Google Sheets">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-            <span>Sync</span>
-          </button>
+          <!-- Refresh / Sync Button & Timestamp -->
+          <div class="fees-sync-control-wrap">
+            <button type="button" class="btn btn-outline fees-analytics-btn-refresh" data-analytics-refresh title="Refresh analytics from Google Sheets">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="fees-sync-icon" data-sync-icon>
+                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span data-sync-text>Sync</span>
+            </button>
+            <span class="fees-analytics-synced-at" data-analytics-synced-at>Synced</span>
+          </div>
         </div>
       </div>
 
       <!-- Live Notification / Status Banner -->
       <div class="fees-analytics-status" data-analytics-status role="status" aria-live="polite" hidden></div>
 
-      <!-- Row 1: Four Compact KPI Cards -->
+      <!-- Row 1: Six Compact KPI Cards -->
       <div class="fees-kpi-grid" data-analytics-kpi-grid>
         <!-- Card 1: Total Fee Collection -->
         <article class="fees-kpi-card kpi-total">
@@ -148,7 +234,31 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-kpi-sub" data-kpi-sub="totalTransactions">Successful receipts</div>
         </article>
 
-        <!-- Card 3: Highest Single Payment -->
+        <!-- Card 3: Unique Paying Students -->
+        <article class="fees-kpi-card kpi-students">
+          <div class="fees-kpi-top">
+            <span class="fees-kpi-label">Unique Paying Students</span>
+            <span class="fees-kpi-icon icon-students" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path></svg>
+            </span>
+          </div>
+          <div class="fees-kpi-value" data-kpi="uniqueStudents">0</div>
+          <div class="fees-kpi-sub" data-kpi-sub="uniqueStudents">Installments deduplicated</div>
+        </article>
+
+        <!-- Card 4: Average Payment -->
+        <article class="fees-kpi-card kpi-average">
+          <div class="fees-kpi-top">
+            <span class="fees-kpi-label">Average Payment</span>
+            <span class="fees-kpi-icon icon-average" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-4-4-3 3"></path></svg>
+            </span>
+          </div>
+          <div class="fees-kpi-value" data-kpi="avgPayment">₹0</div>
+          <div class="fees-kpi-sub" data-kpi-sub="avgPayment">Per receipt average</div>
+        </article>
+
+        <!-- Card 5: Highest Single Payment -->
         <article class="fees-kpi-card kpi-highest">
           <div class="fees-kpi-top">
             <span class="fees-kpi-label">Highest Single Payment</span>
@@ -160,7 +270,7 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-kpi-sub" data-kpi-sub="highestPayment">Peak single installment</div>
         </article>
 
-        <!-- Card 4: Current Month Collection -->
+        <!-- Card 6: Current Month Collection -->
         <article class="fees-kpi-card kpi-month">
           <div class="fees-kpi-top">
             <span class="fees-kpi-label">Current Month</span>
@@ -169,7 +279,7 @@ export function renderFeeAnalyticsMarkup() {
             </span>
           </div>
           <div class="fees-kpi-value" data-kpi="currentMonthCollection">₹0</div>
-          <div class="fees-kpi-sub" data-kpi-sub="currentMonthCollection">Calendar month</div>
+          <div class="fees-kpi-sub" data-kpi-sub="currentMonthCollection">Calendar month (independent of date filter)</div>
         </article>
       </div>
 
@@ -180,9 +290,9 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-chart-card-head">
             <div>
               <h3 class="fees-chart-title">Monthly Fee Collection</h3>
-              <p class="fees-chart-sub">Monthly collection movement with current month comparison</p>
+              <p class="fees-chart-sub">Monthly aggregated collections across all 12 calendar months</p>
             </div>
-            <div class="fees-chart-badge" data-monthly-badge>Last 12 Months</div>
+            <div class="fees-chart-badge" data-monthly-badge>12 Months View</div>
           </div>
           <div class="fees-chart-viewport" data-chart-monthly-container>
             <!-- SVG Rendered Dynamically -->
@@ -194,9 +304,9 @@ export function renderFeeAnalyticsMarkup() {
           <div class="fees-chart-card-head">
             <div>
               <h3 class="fees-chart-title">Daily Collection Trend</h3>
-              <p class="fees-chart-sub">Daily payment rhythm (dates with ₹0 handled)</p>
+              <p class="fees-chart-sub">Continuous daily payment rhythm (including ₹0 collection days)</p>
             </div>
-            <div class="fees-chart-badge" data-daily-badge>Daily Movement</div>
+            <div class="fees-chart-badge" data-daily-badge>Last 30 Days Trend</div>
           </div>
           <div class="fees-chart-viewport" data-chart-daily-container>
             <!-- SVG Rendered Dynamically -->
@@ -241,6 +351,7 @@ export class FeeAnalyticsController {
     this.customStart = '';
     this.customEnd = '';
     this.tooltipEl = null;
+    this.isSyncing = false;
 
     this.cacheDom();
     this.bindEvents();
@@ -254,6 +365,9 @@ export class FeeAnalyticsController {
     this.endInput = this.container.querySelector('[data-analytics-end]');
     this.courseSelect = this.container.querySelector('[data-analytics-course]');
     this.refreshBtn = this.container.querySelector('[data-analytics-refresh]');
+    this.syncIcon = this.container.querySelector('[data-sync-icon]');
+    this.syncText = this.container.querySelector('[data-sync-text]');
+    this.syncedAtEl = this.container.querySelector('[data-analytics-synced-at]');
     this.statusEl = this.container.querySelector('[data-analytics-status]');
     this.kpiGrid = this.container.querySelector('[data-analytics-kpi-grid]');
     this.monthlyChartContainer = this.container.querySelector('[data-chart-monthly-container]');
@@ -268,6 +382,8 @@ export class FeeAnalyticsController {
     this.kpiNodes = {
       totalCollection: this.container.querySelector('[data-kpi="totalCollection"]'),
       totalTransactions: this.container.querySelector('[data-kpi="totalTransactions"]'),
+      uniqueStudents: this.container.querySelector('[data-kpi="uniqueStudents"]'),
+      avgPayment: this.container.querySelector('[data-kpi="avgPayment"]'),
       highestPayment: this.container.querySelector('[data-kpi="highestPayment"]'),
       currentMonthCollection: this.container.querySelector('[data-kpi="currentMonthCollection"]')
     };
@@ -275,9 +391,17 @@ export class FeeAnalyticsController {
     this.kpiSubNodes = {
       totalCollection: this.container.querySelector('[data-kpi-sub="totalCollection"]'),
       totalTransactions: this.container.querySelector('[data-kpi-sub="totalTransactions"]'),
+      uniqueStudents: this.container.querySelector('[data-kpi-sub="uniqueStudents"]'),
+      avgPayment: this.container.querySelector('[data-kpi-sub="avgPayment"]'),
       highestPayment: this.container.querySelector('[data-kpi-sub="highestPayment"]'),
       currentMonthCollection: this.container.querySelector('[data-kpi-sub="currentMonthCollection"]')
     };
+
+    // Ensure rangeSelect defaults to 12m
+    if (this.rangeSelect) {
+      this.rangeSelect.value = '12m';
+      this.currentRange = '12m';
+    }
   }
 
   bindEvents() {
@@ -307,11 +431,43 @@ export class FeeAnalyticsController {
     });
 
     this.refreshBtn?.addEventListener('click', () => {
-      if (typeof this.onRefreshRequested === 'function') {
-        this.showStatus('Syncing latest records from Google Sheets…');
-        this.onRefreshRequested();
-      }
+      this.triggerSync();
     });
+  }
+
+  triggerSync() {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    if (this.syncIcon) this.syncIcon.classList.add('is-spinning');
+    if (this.syncText) this.syncText.textContent = 'Syncing…';
+    if (this.refreshBtn) this.refreshBtn.disabled = true;
+    this.showStatus('Syncing latest records from Google Sheets…');
+
+    if (typeof this.onRefreshRequested === 'function') {
+      try {
+        this.onRefreshRequested();
+      } catch (err) {
+        this.endSync(false, err?.message || 'Sync failed');
+      }
+    } else {
+      setTimeout(() => this.endSync(true), 600);
+    }
+  }
+
+  endSync(success = true, errorMessage = '') {
+    this.isSyncing = false;
+    if (this.syncIcon) this.syncIcon.classList.remove('is-spinning');
+    if (this.syncText) this.syncText.textContent = 'Sync';
+    if (this.refreshBtn) this.refreshBtn.disabled = false;
+
+    if (success) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      if (this.syncedAtEl) this.syncedAtEl.textContent = `Synced at ${timeStr}`;
+      this.showStatus('');
+    } else {
+      this.showStatus(errorMessage || 'Google Sheets sync failed. Please retry.', true);
+    }
   }
 
   showStatus(message, isError = false) {
@@ -327,11 +483,64 @@ export class FeeAnalyticsController {
   }
 
   /**
-   * Updates the master dataset. Called whenever fee records are loaded
-   * or a new payment is saved.
+   * Updates master dataset with raw records from Google Sheets.
+   * Performs normalization, date parsing and duplicate detection.
    */
-  updateRecords(records = []) {
-    this.masterRecords = Array.isArray(records) ? records.filter(r => r && (Number(r.amount) > 0 || r.receiptNo)) : [];
+  updateRecords(rawRecords = []) {
+    this.endSync(true);
+
+    if (!Array.isArray(rawRecords)) rawRecords = [];
+
+    // Normalize each record
+    const normalized = [];
+    const receiptCounts = new Map();
+    let unparseableDates = 0;
+
+    rawRecords.forEach(r => {
+      if (!r) return;
+      const parsedDate = parseDateSafe(r.date);
+      if (!parsedDate) {
+        unparseableDates++;
+      }
+      const amount = Number(String(r.amount || 0).replace(/[^0-9.-]/g, '')) || 0;
+      const course = (r.course || '').trim() || 'Unspecified';
+      const studentName = (r.studentName || '').trim();
+      const phone = String(r.phone || '').trim();
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const studentKey = cleanPhone || studentName.toLowerCase();
+      const receiptNo = String(r.receiptNo || '').trim();
+
+      const item = {
+        ...r,
+        _parsedDate: parsedDate,
+        _ymd: parsedDate ? toYmd(parsedDate) : '',
+        _amount: amount,
+        _course: course,
+        _studentName: studentName,
+        _phone: phone,
+        _studentKey: studentKey,
+        _receiptNo: receiptNo,
+        _isValid: Boolean(parsedDate && receiptNo)
+      };
+
+      if (receiptNo) {
+        receiptCounts.set(receiptNo, (receiptCounts.get(receiptNo) || 0) + 1);
+      }
+      normalized.push(item);
+    });
+
+    this.masterRecords = normalized;
+
+    // Audit logs for verification
+    const duplicates = Array.from(receiptCounts.entries()).filter(([, count]) => count > 1);
+    if (duplicates.length > 0) {
+      console.warn(`[FeeAnalytics Audit] Duplicate receipt numbers in Google Sheets:`, duplicates.map(([no, cnt]) => `${no} (${cnt}x)`));
+    }
+    if (unparseableDates > 0) {
+      console.warn(`[FeeAnalytics Audit] ${unparseableDates} records had unparseable date strings.`);
+    }
+    console.info(`[FeeAnalytics Audit] Processed ${this.masterRecords.length} records. Unique receipts: ${receiptCounts.size}.`);
+
     this.updateCourseOptions();
     this.processAndRender();
   }
@@ -343,16 +552,15 @@ export class FeeAnalyticsController {
     if (!this.courseSelect) return;
     const courses = new Set(['JEE', 'NEET', 'Foundation']);
     this.masterRecords.forEach(r => {
-      const c = (r.course || '').trim();
-      if (c) courses.add(c);
+      const c = r._course;
+      if (c && c !== 'Unspecified') courses.add(c);
     });
 
     const currentVal = this.courseSelect.value;
     const optionsHtml = ['<option value="all">All Courses</option>']
       .concat(Array.from(courses).sort().map(c => `<option value="${c}">${c}</option>`));
 
-    // Add Unspecified if any record has blank course
-    const hasUnspecified = this.masterRecords.some(r => !(r.course || '').trim());
+    const hasUnspecified = this.masterRecords.some(r => r._course === 'Unspecified');
     if (hasUnspecified) {
       optionsHtml.push('<option value="Unspecified">Unspecified Course</option>');
     }
@@ -367,7 +575,6 @@ export class FeeAnalyticsController {
   }
 
   renderSkeleton() {
-    // Show placeholder skeleton states
     Object.values(this.kpiNodes).forEach(node => {
       if (node) node.innerHTML = '<span class="fees-skeleton-pill"></span>';
     });
@@ -383,22 +590,20 @@ export class FeeAnalyticsController {
   }
 
   /**
-   * Filters masterRecords in memory and updates all KPI cards and charts.
+   * Filters masterRecords according to selected date range and course.
    */
   processAndRender() {
     const { start, end } = this.getDateRangeBounds();
 
-    // Filter by date range and course
-    this.filteredRecords = this.masterRecords.filter(record => {
-      const rDate = parseDateSafe(record.date);
-      if (!rDate) return false;
-      if (rDate < start || rDate > end) return false;
+    // Filter masterRecords by date range AND course
+    this.filteredRecords = this.masterRecords.filter(r => {
+      if (!r._isValid || !r._parsedDate) return false;
+      if (r._parsedDate < start || r._parsedDate > end) return false;
 
-      const courseName = (record.course || '').trim();
       if (this.currentCourse !== 'all') {
         if (this.currentCourse === 'Unspecified') {
-          if (courseName) return false;
-        } else if (courseName !== this.currentCourse) {
+          if (r._course !== 'Unspecified') return false;
+        } else if (r._course !== this.currentCourse) {
           return false;
         }
       }
@@ -406,7 +611,9 @@ export class FeeAnalyticsController {
     });
 
     this.renderKpiCards();
-    this.renderMonthlyChart(start, end);
+    // Monthly chart displays all 12 calendar months independently of 7d/30d filter
+    this.renderMonthlyChart();
+    // Daily chart defaults to Last 30 Days (or active range if 7d or custom)
     this.renderDailyTrendChart(start, end);
     this.renderCourseChart();
   }
@@ -459,20 +666,17 @@ export class FeeAnalyticsController {
   }
 
   /**
-   * Calculates and renders the 6 KPI cards.
+   * Calculates and renders the 6 KPI cards with clear scopes.
    */
   renderKpiCards() {
     const records = this.filteredRecords;
-    const totalAmount = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const totalAmount = records.reduce((sum, r) => sum + r._amount, 0);
     const totalTx = records.length;
 
-    // Deduplicate distinct students by Phone or normalized Student Name
+    // Distinct unique students by Phone or clean Name
     const uniqueStudentKeys = new Set();
     records.forEach(r => {
-      const cleanPhone = String(r.phone || '').replace(/[^0-9]/g, '');
-      const cleanName = String(r.studentName || '').trim().toLowerCase();
-      const key = cleanPhone || cleanName;
-      if (key) uniqueStudentKeys.add(key);
+      if (r._studentKey) uniqueStudentKeys.add(r._studentKey);
     });
     const uniqueStudents = uniqueStudentKeys.size;
 
@@ -482,11 +686,11 @@ export class FeeAnalyticsController {
     // Highest Single Payment
     let highestPayment = 0;
     records.forEach(r => {
-      const amt = Number(r.amount) || 0;
-      if (amt > highestPayment) highestPayment = amt;
+      if (r._amount > highestPayment) highestPayment = r._amount;
     });
 
-    // Current Month Collection (from masterRecords so it represents real current calendar month)
+    // Current Month Collection: ALWAYS actual current calendar month (November 2026)
+    // Filtered by course if selected, but independent of the date range dropdown
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
@@ -494,16 +698,13 @@ export class FeeAnalyticsController {
     let currentMonthTx = 0;
 
     this.masterRecords.forEach(r => {
-      const rDate = parseDateSafe(r.date);
-      if (!rDate) return;
-      if (rDate.getFullYear() === currentYear && rDate.getMonth() === currentMonth) {
-        // Apply course filter if selected
+      if (!r._isValid || !r._parsedDate) return;
+      if (r._parsedDate.getFullYear() === currentYear && r._parsedDate.getMonth() === currentMonth) {
         if (this.currentCourse !== 'all') {
-          const cName = (r.course || '').trim();
-          if (this.currentCourse === 'Unspecified' && cName) return;
-          if (this.currentCourse !== 'Unspecified' && cName !== this.currentCourse) return;
+          if (this.currentCourse === 'Unspecified' && r._course !== 'Unspecified') return;
+          if (this.currentCourse !== 'Unspecified' && r._course !== this.currentCourse) return;
         }
-        currentMonthCollection += Number(r.amount) || 0;
+        currentMonthCollection += r._amount;
         currentMonthTx += 1;
       }
     });
@@ -511,36 +712,39 @@ export class FeeAnalyticsController {
     // Update DOM nodes
     if (this.kpiNodes.totalCollection) this.kpiNodes.totalCollection.textContent = formatInr(totalAmount);
     if (this.kpiNodes.totalTransactions) this.kpiNodes.totalTransactions.textContent = formatCount(totalTx);
+    if (this.kpiNodes.uniqueStudents) this.kpiNodes.uniqueStudents.textContent = formatCount(uniqueStudents);
+    if (this.kpiNodes.avgPayment) this.kpiNodes.avgPayment.textContent = formatInr(avgPayment);
     if (this.kpiNodes.highestPayment) this.kpiNodes.highestPayment.textContent = formatInr(highestPayment);
     if (this.kpiNodes.currentMonthCollection) this.kpiNodes.currentMonthCollection.textContent = formatInr(currentMonthCollection);
 
-    // Update subtitle text with context
+    // Update subtitles
     const monthName = MONTH_NAMES_FULL[currentMonth];
     if (this.kpiSubNodes.currentMonthCollection) {
-      this.kpiSubNodes.currentMonthCollection.textContent = `${monthName} ${currentYear} (${currentMonthTx} receipts)`;
+      this.kpiSubNodes.currentMonthCollection.textContent = `${monthName} ${currentYear} (${currentMonthTx} receipts) • Independent of filter`;
     }
     if (this.kpiSubNodes.totalCollection) {
       this.kpiSubNodes.totalCollection.textContent = `${totalTx} receipt${totalTx === 1 ? '' : 's'} recorded`;
+    }
+    if (this.kpiSubNodes.avgPayment) {
+      this.kpiSubNodes.avgPayment.textContent = totalTx > 0 ? `Across ${totalTx} payments` : 'No payments';
     }
   }
 
   /**
    * Graph 1: Monthly Collection (Vertical Bar Chart)
-   * Displays monthly aggregated collections (default 12 months).
+   * Displays all 12 calendar months ending with the current month.
+   * Aggregates masterRecords (filtered by Course), ensuring October 2026 and
+   * November 2026 contain all actual payments, not truncated by the 7-day filter.
    */
-  renderMonthlyChart(filterStart, filterEnd) {
+  renderMonthlyChart() {
     if (!this.monthlyChartContainer) return;
 
-    // Build list of months for the monthly view
-    // Default to last 12 calendar months ending with current month
     const months = [];
     const now = new Date();
     const endMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Count how many months to show: default 12
-    const numMonths = this.currentRange === '3m' ? 3 : this.currentRange === '6m' ? 6 : 12;
-
-    for (let i = numMonths - 1; i >= 0; i--) {
+    // 12 calendar months
+    for (let i = 11; i >= 0; i--) {
       const d = new Date(endMonth.getFullYear(), endMonth.getMonth() - i, 1);
       months.push({
         year: d.getFullYear(),
@@ -553,26 +757,29 @@ export class FeeAnalyticsController {
       });
     }
 
-    // Aggregate filtered records into the months
-    this.filteredRecords.forEach(r => {
-      const rDate = parseDateSafe(r.date);
-      if (!rDate) return;
-      const rYear = rDate.getFullYear();
-      const rMonth = rDate.getMonth();
+    // Aggregate records matching the Course filter across all masterRecords
+    this.masterRecords.forEach(r => {
+      if (!r._isValid || !r._parsedDate) return;
+
+      if (this.currentCourse !== 'all') {
+        if (this.currentCourse === 'Unspecified' && r._course !== 'Unspecified') return;
+        if (this.currentCourse !== 'Unspecified' && r._course !== this.currentCourse) return;
+      }
+
+      const rYear = r._parsedDate.getFullYear();
+      const rMonth = r._parsedDate.getMonth();
       const target = months.find(m => m.year === rYear && m.month === rMonth);
       if (target) {
-        target.total += Number(r.amount) || 0;
+        target.total += r._amount;
         target.count += 1;
       }
     });
 
     const maxTotal = Math.max(...months.map(m => m.total), 10000);
-    // Round upper bound to a clean multiple
     const upperLimit = this.getNiceMax(maxTotal);
 
-    // Update badge
     if (this.monthlyBadge) {
-      this.monthlyBadge.textContent = `${numMonths} Months View`;
+      this.monthlyBadge.textContent = `12 Months View (${months[0].label} – ${months[months.length - 1].label})`;
     }
 
     // SVG Dimensions
@@ -585,7 +792,7 @@ export class FeeAnalyticsController {
     const chartW = width - padLeft - padRight;
     const chartH = height - padTop - padBottom;
 
-    // Y Gridlines (4 lines)
+    // Y Gridlines
     const yTicks = [0, upperLimit * 0.33, upperLimit * 0.66, upperLimit];
     const gridLinesSvg = yTicks.map(val => {
       const y = padTop + chartH - (val / upperLimit) * chartH;
@@ -605,24 +812,20 @@ export class FeeAnalyticsController {
       const bHeight = Math.max(0, (m.total / upperLimit) * chartH);
       const y = padTop + chartH - bHeight;
 
-      // Highlight current month
       const isCurrent = m.isCurrentMonth;
       const barFill = isCurrent ? 'url(#barGradientActive)' : 'url(#barGradient)';
       const strokeAttr = isCurrent ? 'stroke="#ea580c" stroke-width="1.5"' : '';
 
       return `
         <g class="fees-bar-group" data-month-index="${idx}" tabindex="0" role="button" aria-label="${m.fullLabel}: ${formatInr(m.total)}">
-          <!-- Background track column -->
           <rect x="${x}" y="${padTop}" width="${barWidth}" height="${chartH}" rx="4" fill="currentColor" fill-opacity="0.03" />
           
-          <!-- Value text above bar (compact) -->
           ${m.total > 0 ? `
             <text x="${cx}" y="${y - 6}" font-size="9.5" font-weight="600" fill="currentColor" fill-opacity="0.75" text-anchor="middle">
               ${formatInr(m.total, { compact: true })}
             </text>
           ` : ''}
 
-          <!-- Main Bar -->
           <rect 
             x="${x}" 
             y="${m.total > 0 ? y : padTop + chartH - 2}" 
@@ -634,12 +837,10 @@ export class FeeAnalyticsController {
             class="fees-bar-rect"
           />
 
-          <!-- Current Month Badge Pill -->
           ${isCurrent ? `
             <circle cx="${cx}" cy="${padTop + chartH + 18}" r="2" fill="#ea580c" />
           ` : ''}
 
-          <!-- X Axis Label -->
           <text 
             x="${cx}" 
             y="${padTop + chartH + 16}" 
@@ -673,17 +874,17 @@ export class FeeAnalyticsController {
     `;
 
     this.monthlyChartContainer.innerHTML = svg;
-    this.bindMonthlyHover(months, width, height);
+    this.bindMonthlyHover(months);
   }
 
-  bindMonthlyHover(months, svgW, svgH) {
+  bindMonthlyHover(months) {
     const groups = this.monthlyChartContainer.querySelectorAll('.fees-bar-group');
     groups.forEach(group => {
       const idx = Number(group.dataset.monthIndex);
       const data = months[idx];
       if (!data) return;
 
-      const showTip = (e) => {
+      const showTip = () => {
         const rect = group.getBoundingClientRect();
         const parentRect = this.container.getBoundingClientRect();
         const x = rect.left + rect.width / 2 - parentRect.left;
@@ -694,7 +895,7 @@ export class FeeAnalyticsController {
           items: [
             { label: 'Total Collection', value: formatInr(data.total) },
             { label: 'Transactions', value: `${formatCount(data.count)} receipt${data.count === 1 ? '' : 's'}` },
-            { label: 'Average', value: data.count > 0 ? formatInr(data.total / data.count) : '₹0' }
+            { label: 'Average Payment', value: data.count > 0 ? formatInr(data.total / data.count) : '₹0' }
           ]
         }, x, y);
       };
@@ -709,24 +910,47 @@ export class FeeAnalyticsController {
 
   /**
    * Graph 2: Daily Collection Trend (Smooth Area / Line Chart)
-   * Displays daily payments over the active window with correct 0-value interpolation.
+   * Defaults to Last 30 Days (all 30 dates generated consecutively).
+   * If user explicitly selects '7d', shows 7 days.
+   * Correctly aggregates multiple payments on the same date.
    */
-  renderDailyTrendChart(start, end) {
+  renderDailyTrendChart(filterStart, filterEnd) {
     if (!this.dailyChartContainer) return;
 
-    // Build continuous timeline of days
     const days = [];
-    const current = new Date(start);
-    // Safety cap: at most 90 days for daily view to keep it crisp
-    const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    const windowDays = Math.min(diffDays, 60);
+    const now = new Date();
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-    // Adjust start if window is too wide for a single daily chart
-    const effectiveStart = new Date(end);
-    effectiveStart.setDate(effectiveStart.getDate() - (windowDays - 1));
-    effectiveStart.setHours(0, 0, 0, 0);
+    let startDate;
+    let endDate;
+    let badgeLabel = 'Last 30 Days Trend';
 
-    for (let d = new Date(effectiveStart); d <= end; d.setDate(d.getDate() + 1)) {
+    if (this.currentRange === '7d') {
+      startDate = new Date(todayEnd);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = todayEnd;
+      badgeLabel = 'Last 7 Days Trend';
+    } else if (this.currentRange === 'custom') {
+      startDate = new Date(filterStart);
+      endDate = new Date(filterEnd);
+      const diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      if (diffDays > 60) {
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 59);
+        startDate.setHours(0, 0, 0, 0);
+      }
+      badgeLabel = `${diffDays} Days Trend`;
+    } else {
+      // Default: Last 30 Days
+      startDate = new Date(todayEnd);
+      startDate.setDate(startDate.getDate() - 29);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = todayEnd;
+      badgeLabel = 'Last 30 Days Trend';
+    }
+
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const ymd = toYmd(d);
       days.push({
         date: new Date(d),
@@ -738,11 +962,18 @@ export class FeeAnalyticsController {
       });
     }
 
-    // Map records into days
-    this.filteredRecords.forEach(r => {
-      const match = days.find(day => day.ymd === r.date);
+    // Aggregate masterRecords matching course and date window
+    this.masterRecords.forEach(r => {
+      if (!r._isValid || !r._ymd) return;
+
+      if (this.currentCourse !== 'all') {
+        if (this.currentCourse === 'Unspecified' && r._course !== 'Unspecified') return;
+        if (this.currentCourse !== 'Unspecified' && r._course !== this.currentCourse) return;
+      }
+
+      const match = days.find(day => day.ymd === r._ymd);
       if (match) {
-        match.total += Number(r.amount) || 0;
+        match.total += r._amount;
         match.count += 1;
       }
     });
@@ -751,7 +982,7 @@ export class FeeAnalyticsController {
     const upperLimit = this.getNiceMax(maxDaily);
 
     if (this.dailyBadge) {
-      this.dailyBadge.textContent = `${days.length} Days Trend`;
+      this.dailyBadge.textContent = `${badgeLabel} (${days.length} Days)`;
     }
 
     // SVG Dimensions
@@ -782,7 +1013,7 @@ export class FeeAnalyticsController {
       return { x, y, day };
     });
 
-    // Build Smooth Catmull-Rom or Cubic Bezier Spline
+    // Build Smooth Cubic Bezier Spline
     let pathD = '';
     if (points.length > 0) {
       pathD = `M ${points[0].x} ${points[0].y}`;
@@ -803,7 +1034,7 @@ export class FeeAnalyticsController {
 
     const areaD = pathD ? `${pathD} L ${points[points.length - 1].x} ${padTop + chartH} L ${points[0].x} ${padTop + chartH} Z` : '';
 
-    // X Axis Labels (sample ~4-5 points across the timeline)
+    // X Axis Labels (~5 points distributed evenly)
     const labelStride = Math.max(1, Math.floor(days.length / 5));
     const xLabelsSvg = points.filter((_, idx) => idx % labelStride === 0 || idx === points.length - 1).map(pt => {
       return `
@@ -815,7 +1046,7 @@ export class FeeAnalyticsController {
 
     // Active dots on peak days
     const activeDotsSvg = points.filter(pt => pt.day.total > 0).map(pt => `
-      <circle cx="${pt.x}" cy="${pt.y}" r="3" fill="#ffffff" stroke="#ea580c" stroke-width="2" class="fees-daily-dot" />
+      <circle cx="${pt.x}" cy="${pt.y}" r="3.2" fill="#ffffff" stroke="#ea580c" stroke-width="2" class="fees-daily-dot" />
     `).join('');
 
     const svg = `
@@ -833,17 +1064,17 @@ export class FeeAnalyticsController {
         ${activeDotsSvg}
         ${xLabelsSvg}
 
-        <!-- Interactive hover vertical tracker line and pointer circle -->
+        <!-- Interactive hover tracker line and dot -->
         <line x1="0" y1="${padTop}" x2="0" y2="${padTop + chartH}" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="3,3" opacity="0" class="fees-tracker-line" />
         <circle cx="0" cy="0" r="5" fill="#ea580c" stroke="#ffffff" stroke-width="2" opacity="0" class="fees-tracker-dot" />
       </svg>
     `;
 
     this.dailyChartContainer.innerHTML = svg;
-    this.bindDailyHover(points, width, height, padLeft, padRight);
+    this.bindDailyHover(points, width, height);
   }
 
-  bindDailyHover(points, svgW, svgH, padLeft, padRight) {
+  bindDailyHover(points, svgW, svgH) {
     const svgEl = this.dailyChartContainer.querySelector('svg');
     const line = svgEl?.querySelector('.fees-tracker-line');
     const dot = svgEl?.querySelector('.fees-tracker-dot');
@@ -875,7 +1106,6 @@ export class FeeAnalyticsController {
       dot.setAttribute('cy', closest.y);
       dot.setAttribute('opacity', '1');
 
-      // Show Tooltip
       const parentRect = this.container.getBoundingClientRect();
       const tooltipX = svgRect.left + (closest.x / svgW) * svgRect.width - parentRect.left;
       const tooltipY = svgRect.top + (closest.y / svgH) * svgRect.height - parentRect.top;
@@ -903,20 +1133,17 @@ export class FeeAnalyticsController {
 
   /**
    * Graph 3: Course-wise Revenue (Horizontal Bar Chart)
-   * Groups payments by course, handles missing courses as 'Unspecified',
-   * and renders sorted horizontal progress tracks.
+   * Groups filtered records by course and displays revenue share.
    */
   renderCourseChart() {
     if (!this.courseChartContainer) return;
 
-    // Aggregate by course
     const courseMap = new Map();
     let grandTotal = 0;
 
     this.filteredRecords.forEach(r => {
-      const rawCourse = (r.course || '').trim();
-      const courseName = rawCourse || 'Unspecified';
-      const amt = Number(r.amount) || 0;
+      const courseName = r._course;
+      const amt = r._amount;
       grandTotal += amt;
 
       const curr = courseMap.get(courseName) || { course: courseName, total: 0, count: 0 };
@@ -925,7 +1152,6 @@ export class FeeAnalyticsController {
       courseMap.set(courseName, curr);
     });
 
-    // Sort descending by total amount
     const courses = Array.from(courseMap.values()).sort((a, b) => b.total - a.total);
 
     if (this.courseBadge) {
@@ -942,7 +1168,6 @@ export class FeeAnalyticsController {
       return;
     }
 
-    // Color badges palette matching website identity
     const colorMap = {
       'JEE': { bg: 'rgba(234, 88, 12, 0.12)', text: '#ea580c', bar: 'linear-gradient(90deg, #ea580c, #f97316)' },
       'NEET': { bg: 'rgba(16, 185, 129, 0.12)', text: '#059669', bar: 'linear-gradient(90deg, #059669, #10b981)' },
@@ -997,7 +1222,6 @@ export class FeeAnalyticsController {
       <div class="fees-tooltip-body">${itemsHtml}</div>
     `;
 
-    // Position tooltip smoothly
     this.tooltipEl.style.left = `${Math.round(x)}px`;
     this.tooltipEl.style.top = `${Math.round(y)}px`;
     this.tooltipEl.hidden = false;
@@ -1007,7 +1231,6 @@ export class FeeAnalyticsController {
     if (this.tooltipEl) this.tooltipEl.hidden = true;
   }
 
-  // Calculate clean rounded upper limit for Y axis
   getNiceMax(val) {
     if (val <= 0) return 10000;
     const factor = Math.pow(10, Math.floor(Math.log10(val)));
