@@ -516,7 +516,7 @@ export function initFinancePage() {
         showLogin();
         const authNote = authPanel.querySelector('[data-auth-note]');
         if (authNote && authRes.authSource === 'environment') {
-          authNote.textContent = '🔒 Master password is set in server environment variables (ADMIN_PASSWORD).';
+          authNote.textContent = '🔒 Master password is set in server environment variables (Finance_PASSWORDS).';
           authNote.hidden = false;
         }
       }

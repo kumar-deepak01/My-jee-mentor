@@ -1,21 +1,34 @@
 import { createHmac, createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'node:crypto';
 import { getSetting, setSetting, recordAuditEntry } from './finance-db.js';
 
-const COOKIE = 'mjm_fees_admin';
+export const FINANCE_COOKIE = 'mjm_finance_admin';
 const SESSION_SECONDS = 4 * 60 * 60; // 4 hours
 const loginAttempts = new Map();
 
 /**
- * Checks whether an admin password has been configured in env or secure storage.
+ * Returns trimmed Finance environment variable (strictly process.env.Finance_PASSWORDS).
+ * Does NOT check ADMIN_PASSWORD or any other variable.
  */
-export function isPasswordConfigured() {
-  if (process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim()) {
+export function getFinanceEnvPassword() {
+  const raw = process.env.Finance_PASSWORDS;
+  return typeof raw === 'string' ? raw.trim() : '';
+}
+
+/**
+ * Checks whether Finance Portal password is configured via Finance_PASSWORDS or secure database hash.
+ */
+export function isFinancePasswordConfigured() {
+  const envPass = getFinanceEnvPassword();
+  if (envPass) {
     return true;
   }
   const hash = getSetting('admin_password_hash');
   const salt = getSetting('admin_password_salt');
   return Boolean(hash && salt);
 }
+
+// Backward-compatible alias
+export const isPasswordConfigured = isFinancePasswordConfigured;
 
 /**
  * Derives a PBKDF2-SHA512 hash for a password using a salt.
@@ -25,52 +38,62 @@ function hashPassword(password, salt) {
 }
 
 /**
- * Verifies a candidate password against either process.env.ADMIN_PASSWORD or stored PBKDF2 hash.
+ * Verifies candidate password for Finance Portal.
+ * Uses timingSafeEqual on SHA-256 digest to prevent timing attacks.
+ * Trims whitespace/newlines from input and stored value.
  */
-export function verifyAdminPassword(candidate) {
+export function verifyFinancePassword(candidate) {
   if (!candidate || typeof candidate !== 'string') return false;
+  const candidateTrimmed = candidate.trim();
+  if (!candidateTrimmed) return false;
 
-  // 1. Check environment variable first if provided
-  if (process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim()) {
-    const a = createHash('sha256').update(candidate).digest();
-    const b = createHash('sha256').update(process.env.ADMIN_PASSWORD).digest();
-    return timingSafeEqual(a, b) && candidate.length === process.env.ADMIN_PASSWORD.length;
+  // 1. Check exact process.env.Finance_PASSWORDS if configured
+  const envPass = getFinanceEnvPassword();
+  if (envPass) {
+    const a = createHash('sha256').update(candidateTrimmed).digest();
+    const b = createHash('sha256').update(envPass).digest();
+    return timingSafeEqual(a, b);
   }
 
-  // 2. Check PBKDF2 hash in secure database
+  // 2. Check PBKDF2 hash in database (only if Finance_PASSWORDS is not set)
   const storedHash = getSetting('admin_password_hash');
   const storedSalt = getSetting('admin_password_salt');
   if (!storedHash || !storedSalt) {
     return false;
   }
 
-  const candidateHash = hashPassword(candidate, storedSalt);
+  const candidateHash = hashPassword(candidateTrimmed, storedSalt);
   const a = Buffer.from(candidateHash, 'hex');
   const b = Buffer.from(storedHash, 'hex');
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
 }
 
+// Backward-compatible alias
+export const verifyAdminPassword = verifyFinancePassword;
+
 /**
- * Sets the initial master admin password.
+ * Sets initial Finance master password in database (only if no env password exists).
  * Strictly prevents overwriting an existing password.
  */
-export function setAdminPassword(newPassword, clientIp = 'Unknown') {
-  if (isPasswordConfigured()) {
-    const error = new Error('Admin password has already been configured. Cannot overwrite.');
+export function setFinancePassword(newPassword, clientIp = 'Unknown') {
+  if (isFinancePasswordConfigured()) {
+    const error = new Error('Finance password has already been configured. Cannot overwrite.');
     error.code = 'PASSWORD_ALREADY_SET';
     error.status = 403;
     throw error;
   }
 
-  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+  const cleanPassword = typeof newPassword === 'string' ? newPassword.trim() : '';
+
+  if (cleanPassword.length < 8) {
     const error = new Error('Password must be at least 8 characters long.');
     error.code = 'PASSWORD_TOO_SHORT';
     error.status = 400;
     throw error;
   }
 
-  if (newPassword.length > 200) {
+  if (cleanPassword.length > 200) {
     const error = new Error('Password is too long (maximum 200 characters).');
     error.code = 'PASSWORD_TOO_LONG';
     error.status = 400;
@@ -78,7 +101,7 @@ export function setAdminPassword(newPassword, clientIp = 'Unknown') {
   }
 
   const salt = randomBytes(32).toString('hex');
-  const hash = hashPassword(newPassword, salt);
+  const hash = hashPassword(cleanPassword, salt);
   const sessionSecret = randomBytes(64).toString('hex');
 
   setSetting('admin_password_salt', salt);
@@ -88,21 +111,26 @@ export function setAdminPassword(newPassword, clientIp = 'Unknown') {
 
   recordAuditEntry({
     actor: 'Owner Initial Setup',
-    action: 'CREATE_ADMIN_PASSWORD',
+    action: 'CREATE_FINANCE_PASSWORD',
     entity: 'Authentication',
-    details: 'Master admin password successfully configured with PBKDF2-SHA512 encryption.',
+    details: 'Master Finance password successfully configured with PBKDF2-SHA512 encryption.',
     ip_address: clientIp
   });
 
   return true;
 }
 
+// Backward-compatible alias
+export const setAdminPassword = setFinancePassword;
+
 /**
- * Returns secret used to sign HMAC session tokens.
+ * Returns secret used to sign Finance HMAC session tokens.
+ * Strictly uses Finance_PASSWORDS or database secret. Never uses ADMIN_PASSWORD.
  */
-function getSessionSigningSecret() {
-  if (process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim()) {
-    return process.env.ADMIN_PASSWORD;
+function getFinanceSessionSecret() {
+  const envPass = getFinanceEnvPassword();
+  if (envPass) {
+    return envPass;
   }
   let secret = getSetting('admin_session_secret');
   if (!secret) {
@@ -112,47 +140,53 @@ function getSessionSigningSecret() {
 }
 
 /**
- * Signs a session payload using HMAC-SHA256.
+ * Signs a session payload using HMAC-SHA256 for Finance Portal.
  */
-export function signSessionPayload(payload) {
-  const secret = getSessionSigningSecret();
+export function signFinanceSessionPayload(payload) {
+  const secret = getFinanceSessionSecret();
   if (!secret) return '';
   return createHmac('sha256', secret).update(payload).digest('base64url');
 }
 
 /**
- * Creates Set-Cookie header for authenticated admin session.
+ * Creates Set-Cookie header for authenticated Finance admin session (mjm_finance_admin).
  */
-export function makeSessionCookie(age = SESSION_SECONDS) {
+export function makeFinanceSessionCookie(age = SESSION_SECONDS) {
   const payload = Buffer.from(
     JSON.stringify({ exp: Math.floor(Date.now() / 1000) + age })
   ).toString('base64url');
-  const signature = signSessionPayload(payload);
+  const signature = signFinanceSessionPayload(payload);
   const token = `${payload}.${signature}`;
   const isProd = process.env.NODE_ENV === 'production';
-  return `${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; ${isProd ? 'Secure; ' : ''}SameSite=Lax; Max-Age=${age}`;
+  return `${FINANCE_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; ${isProd ? 'Secure; ' : ''}SameSite=Lax; Max-Age=${age}`;
 }
 
-/**
- * Creates Set-Cookie header to clear session cookie on logout.
- */
-export function clearSessionCookie() {
-  return `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
-}
+// Backward-compatible alias
+export const makeSessionCookie = makeFinanceSessionCookie;
 
 /**
- * Verifies if the incoming request has a valid, non-expired admin session.
+ * Creates Set-Cookie header to clear Finance session cookie on logout.
  */
-export function hasAdminSession(request) {
-  const secret = getSessionSigningSecret();
+export function clearFinanceSessionCookie() {
+  return `${FINANCE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+// Backward-compatible alias
+export const clearSessionCookie = clearFinanceSessionCookie;
+
+/**
+ * Verifies if the incoming request has a valid, non-expired Finance admin session.
+ */
+export function hasFinanceSession(request) {
+  const secret = getFinanceSessionSecret();
   if (!secret) return false;
 
   const cookieHeader = request.headers.get('cookie') || '';
   const value = cookieHeader
     .split(';')
     .map(p => p.trim())
-    .find(p => p.startsWith(`${COOKIE}=`))
-    ?.slice(COOKIE.length + 1);
+    .find(p => p.startsWith(`${FINANCE_COOKIE}=`))
+    ?.slice(FINANCE_COOKIE.length + 1);
 
   if (!value) return false;
 
@@ -160,7 +194,7 @@ export function hasAdminSession(request) {
     const [payload, signature, ...rest] = decodeURIComponent(value).split('.');
     if (!payload || !signature || rest.length) return false;
 
-    const expected = signSessionPayload(payload);
+    const expected = signFinanceSessionPayload(payload);
     const a = Buffer.from(expected);
     const b = Buffer.from(signature);
     if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
@@ -171,6 +205,9 @@ export function hasAdminSession(request) {
     return false;
   }
 }
+
+// Backward-compatible alias
+export const hasAdminSession = hasFinanceSession;
 
 /**
  * Rate-limiting helper for login and password setup.

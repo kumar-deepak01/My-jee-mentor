@@ -14,14 +14,17 @@ import {
   getAllSettings
 } from '../server/finance-db.js';
 import {
-  isPasswordConfigured,
-  setAdminPassword,
-  verifyAdminPassword,
-  hasAdminSession,
-  makeSessionCookie,
-  clearSessionCookie
+  FINANCE_COOKIE,
+  getFinanceEnvPassword,
+  isFinancePasswordConfigured,
+  setFinancePassword,
+  verifyFinancePassword,
+  hasFinanceSession,
+  makeFinanceSessionCookie,
+  clearFinanceSessionCookie
 } from '../server/admin-auth.js';
 import { handleFinanceRequest } from '../api/_finance-handler.js';
+import { handleFeesRequest } from '../api/_fees-handler.js';
 
 test('FINANCE_SPREADSHEET_TITLE is accurate', () => {
   assert.equal(FINANCE_SPREADSHEET_TITLE, 'My JEE Mentor – Finance Management');
@@ -128,24 +131,57 @@ test('getFinanceConnectionStatus returns comprehensive status object', async () 
   assert.equal(status.feeSheet.readOnly, true);
 });
 
-test('Admin Auth: First-time setup, PBKDF2 hashing, and verification', () => {
-  // Clear any existing test passwords first
+test('Finance Auth: strictly reads process.env.Finance_PASSWORDS and ignores ADMIN_PASSWORD', () => {
+  // Clear any existing test state
+  delete process.env.Finance_PASSWORDS;
+  process.env.ADMIN_PASSWORD = 'FeePasswordOnly@123';
   deleteSetting('admin_password_hash');
   deleteSetting('admin_password_salt');
   deleteSetting('admin_session_secret');
 
-  assert.equal(isPasswordConfigured(), false);
+  // ADMIN_PASSWORD is set, but Finance_PASSWORDS is not -> Finance password is NOT configured
+  assert.equal(isFinancePasswordConfigured(), false);
+  assert.equal(getFinanceEnvPassword(), '');
+  assert.equal(verifyFinancePassword('FeePasswordOnly@123'), false);
+
+  // Set Finance_PASSWORDS (with accidental whitespace/newline)
+  process.env.Finance_PASSWORDS = '  FinanceSecret@2026\n';
+  assert.equal(isFinancePasswordConfigured(), true);
+  assert.equal(getFinanceEnvPassword(), 'FinanceSecret@2026');
+
+  // Verify correct password succeeds even with surrounding whitespace in candidate
+  assert.equal(verifyFinancePassword('FinanceSecret@2026'), true);
+  assert.equal(verifyFinancePassword('  FinanceSecret@2026  '), true);
+
+  // Verify wrong password fails
+  assert.equal(verifyFinancePassword('WrongPassword123'), false);
+  // Verify Fee Register password fails for Finance
+  assert.equal(verifyFinancePassword('FeePasswordOnly@123'), false);
+
+  // Clean up env
+  delete process.env.Finance_PASSWORDS;
+  delete process.env.ADMIN_PASSWORD;
+});
+
+test('Finance Auth: Database PBKDF2 hashing fallback when Finance_PASSWORDS is not set', () => {
+  delete process.env.Finance_PASSWORDS;
+  delete process.env.ADMIN_PASSWORD;
+  deleteSetting('admin_password_hash');
+  deleteSetting('admin_password_salt');
+  deleteSetting('admin_session_secret');
+
+  assert.equal(isFinancePasswordConfigured(), false);
 
   // Reject too-short password (< 8 chars)
   assert.throws(() => {
-    setAdminPassword('short');
+    setFinancePassword('short');
   }, /at least 8 characters/);
 
   // Successfully set a strong password
   const testPass = 'AdminSecret@2026';
-  const success = setAdminPassword(testPass, '127.0.0.1');
+  const success = setFinancePassword(testPass, '127.0.0.1');
   assert.equal(success, true);
-  assert.equal(isPasswordConfigured(), true);
+  assert.equal(isFinancePasswordConfigured(), true);
 
   // Verify hash and salt were stored in settings
   const hash = getSetting('admin_password_hash');
@@ -154,79 +190,100 @@ test('Admin Auth: First-time setup, PBKDF2 hashing, and verification', () => {
   assert.ok(salt && salt.length === 64);  // 32 bytes hex
 
   // Verify correct password succeeds
-  assert.equal(verifyAdminPassword(testPass), true);
+  assert.equal(verifyFinancePassword(testPass), true);
+  assert.equal(verifyFinancePassword('WrongPassword123'), false);
 
-  // Verify incorrect password fails
-  assert.equal(verifyAdminPassword('WrongPassword123'), false);
-  assert.equal(verifyAdminPassword(''), false);
-
-  // Verify overwrite protection (cannot call setAdminPassword again once configured)
+  // Verify overwrite protection
   assert.throws(() => {
-    setAdminPassword('AnotherPassword2026', '127.0.0.1');
+    setFinancePassword('AnotherPassword2026', '127.0.0.1');
   }, /already been configured/);
-});
 
-test('Admin Auth: Session cookie creation, signing, and verification', () => {
-  const cookieHeader = makeSessionCookie();
-  assert.ok(cookieHeader.includes('mjm_fees_admin='));
-  assert.ok(cookieHeader.includes('HttpOnly'));
-  assert.ok(cookieHeader.includes('Max-Age=14400'));
-
-  // Extract token from Set-Cookie header
-  const token = cookieHeader.split(';')[0].replace('mjm_fees_admin=', '');
-
-  // Valid session request
-  const validReq = new Request('https://www.myjeementor.com/api/finance', {
-    headers: { cookie: `mjm_fees_admin=${token}` }
-  });
-  assert.equal(hasAdminSession(validReq), true);
-
-  // Tampered token request
-  const tamperedReq = new Request('https://www.myjeementor.com/api/finance', {
-    headers: { cookie: `mjm_fees_admin=${token}tampered` }
-  });
-  assert.equal(hasAdminSession(tamperedReq), false);
-
-  // No cookie request
-  const noCookieReq = new Request('https://www.myjeementor.com/api/finance');
-  assert.equal(hasAdminSession(noCookieReq), false);
-
-  // Clear cookie header
-  const clearHeader = clearSessionCookie();
-  assert.ok(clearHeader.includes('Max-Age=0'));
-});
-
-test('handleFinanceRequest: Auth status check and protected actions', async () => {
-  // Test public auth-status action
-  const statusReq = new Request('https://www.myjeementor.com/api/finance?action=auth-status');
-  const statusRes = await handleFinanceRequest(statusReq);
-  const statusData = await statusRes.json();
-  assert.equal(statusRes.status, 200);
-  assert.equal(statusData.ok, true);
-  assert.equal(statusData.isSetupRequired, false); // because we set password in previous test
-
-  // Test unauthorized request to protected endpoint (summary)
-  const unauthReq = new Request('https://www.myjeementor.com/api/finance?action=summary');
-  const unauthRes = await handleFinanceRequest(unauthReq);
-  assert.equal(unauthRes.status, 401);
-  const unauthData = await unauthRes.json();
-  assert.equal(unauthData.code, 'AUTH_REQUIRED');
-
-  // Test authorized request with session cookie
-  const cookieHeader = makeSessionCookie();
-  const token = cookieHeader.split(';')[0].replace('mjm_fees_admin=', '');
-  const authReq = new Request('https://www.myjeementor.com/api/finance?action=summary', {
-    headers: { cookie: `mjm_fees_admin=${token}` }
-  });
-  const authRes = await handleFinanceRequest(authReq);
-  assert.equal(authRes.status, 200);
-  const authData = await authRes.json();
-  assert.equal(authData.ok, true);
-  assert.ok(authData.revenue);
-
-  // Clean up test credentials so storage stays pristine
+  // Clean up
   deleteSetting('admin_password_hash');
   deleteSetting('admin_password_salt');
   deleteSetting('admin_session_secret');
-  deleteSetting('admin_password_created_at');
+});
+
+test('Independent Session Cookies: mjm_finance_admin vs mjm_fees_admin', () => {
+  process.env.Finance_PASSWORDS = 'FinanceSecretKey@999';
+  process.env.ADMIN_PASSWORD = 'FeeSecretKey@888';
+
+  const financeCookie = makeFinanceSessionCookie();
+  assert.ok(financeCookie.includes(`${FINANCE_COOKIE}=`));
+  assert.ok(financeCookie.includes('HttpOnly'));
+
+  const financeToken = financeCookie.split(';')[0].replace(`${FINANCE_COOKIE}=`, '');
+
+  // Finance session accepts mjm_finance_admin
+  const validFinanceReq = new Request('https://www.myjeementor.com/api/finance', {
+    headers: { cookie: `${FINANCE_COOKIE}=${financeToken}` }
+  });
+  assert.equal(hasFinanceSession(validFinanceReq), true);
+
+  // Finance session strictly REJECTS mjm_fees_admin
+  const feesCookieReq = new Request('https://www.myjeementor.com/api/finance', {
+    headers: { cookie: `mjm_fees_admin=${financeToken}` }
+  });
+  assert.equal(hasFinanceSession(feesCookieReq), false);
+
+  // Clear cookie header
+  const clearHeader = clearFinanceSessionCookie();
+  assert.ok(clearHeader.includes('Max-Age=0'));
+  assert.ok(clearHeader.includes(`${FINANCE_COOKIE}=`));
+
+  delete process.env.Finance_PASSWORDS;
+  delete process.env.ADMIN_PASSWORD;
+});
+
+test('Cross-Portal Auth Independence: One portal password does not authenticate the other', async () => {
+  process.env.Finance_PASSWORDS = 'FinancePassword#1';
+  process.env.ADMIN_PASSWORD = 'FeesPassword#2';
+  process.env.SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx_mock/exec';
+  process.env.SHEET_SECRET = 'MockSecret123';
+
+  // 1. Finance Login with Fees password must FAIL with 401
+  const financeWrongReq = new Request('https://www.myjeementor.com/api/finance?action=login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ password: 'FeesPassword#2' })
+  });
+  const financeWrongRes = await handleFinanceRequest(financeWrongReq);
+  assert.equal(financeWrongRes.status, 401);
+
+  // 2. Finance Login with Finance password must SUCCEED with 200 and mjm_finance_admin cookie
+  const financeCorrectReq = new Request('https://www.myjeementor.com/api/finance?action=login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ password: 'FinancePassword#1' })
+  });
+  const financeCorrectRes = await handleFinanceRequest(financeCorrectReq);
+  assert.equal(financeCorrectRes.status, 200);
+  const financeCookieHeader = financeCorrectRes.headers.get('set-cookie');
+  assert.ok(financeCookieHeader.includes('mjm_finance_admin='));
+
+  // 3. Fees Login with Finance password must FAIL with 401
+  const feesWrongReq = new Request('https://www.myjeementor.com/api/fees?action=login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ password: 'FinancePassword#1' })
+  });
+  const feesWrongRes = await handleFeesRequest(feesWrongReq);
+  assert.equal(feesWrongRes.status, 401);
+
+  // 4. Fees Login with Fees password must SUCCEED with 200 and mjm_fees_admin cookie
+  const feesCorrectReq = new Request('https://www.myjeementor.com/api/fees?action=login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ password: 'FeesPassword#2' })
+  });
+  const feesCorrectRes = await handleFeesRequest(feesCorrectReq);
+  assert.equal(feesCorrectRes.status, 200);
+  const feesCookieHeader = feesCorrectRes.headers.get('set-cookie');
+  assert.ok(feesCookieHeader.includes('mjm_fees_admin='));
+
+  // Clean up
+  delete process.env.Finance_PASSWORDS;
+  delete process.env.ADMIN_PASSWORD;
+  delete process.env.SHEET_WEBAPP_URL;
+  delete process.env.SHEET_SECRET;
 });

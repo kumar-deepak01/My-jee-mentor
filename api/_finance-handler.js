@@ -9,16 +9,18 @@ import {
 } from '../server/finance-service.js';
 import { setSetting, getSetting } from '../server/finance-db.js';
 import {
-  isPasswordConfigured,
-  setAdminPassword,
-  verifyAdminPassword,
-  hasAdminSession,
-  makeSessionCookie,
-  clearSessionCookie,
+  isFinancePasswordConfigured,
+  setFinancePassword,
+  verifyFinancePassword,
+  hasFinanceSession,
+  makeFinanceSessionCookie,
+  clearFinanceSessionCookie,
   checkRateLimit,
   recordFailedAttempt,
-  clearRateLimit
+  clearRateLimit,
+  getFinanceEnvPassword
 } from '../server/admin-auth.js';
+import { fetchRawFeeRecords } from './_fees-handler.js';
 
 const json = (body, status = 200, headers = {}) =>
   Response.json(body, { status, headers: { 'cache-control': 'no-store', ...headers } });
@@ -47,22 +49,22 @@ export async function handleFinanceRequest(request) {
     const action = url.searchParams.get('action') || 'status';
     const clientIp = getClientIp(request);
 
-    // 1. Auth Status check (public: tells frontend if setup is needed or if already logged in)
+    // 1. Auth Status check (public: reports whether Finance password exists and if session is active)
     if (method === 'GET' && action === 'auth-status') {
-      const hasEnvPassword = Boolean(process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim());
+      const hasEnvPassword = Boolean(getFinanceEnvPassword());
       const hasDbPassword = Boolean(getSetting('admin_password_hash') && getSetting('admin_password_salt'));
-      const isConfigured = isPasswordConfigured();
+      const isConfigured = isFinancePasswordConfigured();
       return json({
         ok: true,
         isSetupRequired: !isConfigured,
-        authenticated: hasAdminSession(request),
+        authenticated: hasFinanceSession(request),
         authSource: hasEnvPassword ? 'environment' : (hasDbPassword ? 'database' : 'none'),
         hasEnvPassword,
         hasDbPassword
       });
     }
 
-    // 2. First-time Admin Password Setup
+    // 2. First-time Admin Password Setup (only allowed when no Finance_PASSWORDS and no DB password exists)
     if (method === 'POST' && action === 'setup-password') {
       checkOrigin(request);
       checkRateLimit(clientIp, 5);
@@ -73,20 +75,20 @@ export async function handleFinanceRequest(request) {
       if (!password || typeof password !== 'string') {
         return json({ ok: false, message: 'Password is required.' }, 400);
       }
-      if (password.length < 8) {
+      if (password.trim().length < 8) {
         return json({ ok: false, message: 'Password must be at least 8 characters long.' }, 400);
       }
-      if (password !== confirmPassword) {
+      if (password.trim() !== String(confirmPassword || '').trim()) {
         return json({ ok: false, message: 'Passwords do not match.' }, 400);
       }
 
       try {
-        setAdminPassword(password, clientIp);
+        setFinancePassword(password, clientIp);
         clearRateLimit(clientIp);
         return json(
-          { ok: true, message: 'Master admin password successfully configured.' },
+          { ok: true, message: 'Finance admin password successfully configured.' },
           200,
-          { 'set-cookie': makeSessionCookie() }
+          { 'set-cookie': makeFinanceSessionCookie() }
         );
       } catch (err) {
         recordFailedAttempt(clientIp);
@@ -94,7 +96,7 @@ export async function handleFinanceRequest(request) {
       }
     }
 
-    // 3. Admin Login
+    // 3. Finance Admin Login (strictly uses Finance_PASSWORDS or database hash)
     if (method === 'POST' && action === 'login') {
       checkOrigin(request);
       checkRateLimit(clientIp, 10);
@@ -102,22 +104,22 @@ export async function handleFinanceRequest(request) {
       const body = await request.json().catch(() => ({}));
       const password = typeof body?.password === 'string' ? body.password : '';
 
-      if (!isPasswordConfigured()) {
-        return json({ ok: false, message: 'Admin password has not been created yet. Please complete initial setup.' }, 400);
+      if (!isFinancePasswordConfigured()) {
+        return json({ ok: false, message: 'Finance password has not been created yet. Please complete initial setup.' }, 400);
       }
 
-      if (!verifyAdminPassword(password)) {
+      if (!verifyFinancePassword(password)) {
         recordFailedAttempt(clientIp);
         return json({ ok: false, message: 'Password does not match.' }, 401);
       }
 
       clearRateLimit(clientIp);
-      return json({ ok: true }, 200, { 'set-cookie': makeSessionCookie() });
+      return json({ ok: true }, 200, { 'set-cookie': makeFinanceSessionCookie() });
     }
 
-    // 4. Admin Logout
+    // 4. Finance Admin Logout
     if (method === 'POST' && action === 'logout') {
-      return json({ ok: true }, 200, { 'set-cookie': clearSessionCookie() });
+      return json({ ok: true }, 200, { 'set-cookie': clearFinanceSessionCookie() });
     }
 
     // 5. OAuth callback endpoint (from Google redirect)
@@ -143,21 +145,21 @@ export async function handleFinanceRequest(request) {
       return Response.redirect(new URL('/finance.html?setup=success', url.origin).toString(), 302);
     }
 
-    // 6. All other management endpoints STRICTLY REQUIRE Admin Authentication
-    if (!hasAdminSession(request)) {
+    // 6. All other management endpoints STRICTLY REQUIRE Finance Admin Authentication
+    if (!hasFinanceSession(request)) {
       // Allow read-only status check so UI can display connection pills if permitted
       if (method === 'GET' && action === 'status') {
         const publicStatus = await getFinanceConnectionStatus();
         return json({
           ok: true,
           authenticated: false,
-          isSetupRequired: !isPasswordConfigured(),
+          isSetupRequired: !isFinancePasswordConfigured(),
           status: publicStatus.status,
           spreadsheetConfigured: Boolean(publicStatus.spreadsheetId),
           spreadsheetUrl: publicStatus.spreadsheetUrl
         });
       }
-      return json({ ok: false, code: 'AUTH_REQUIRED', message: 'Admin authentication required.' }, 401);
+      return json({ ok: false, code: 'AUTH_REQUIRED', message: 'Finance admin authentication required.' }, 401);
     }
 
     // Authenticated GET actions
@@ -175,19 +177,14 @@ export async function handleFinanceRequest(request) {
 
       if (action === 'summary') {
         const status = await getFinanceConnectionStatus();
-        // Read fee income stats from existing Fee Collection sheet
+        // Read student fee revenue directly from Google Sheets via SHEET_SECRET
         let feeTotal = 0;
         let feeCount = 0;
         try {
-          const feesReq = new Request(new URL('/api/fees', url.origin).toString(), {
-            headers: request.headers
-          });
-          const feesHandler = (await import('./_fees-handler.js')).handleFeesRequest;
-          const feesRes = await feesHandler(feesReq);
-          const feesPayload = await feesRes.json();
-          if (feesPayload.ok && Array.isArray(feesPayload.records)) {
-            feeCount = feesPayload.records.length;
-            feeTotal = feesPayload.records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+          const records = await fetchRawFeeRecords();
+          if (Array.isArray(records)) {
+            feeCount = records.length;
+            feeTotal = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
           }
         } catch (fErr) {
           console.warn('Could not read fee summary:', fErr.message);
