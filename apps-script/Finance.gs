@@ -522,7 +522,61 @@ function doPost(e) {
       return jsonOutput({ ok: true, incomeId: incId, message: 'Other income recorded successfully.' });
     }
 
-    // 6. Manual Audit Log Entry
+    // 6. Delete Salary
+    if (action === 'delete-salary') {
+      const sheet = ensureSheet(spreadsheet, 'Salaries');
+      const targetId = cleanCell(data.id, 50);
+      if (!targetId) return jsonOutput({ ok: false, message: 'Salary ID is required.' });
+
+      const lastRow = sheet.getLastRow();
+      let foundRow = -1;
+      if (lastRow > 1) {
+        const idCells = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+        for (let i = 0; i < idCells.length; i++) {
+          if (String(idCells[i][0]).trim() === targetId) {
+            foundRow = i + 2;
+            break;
+          }
+        }
+      }
+
+      if (foundRow === -1) {
+        return jsonOutput({ ok: false, message: 'Salary not found: ' + targetId });
+      }
+
+      sheet.deleteRow(foundRow);
+      appendAudit(spreadsheet, data.actor, 'DELETE_SALARY', 'Salaries', 'Deleted ' + targetId, data.clientIp);
+      return jsonOutput({ ok: true, deletedId: targetId, message: 'Salary record deleted.' });
+    }
+
+    // 7. Delete Other Income
+    if (action === 'delete-other-income') {
+      const sheet = ensureSheet(spreadsheet, 'OtherIncome');
+      const targetId = cleanCell(data.id, 50);
+      if (!targetId) return jsonOutput({ ok: false, message: 'Income ID is required.' });
+
+      const lastRow = sheet.getLastRow();
+      let foundRow = -1;
+      if (lastRow > 1) {
+        const idCells = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+        for (let i = 0; i < idCells.length; i++) {
+          if (String(idCells[i][0]).trim() === targetId) {
+            foundRow = i + 2;
+            break;
+          }
+        }
+      }
+
+      if (foundRow === -1) {
+        return jsonOutput({ ok: false, message: 'Income not found: ' + targetId });
+      }
+
+      sheet.deleteRow(foundRow);
+      appendAudit(spreadsheet, data.actor, 'DELETE_INCOME', 'OtherIncome', 'Deleted ' + targetId, data.clientIp);
+      return jsonOutput({ ok: true, deletedId: targetId, message: 'Income record deleted.' });
+    }
+
+    // 8. Manual Audit Log Entry
     if (action === 'log-audit') {
       appendAudit(spreadsheet, data.actor, data.actionName || 'CUSTOM_ACTION', data.entity || 'General', data.details || '', data.clientIp);
       return jsonOutput({ ok: true, message: 'Audit entry recorded.' });

@@ -10,10 +10,12 @@ import {
   deleteExpense,
   getSalaries,
   addSalary,
+  deleteSalary,
   getEmployees,
   addEmployee,
   getOtherIncome,
   addOtherIncome,
+  deleteOtherIncome,
   getCategories,
   getAuditLog
 } from '../server/finance-service.js';
@@ -358,6 +360,15 @@ export async function handleFinanceRequest(request) {
         return json(result, 201);
       }
 
+      if (action === 'delete-salary') {
+        const id = String(body?.id || '').trim();
+        if (!id) {
+          return json({ ok: false, message: 'Salary ID is required.' }, 400);
+        }
+        const result = await deleteSalary(id, 'Admin', clientIp);
+        return json(result);
+      }
+
       if (action === 'add-other-income') {
         const amount = Number(body?.amount);
         if (!Number.isFinite(amount) || amount <= 0) {
@@ -370,6 +381,15 @@ export async function handleFinanceRequest(request) {
           receivedBy: 'Admin'
         });
         return json(result, 201);
+      }
+
+      if (action === 'delete-other-income') {
+        const id = String(body?.id || '').trim();
+        if (!id) {
+          return json({ ok: false, message: 'Income ID is required.' }, 400);
+        }
+        const result = await deleteOtherIncome(id, 'Admin', clientIp);
+        return json(result);
       }
 
       return json({ ok: false, message: 'Invalid POST action.' }, 404);

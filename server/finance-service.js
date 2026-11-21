@@ -382,6 +382,13 @@ export async function addSalary(data) {
 }
 
 /**
+ * Deletes a Salary record from Google Sheets.
+ */
+export async function deleteSalary(id, actor = 'Admin', clientIp = '127.0.0.1') {
+  return await callFinanceSheet('POST', { action: 'delete-salary', body: { id, actor, clientIp } });
+}
+
+/**
  * Reads Employees from Google Sheets.
  */
 export async function getEmployees(filters = {}) {
@@ -409,6 +416,13 @@ export async function getOtherIncome(filters = {}) {
  */
 export async function addOtherIncome(data) {
   return await callFinanceSheet('POST', { action: 'add-other-income', body: data });
+}
+
+/**
+ * Deletes an OtherIncome record from Google Sheets.
+ */
+export async function deleteOtherIncome(id, actor = 'Admin', clientIp = '127.0.0.1') {
+  return await callFinanceSheet('POST', { action: 'delete-other-income', body: { id, actor, clientIp } });
 }
 
 /**
