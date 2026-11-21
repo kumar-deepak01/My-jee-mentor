@@ -398,10 +398,15 @@ export function initPhoneComponent(container) {
     getCountry: () => currentCountry,
     selectCountry,
     validate: validateLive,
-    getE164: () => hiddenE164?.value || '',
+    getE164: () => {
+      const raw = (phoneInput?.value || '').trim();
+      const res = validatePhoneNumber(raw, currentCountry.iso2);
+      return res.isValid ? res.e164 : (hiddenE164?.value || '');
+    },
     getFormatted: () => {
-      const res = validatePhoneNumber(phoneInput.value, currentCountry.iso2);
-      return res.formatted || res.e164 || phoneInput.value;
+      const raw = (phoneInput?.value || '').trim();
+      const res = validatePhoneNumber(raw, currentCountry.iso2);
+      return res.formatted || res.e164 || (phoneInput?.value || '');
     }
   };
 }

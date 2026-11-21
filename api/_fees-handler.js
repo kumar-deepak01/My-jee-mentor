@@ -177,9 +177,26 @@ export async function handleFeesRequest(request){
       if(action==='logout')return json({ok:true},200,{'set-cookie':clearCookie()});
       if(!hasSession(request))throw new FeesError(401,'LOGIN_REQUIRED','Please enter the admin password again.');
       if(action!=='collect')throw new FeesError(404,'ACTION_NOT_FOUND','This fee action is not available.');
-      const record=validateRecord(body),saved=await callSheet('POST',{body:record});
-      if(!saved.receiptNo||!saved.record)throw new FeesError(502,'SHEET_SAVE_UNCONFIRMED','Google Sheets did not return a saved receipt. No receipt was generated.');
-      return json({ok:true,receiptNo:saved.receiptNo,record:saved.record},201);
+      const record=validateRecord(body);
+      let saved;
+      try{
+        saved=await callSheet('POST',{body:record});
+      }catch(sheetErr){
+        // If the deployed Apps Script fails on numbers starting with '+' due to cleanCell quote prepending,
+        // retry with digits-only phone to guarantee backward-compatibility with live Google Apps Script.
+        if(record.phone&&record.phone.startsWith('+')){
+          const digitsPhone=record.phone.replace(/\D/g,'');
+          try{
+            saved=await callSheet('POST',{body:{...record,phone:digitsPhone}});
+          }catch(retryErr){
+            throw sheetErr;
+          }
+        }else{
+          throw sheetErr;
+        }
+      }
+      if(!saved||!saved.receiptNo||!saved.record)throw new FeesError(502,'SHEET_SAVE_UNCONFIRMED','Google Sheets did not return a saved receipt. No receipt was generated.');
+      return json({ok:true,receiptNo:saved.receiptNo,record:{...saved.record,phone:record.phone}},201);
     }
     if(method==='GET'){
       if(!hasSession(request))throw new FeesError(401,'LOGIN_REQUIRED','Enter the admin password to view fee records.');

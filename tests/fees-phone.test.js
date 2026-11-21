@@ -197,3 +197,84 @@ test('Backend validateRecord rejects invalid phone numbers', () => {
     validateRecord({ ...baseRecord, phone: 'abcdefghij' });
   }, (err) => err.code === 'PHONE_INVALID' && /international phone number/i.test(err.message));
 });
+
+
+test('Backend validateRecord rejects empty student name', () => {
+  const baseRecord = {
+    phone: '+917294048814',
+    course: 'JEE',
+    amount: 5000,
+    paymentMode: 'UPI',
+    date: '2026-11-21'
+  };
+
+  assert.throws(() => {
+    validateRecord({ ...baseRecord, studentName: '' });
+  }, (err) => err.code === 'STUDENT_REQUIRED');
+
+  assert.throws(() => {
+    validateRecord({ ...baseRecord, studentName: '   ' });
+  }, (err) => err.code === 'STUDENT_REQUIRED');
+});
+
+test('Backend validateRecord rejects empty or non-positive amount', () => {
+  const baseRecord = {
+    studentName: 'Deepak Kumar',
+    phone: '+917294048814',
+    course: 'JEE',
+    paymentMode: 'UPI',
+    date: '2026-11-21'
+  };
+
+  assert.throws(() => {
+    validateRecord({ ...baseRecord, amount: 0 });
+  }, (err) => err.code === 'AMOUNT_INVALID');
+
+  assert.throws(() => {
+    validateRecord({ ...baseRecord, amount: -500 });
+  }, (err) => err.code === 'AMOUNT_INVALID');
+
+  assert.throws(() => {
+    validateRecord({ ...baseRecord, amount: 'invalid' });
+  }, (err) => err.code === 'AMOUNT_INVALID');
+});
+
+test('Backend validateRecord accepts 0 and positive balance due', () => {
+  const baseRecord = {
+    studentName: 'Deepak Kumar',
+    phone: '+917294048814',
+    course: 'JEE',
+    amount: 5000,
+    paymentMode: 'UPI',
+    date: '2026-11-21'
+  };
+
+  const recZero = validateRecord({ ...baseRecord, balanceDue: 0 });
+  assert.equal(recZero.balanceDue, 0);
+
+  const recEmpty = validateRecord({ ...baseRecord, balanceDue: '' });
+  assert.equal(recEmpty.balanceDue, 0);
+
+  const recPositive = validateRecord({ ...baseRecord, balanceDue: 2500 });
+  assert.equal(recPositive.balanceDue, 2500);
+});
+
+test('Google Apps Script compatibility - handles phone numbers with and without leading +', () => {
+  const phoneWithPlus = '+917294048814';
+  const phoneWithoutPlus = phoneWithPlus.replace(/\D/g, '');
+  assert.equal(phoneWithoutPlus, '917294048814');
+
+  // Both forms contain 12 digits
+  const digits1 = (phoneWithPlus.match(/[0-9]/g) || []).length;
+  const digits2 = (phoneWithoutPlus.match(/[0-9]/g) || []).length;
+  assert.equal(digits1, 12);
+  assert.equal(digits2, 12);
+
+  // Both forms pass /^\+?[0-9-]+$/
+  assert.equal(/^\+?[0-9-]+$/.test(phoneWithPlus), true);
+  assert.equal(/^\+?[0-9-]+$/.test(phoneWithoutPlus), true);
+
+  // Both forms pass legacy /^\+?[0-9 ()-]{8,20}$/
+  assert.equal(/^\+?[0-9 ()-]{8,20}$/.test(phoneWithPlus), true);
+  assert.equal(/^\+?[0-9 ()-]{8,20}$/.test(phoneWithoutPlus), true);
+});

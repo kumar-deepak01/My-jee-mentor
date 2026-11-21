@@ -115,8 +115,29 @@ export function initFeesPage(){
   filters.addEventListener('submit',event=>{event.preventDefault();loadHistory()});
   filters.addEventListener('reset',()=>setTimeout(loadHistory,0));
 
+  let isSubmitting = false;
+
   feeForm.addEventListener('submit',async event=>{
     event.preventDefault();
+    if(isSubmitting) return;
+
+    // 1. Trim all text inputs before validation
+    for(const el of feeForm.elements){
+      if(typeof el.value==='string'&&el.type!=='password'&&el.type!=='file'){
+        el.value=el.value.trim();
+      }
+    }
+
+    // 2. Validate Student Name
+    const studentName=feeForm.elements.studentName?.value.trim();
+    if(!studentName){
+      feeForm.elements.studentName?.focus();
+      setStatus(feeStatus,'Student name is required.',true);
+      return;
+    }
+
+    // 3. Validate Phone with international component
+    let validatedE164='';
     if(phoneComp){
       const phoneRes=phoneComp.validate();
       if(!phoneRes.isValid){
@@ -124,16 +145,62 @@ export function initFeesPage(){
         setStatus(feeStatus,phoneRes.error||'Please enter a valid phone number.',true);
         return;
       }
+      validatedE164=phoneRes.e164||phoneComp.getE164();
     }
+
+    // 4. Validate Amount
+    const amountVal=Number(feeForm.elements.amount?.value);
+    if(!Number.isFinite(amountVal)||amountVal<=0){
+      feeForm.elements.amount?.focus();
+      setStatus(feeStatus,'Enter a valid payment amount greater than zero.',true);
+      return;
+    }
+
+    // 5. Validate Course
+    if(!feeForm.elements.course?.value){
+      feeForm.elements.course?.focus();
+      setStatus(feeStatus,'Please select a course.',true);
+      return;
+    }
+
+    // 6. Validate Payment Mode
+    if(!feeForm.elements.paymentMode?.value){
+      feeForm.elements.paymentMode?.focus();
+      setStatus(feeStatus,'Please select a payment mode.',true);
+      return;
+    }
+
+    // 7. Validate Date
+    if(!feeForm.elements.date?.value){
+      feeForm.elements.date?.focus();
+      setStatus(feeStatus,'Please select a payment date.',true);
+      return;
+    }
+
+    // 8. Balance Due (accept 0 or positive number)
+    const rawBalance=feeForm.elements.balanceDue?.value;
+    const balanceDueVal=rawBalance===''||rawBalance==null?0:Number(rawBalance);
+    if(!Number.isFinite(balanceDueVal)||balanceDueVal<0){
+      feeForm.elements.balanceDue?.focus();
+      setStatus(feeStatus,'Enter a valid balance due (0 or greater).',true);
+      return;
+    }
+
     if(!feeForm.reportValidity())return;
+
+    isSubmitting=true;
     saveButton.disabled=true;
     setStatus(feeStatus,'Saving payment to Google Sheets…');
+
     const data=Object.fromEntries(new FormData(feeForm));
-    if(phoneComp&&phoneComp.getE164()){
-      data.phone=phoneComp.getE164();
+    if(validatedE164){
+      data.phone=validatedE164;
+    }
+    if(phoneComp){
       data.phoneCountry=phoneComp.getCountry().iso2;
       data.phoneDialCode=phoneComp.getCountry().dialCode;
     }
+
     try{
       const saved=await api('collect',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});
       if(!saved.receiptNo||!saved.record)throw new Error('Google Sheets did not confirm the save. No receipt was generated.');
@@ -146,6 +213,7 @@ export function initFeesPage(){
       if(error.status===401){showLogin('Session expired. Please sign in again.');return}
       setStatus(feeStatus,error.message||'Payment was not saved. No receipt was generated.',true);
     }finally{
+      isSubmitting=false;
       saveButton.disabled=false;
     }
   });
