@@ -3529,8 +3529,8 @@ html.dark-theme .booking-success p {
 /* 6 KPI Cards Grid */
 .fees-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
   margin-bottom: 24px;
 }
 
@@ -3539,14 +3539,14 @@ html.dark-theme .booking-success p {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
-  min-height: 114px;
+  min-height: 110px;
 }
 
 .fees-kpi-card:hover {
@@ -3565,13 +3565,8 @@ html.dark-theme .booking-success p {
   background: transparent;
 }
 
-.fees-kpi-card.kpi-today::before,
 .fees-kpi-card.kpi-total::before {
   background: linear-gradient(90deg, #ea580c, #f97316);
-}
-
-.fees-kpi-card.kpi-upi::before {
-  background: linear-gradient(90deg, #059669, #10b981);
 }
 
 .fees-kpi-card.kpi-transactions::before {
@@ -3626,15 +3621,9 @@ html.dark-theme .booking-success p {
   height: 15px;
 }
 
-.kpi-today .fees-kpi-icon,
 .kpi-total .fees-kpi-icon {
   background: #fff7ed;
   color: #ea580c;
-}
-
-.kpi-upi .fees-kpi-icon {
-  background: #ecfdf5;
-  color: #059669;
 }
 
 .kpi-transactions .fees-kpi-icon {
@@ -3663,7 +3652,7 @@ html.dark-theme .booking-success p {
 }
 
 .fees-kpi-value {
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: #0f172a;
   letter-spacing: -0.02em;
@@ -4001,21 +3990,6 @@ html.dark-theme .fees-kpi-value {
   color: #f8fafc;
 }
 
-html.dark-theme .kpi-today .fees-kpi-icon {
-  background: rgba(234, 88, 12, 0.15);
-  color: #fb923c;
-}
-
-html.dark-theme .kpi-upi .fees-kpi-icon {
-  background: rgba(5, 150, 105, 0.15);
-  color: #34d399;
-}
-
-html.dark-theme .kpi-average .fees-kpi-icon {
-  background: rgba(147, 51, 234, 0.15);
-  color: #c084fc;
-}
-
 html.dark-theme .fees-chart-card {
   background: #151b24;
   border-color: #334155;
@@ -4039,12 +4013,12 @@ html.dark-theme .fees-course-amount {
   .fees-charts-row-two {
     grid-template-columns: 1fr;
   }
+  .fees-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
-  .fees-kpi-grid {
-    grid-template-columns: 1fr;
-  }
   .fees-analytics-header {
     flex-direction: column;
     align-items: stretch;
