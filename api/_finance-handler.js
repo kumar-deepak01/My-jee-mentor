@@ -1,4 +1,3 @@
-import { createHmac, createHash, timingSafeEqual } from 'node:crypto';
 import {
   getFinanceConnectionStatus,
   generateAuthUrl,
@@ -9,33 +8,35 @@ import {
   verifySpreadsheet
 } from '../server/finance-service.js';
 import { setSetting, getSetting } from '../server/finance-db.js';
+import {
+  isPasswordConfigured,
+  setAdminPassword,
+  verifyAdminPassword,
+  hasAdminSession,
+  makeSessionCookie,
+  clearSessionCookie,
+  checkRateLimit,
+  recordFailedAttempt,
+  clearRateLimit
+} from '../server/admin-auth.js';
 
-const COOKIE = 'mjm_fees_admin';
 const json = (body, status = 200, headers = {}) =>
   Response.json(body, { status, headers: { 'cache-control': 'no-store', ...headers } });
 
-function hasAdminSession(request) {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword) return false;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const value = cookieHeader
-    .split(';')
-    .map(p => p.trim())
-    .find(p => p.startsWith(`${COOKIE}=`))
-    ?.slice(COOKIE.length + 1);
+function getClientIp(request) {
+  return (
+    request.headers.get('x-forwarded-for') ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  ).split(',')[0].trim().slice(0, 100);
+}
 
-  if (!value) return false;
-  try {
-    const [payload, signature, ...rest] = decodeURIComponent(value).split('.');
-    if (!payload || !signature || rest.length) return false;
-    const expected = createHmac('sha256', adminPassword).update(payload).digest('base64url');
-    const a = Buffer.from(expected);
-    const b = Buffer.from(signature);
-    if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
-    const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    return data.exp > Date.now() / 1000;
-  } catch {
-    return false;
+function checkOrigin(request) {
+  const origin = request.headers.get('origin');
+  if (origin && new URL(origin).origin !== new URL(request.url).origin) {
+    const error = new Error('This request origin is not allowed.');
+    error.status = 403;
+    throw error;
   }
 }
 
@@ -44,8 +45,76 @@ export async function handleFinanceRequest(request) {
     const url = new URL(request.url);
     const method = request.method;
     const action = url.searchParams.get('action') || 'status';
+    const clientIp = getClientIp(request);
 
-    // OAuth callback endpoint (from Google redirect)
+    // 1. Auth Status check (public: tells frontend if setup is needed or if already logged in)
+    if (method === 'GET' && action === 'auth-status') {
+      return json({
+        ok: true,
+        isSetupRequired: !isPasswordConfigured(),
+        authenticated: hasAdminSession(request)
+      });
+    }
+
+    // 2. First-time Admin Password Setup
+    if (method === 'POST' && action === 'setup-password') {
+      checkOrigin(request);
+      checkRateLimit(clientIp, 5);
+
+      const body = await request.json().catch(() => ({}));
+      const { password, confirmPassword } = body;
+
+      if (!password || typeof password !== 'string') {
+        return json({ ok: false, message: 'Password is required.' }, 400);
+      }
+      if (password.length < 8) {
+        return json({ ok: false, message: 'Password must be at least 8 characters long.' }, 400);
+      }
+      if (password !== confirmPassword) {
+        return json({ ok: false, message: 'Passwords do not match.' }, 400);
+      }
+
+      try {
+        setAdminPassword(password, clientIp);
+        clearRateLimit(clientIp);
+        return json(
+          { ok: true, message: 'Master admin password successfully configured.' },
+          200,
+          { 'set-cookie': makeSessionCookie() }
+        );
+      } catch (err) {
+        recordFailedAttempt(clientIp);
+        return json({ ok: false, message: err.message }, err.status || 400);
+      }
+    }
+
+    // 3. Admin Login
+    if (method === 'POST' && action === 'login') {
+      checkOrigin(request);
+      checkRateLimit(clientIp, 10);
+
+      const body = await request.json().catch(() => ({}));
+      const password = typeof body?.password === 'string' ? body.password : '';
+
+      if (!isPasswordConfigured()) {
+        return json({ ok: false, message: 'Admin password has not been created yet. Please complete initial setup.' }, 400);
+      }
+
+      if (!verifyAdminPassword(password)) {
+        recordFailedAttempt(clientIp);
+        return json({ ok: false, message: 'Password does not match.' }, 401);
+      }
+
+      clearRateLimit(clientIp);
+      return json({ ok: true }, 200, { 'set-cookie': makeSessionCookie() });
+    }
+
+    // 4. Admin Logout
+    if (method === 'POST' && action === 'logout') {
+      return json({ ok: true }, 200, { 'set-cookie': clearSessionCookie() });
+    }
+
+    // 5. OAuth callback endpoint (from Google redirect)
     if (method === 'GET' && action === 'oauth-callback') {
       const code = url.searchParams.get('code');
       const error = url.searchParams.get('error');
@@ -62,20 +131,21 @@ export async function handleFinanceRequest(request) {
       const tokenData = await exchangeAuthCode(code, redirectUri);
       const accessToken = tokenData.access_token || (await getValidAccessToken());
 
-      // Automatically create Finance Google Spreadsheet in the user's Google Drive
+      // Automatically create Finance Google Spreadsheet in user's Google Drive
       await createFinanceSpreadsheet(accessToken);
 
       return Response.redirect(new URL('/finance.html?setup=success', url.origin).toString(), 302);
     }
 
-    // All other management endpoints require Admin Authentication
+    // 6. All other management endpoints STRICTLY REQUIRE Admin Authentication
     if (!hasAdminSession(request)) {
-      // Allow status check so the frontend knows if setup is required before login
+      // Allow read-only status check so UI can display connection pills if permitted
       if (method === 'GET' && action === 'status') {
         const publicStatus = await getFinanceConnectionStatus();
         return json({
           ok: true,
           authenticated: false,
+          isSetupRequired: !isPasswordConfigured(),
           status: publicStatus.status,
           spreadsheetConfigured: Boolean(publicStatus.spreadsheetId),
           spreadsheetUrl: publicStatus.spreadsheetUrl
@@ -84,10 +154,11 @@ export async function handleFinanceRequest(request) {
       return json({ ok: false, code: 'AUTH_REQUIRED', message: 'Admin authentication required.' }, 401);
     }
 
+    // Authenticated GET actions
     if (method === 'GET') {
       if (action === 'status') {
         const status = await getFinanceConnectionStatus();
-        return json({ ok: true, authenticated: true, ...status });
+        return json({ ok: true, authenticated: true, isSetupRequired: false, ...status });
       }
 
       if (action === 'auth-url') {
@@ -139,6 +210,7 @@ export async function handleFinanceRequest(request) {
       return json({ ok: false, message: 'Invalid GET action.' }, 404);
     }
 
+    // Authenticated POST actions
     if (method === 'POST') {
       const body = await request.json().catch(() => ({}));
 

@@ -30,18 +30,42 @@ export function financePageMarkup() {
   return `
     <section class="fees-portal finance-portal">
       <div class="container">
-        <!-- Admin Login Panel -->
+        <!-- Admin Auth / First-time Setup Panel -->
         <section class="fees-panel fees-login-panel" data-finance-auth>
-          <span class="eyebrow">FINANCE ADMIN LOGIN</span>
-          <h2>Enter Admin Password</h2>
-          <form data-finance-login>
-            <label for="financePassword">Admin Password</label>
-            <div class="fees-login-row">
-              <input id="financePassword" name="password" type="password" required autocomplete="current-password" maxlength="300">
-              <button class="btn btn-primary" type="submit" data-finance-login-button>Unlock Finance</button>
-            </div>
-            <p class="fees-status" data-finance-login-status role="status" aria-live="polite"></p>
-          </form>
+          <!-- First-time Setup View (shown only when no admin password exists) -->
+          <div data-finance-setup-view hidden>
+            <span class="eyebrow" style="color: #ea580c;">INITIAL ADMIN SETUP</span>
+            <h2>Create Admin Password</h2>
+            <p class="fees-help" style="margin-top: 6px; margin-bottom: 20px;">
+              No admin password has been created yet. Create your private master password to secure the Finance Portal and Google Sheets data.
+            </p>
+            <form data-finance-setup-password-form>
+              <label for="newAdminPassword">Choose Master Admin Password
+                <input id="newAdminPassword" name="password" type="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+              </label>
+              <label for="confirmAdminPassword" style="margin-top: 14px;">Confirm Admin Password
+                <input id="confirmAdminPassword" name="confirmPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Re-enter password">
+              </label>
+              <button class="btn btn-primary" type="submit" data-finance-setup-button style="width: 100%; margin-top: 18px;">
+                Set Password &amp; Unlock Finance Portal
+              </button>
+              <p class="fees-status" data-finance-setup-status role="status" aria-live="polite"></p>
+            </form>
+          </div>
+
+          <!-- Normal Login View -->
+          <div data-finance-login-view>
+            <span class="eyebrow">FINANCE ADMIN LOGIN</span>
+            <h2>Enter Admin Password</h2>
+            <form data-finance-login>
+              <label for="financePassword">Admin Password</label>
+              <div class="fees-login-row">
+                <input id="financePassword" name="password" type="password" required autocomplete="current-password" maxlength="300">
+                <button class="btn btn-primary" type="submit" data-finance-login-button>Unlock Finance</button>
+              </div>
+              <p class="fees-status" data-finance-login-status role="status" aria-live="polite"></p>
+            </form>
+          </div>
         </section>
 
         <!-- Finance Dashboard -->
@@ -318,6 +342,11 @@ export function initFinancePage() {
   const loginForm = authPanel.querySelector('[data-finance-login]');
   const loginStatus = authPanel.querySelector('[data-finance-login-status]');
   const loginButton = authPanel.querySelector('[data-finance-login-button]');
+  const setupView = authPanel.querySelector('[data-finance-setup-view]');
+  const loginView = authPanel.querySelector('[data-finance-login-view]');
+  const setupForm = authPanel.querySelector('[data-finance-setup-password-form]');
+  const setupStatus = authPanel.querySelector('[data-finance-setup-status]');
+  const setupButton = authPanel.querySelector('[data-finance-setup-button]');
   const logoutButton = dashboardPanel.querySelector('[data-finance-logout]');
   const statusPill = dashboardPanel.querySelector('[data-finance-status-pill]');
   const statusText = statusPill?.querySelector('[data-status-text]');
@@ -457,14 +486,82 @@ export function initFinancePage() {
     loadStatus();
   }
 
+  function showSetupView() {
+    dashboardPanel.hidden = true;
+    authPanel.hidden = false;
+    if (setupView) setupView.hidden = false;
+    if (loginView) loginView.hidden = true;
+  }
+
   function showLogin(msg = '') {
     dashboardPanel.hidden = true;
     authPanel.hidden = false;
+    if (setupView) setupView.hidden = true;
+    if (loginView) loginView.hidden = false;
     if (loginStatus) {
       loginStatus.textContent = msg;
       loginStatus.className = `fees-status ${msg ? 'is-error' : ''}`;
     }
   }
+
+  async function checkAuth() {
+    try {
+      const authRes = await api(ENDPOINT, { query: { action: 'auth-status' } });
+      if (authRes.authenticated) {
+        showDashboard();
+      } else if (authRes.isSetupRequired) {
+        showSetupView();
+      } else {
+        showLogin();
+      }
+    } catch {
+      showLogin();
+    }
+  }
+
+  setupForm?.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (setupButton) setupButton.disabled = true;
+    if (setupStatus) {
+      setupStatus.textContent = 'Securing admin password…';
+      setupStatus.className = 'fees-status';
+    }
+
+    const password = setupForm.elements.password.value;
+    const confirmPassword = setupForm.elements.confirmPassword.value;
+
+    if (password !== confirmPassword) {
+      if (setupStatus) {
+        setupStatus.textContent = 'Passwords do not match.';
+        setupStatus.className = 'fees-status is-error';
+      }
+      if (setupButton) setupButton.disabled = false;
+      return;
+    }
+
+    try {
+      const res = await api(ENDPOINT, {
+        method: 'POST',
+        query: { action: 'setup-password' },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, confirmPassword })
+      });
+      if (res.ok) {
+        showAlert('Admin master password successfully configured! You are now logged in.', false);
+        setupForm.reset();
+        showDashboard();
+      } else {
+        throw new Error(res.message || 'Failed to set password.');
+      }
+    } catch (err) {
+      if (setupStatus) {
+        setupStatus.textContent = err.message;
+        setupStatus.className = 'fees-status is-error';
+      }
+    } finally {
+      if (setupButton) setupButton.disabled = false;
+    }
+  });
 
   loginForm?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -475,8 +572,7 @@ export function initFinancePage() {
     }
     try {
       const password = loginForm.elements.password.value;
-      // Reuses admin login from /api/fees
-      await api(FEES_ENDPOINT, {
+      await api(ENDPOINT, {
         method: 'POST',
         query: { action: 'login' },
         headers: { 'Content-Type': 'application/json' },
@@ -496,7 +592,7 @@ export function initFinancePage() {
 
   logoutButton?.addEventListener('click', async () => {
     try {
-      await api(FEES_ENDPOINT, { method: 'POST', query: { action: 'logout' } });
+      await api(ENDPOINT, { method: 'POST', query: { action: 'logout' } });
     } catch {}
     showLogin('You have been logged out.');
   });
@@ -575,8 +671,6 @@ export function initFinancePage() {
     }
   });
 
-  // Check existing session
-  api(FEES_ENDPOINT, { query: { action: 'session' } })
-    .then(showDashboard)
-    .catch(() => showLogin());
+  // Check authentication status and determine if setup or login is needed
+  checkAuth();
 }

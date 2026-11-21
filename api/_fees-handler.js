@@ -1,11 +1,15 @@
 import {createHmac,createHash,timingSafeEqual} from 'node:crypto';
+import {isPasswordConfigured,verifyAdminPassword,hasAdminSession,makeSessionCookie,clearSessionCookie} from '../server/admin-auth.js';
 
 const COOKIE='mjm_fees_admin',SESSION_SECONDS=4*60*60,loginAttempts=new Map();
 const json=(body,status=200,headers={})=>Response.json(body,{status,headers:{'cache-control':'no-store',...headers}});
 class FeesError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code}}
 function sanitizedMessage(error){let message=String(error?.message||error||'Unknown error');for(const name of ['ADMIN_PASSWORD','SHEET_SECRET','SHEET_WEBAPP_URL'])if(process.env[name])message=message.split(process.env[name]).join('[redacted]');return message.slice(0,500)}
 const safeEqual=(left,right)=>{const a=createHash('sha256').update(String(left)).digest(),b=createHash('sha256').update(String(right)).digest();return timingSafeEqual(a,b)&&String(left).length===String(right).length};
-function requireAdminConfig(){for(const name of ['ADMIN_PASSWORD','SHEET_WEBAPP_URL','SHEET_SECRET'])if(!process.env[name])throw new FeesError(503,'FEES_CONFIG_MISSING',`Fee service setup is incomplete. Configure ${name} on the server.`)}
+function requireAdminConfig(){
+  if(!isPasswordConfigured())throw new FeesError(503,'FEES_CONFIG_MISSING','Fee service setup is incomplete. Admin password has not been configured.');
+  for(const name of ['SHEET_WEBAPP_URL','SHEET_SECRET'])if(!process.env[name])throw new FeesError(503,'FEES_CONFIG_MISSING',`Fee service setup is incomplete. Configure ${name} on the server.`);
+}
 function sign(payload){return createHmac('sha256',process.env.ADMIN_PASSWORD).update(payload).digest('base64url')}
 function makeCookie(){const payload=Buffer.from(JSON.stringify({exp:Math.floor(Date.now()/1000)+SESSION_SECONDS})).toString('base64url'),token=`${payload}.${sign(payload)}`;return`${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_SECONDS}`}
 function clearCookie(){return`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`}
@@ -44,15 +48,15 @@ export async function handleFeesRequest(request){
     if(method==='POST'){
       checkOrigin(request);const body=await request.json().catch(()=>{throw new FeesError(400,'INVALID_JSON','The submitted form is invalid.')});
       if(action==='login'){
-        rateLimitLogin(request);if(!safeEqual(body?.password,process.env.ADMIN_PASSWORD))throw new FeesError(401,'LOGIN_FAILED','Password does not match.');clearLoginAttempts(request);return json({ok:true},200,{'set-cookie':makeCookie()})
+        rateLimitLogin(request);if(!verifyAdminPassword(body?.password))throw new FeesError(401,'LOGIN_FAILED','Password does not match.');clearLoginAttempts(request);return json({ok:true},200,{'set-cookie':makeSessionCookie()})
       }
-      if(action==='logout')return json({ok:true},200,{'set-cookie':clearCookie()});
-      if(!hasSession(request))throw new FeesError(401,'LOGIN_REQUIRED','Please enter the admin password again.');
+      if(action==='logout')return json({ok:true},200,{'set-cookie':clearSessionCookie()});
+      if(!hasAdminSession(request))throw new FeesError(401,'LOGIN_REQUIRED','Please enter the admin password again.');
       if(action!=='collect')throw new FeesError(404,'ACTION_NOT_FOUND','This fee action is not available.');
       const record=validateRecord(body),saved=await callSheet('POST',{body:record});if(!saved.receiptNo||!saved.record)throw new FeesError(502,'SHEET_SAVE_UNCONFIRMED','Google Sheets did not return a saved receipt. No receipt was generated.');return json({ok:true,receiptNo:saved.receiptNo,record:saved.record},201)
     }
     if(method==='GET'){
-      if(!hasSession(request))throw new FeesError(401,'LOGIN_REQUIRED','Enter the admin password to view fee records.');
+      if(!hasAdminSession(request))throw new FeesError(401,'LOGIN_REQUIRED','Enter the admin password to view fee records.');
       if(action==='session')return json({ok:true});
       const search=text(url.searchParams.get('search'),100),date=text(url.searchParams.get('date'),10);if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new FeesError(400,'DATE_INVALID','Select a valid date filter.');const result=await callSheet('GET',{query:{search,date}});return json({ok:true,records:Array.isArray(result.records)?result.records:[]})
     }

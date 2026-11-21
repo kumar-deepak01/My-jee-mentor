@@ -13,6 +13,15 @@ import {
   deleteSetting,
   getAllSettings
 } from '../server/finance-db.js';
+import {
+  isPasswordConfigured,
+  setAdminPassword,
+  verifyAdminPassword,
+  hasAdminSession,
+  makeSessionCookie,
+  clearSessionCookie
+} from '../server/admin-auth.js';
+import { handleFinanceRequest } from '../api/_finance-handler.js';
 
 test('FINANCE_SPREADSHEET_TITLE is accurate', () => {
   assert.equal(FINANCE_SPREADSHEET_TITLE, 'My JEE Mentor – Finance Management');
@@ -117,4 +126,107 @@ test('getFinanceConnectionStatus returns comprehensive status object', async () 
   assert.ok(typeof status.feeSheet === 'object');
   assert.ok(typeof status.feeSheet.connected === 'boolean');
   assert.equal(status.feeSheet.readOnly, true);
+});
+
+test('Admin Auth: First-time setup, PBKDF2 hashing, and verification', () => {
+  // Clear any existing test passwords first
+  deleteSetting('admin_password_hash');
+  deleteSetting('admin_password_salt');
+  deleteSetting('admin_session_secret');
+
+  assert.equal(isPasswordConfigured(), false);
+
+  // Reject too-short password (< 8 chars)
+  assert.throws(() => {
+    setAdminPassword('short');
+  }, /at least 8 characters/);
+
+  // Successfully set a strong password
+  const testPass = 'AdminSecret@2026';
+  const success = setAdminPassword(testPass, '127.0.0.1');
+  assert.equal(success, true);
+  assert.equal(isPasswordConfigured(), true);
+
+  // Verify hash and salt were stored in settings
+  const hash = getSetting('admin_password_hash');
+  const salt = getSetting('admin_password_salt');
+  assert.ok(hash && hash.length === 128); // 64 bytes hex
+  assert.ok(salt && salt.length === 64);  // 32 bytes hex
+
+  // Verify correct password succeeds
+  assert.equal(verifyAdminPassword(testPass), true);
+
+  // Verify incorrect password fails
+  assert.equal(verifyAdminPassword('WrongPassword123'), false);
+  assert.equal(verifyAdminPassword(''), false);
+
+  // Verify overwrite protection (cannot call setAdminPassword again once configured)
+  assert.throws(() => {
+    setAdminPassword('AnotherPassword2026', '127.0.0.1');
+  }, /already been configured/);
+});
+
+test('Admin Auth: Session cookie creation, signing, and verification', () => {
+  const cookieHeader = makeSessionCookie();
+  assert.ok(cookieHeader.includes('mjm_fees_admin='));
+  assert.ok(cookieHeader.includes('HttpOnly'));
+  assert.ok(cookieHeader.includes('Max-Age=14400'));
+
+  // Extract token from Set-Cookie header
+  const token = cookieHeader.split(';')[0].replace('mjm_fees_admin=', '');
+
+  // Valid session request
+  const validReq = new Request('https://www.myjeementor.com/api/finance', {
+    headers: { cookie: `mjm_fees_admin=${token}` }
+  });
+  assert.equal(hasAdminSession(validReq), true);
+
+  // Tampered token request
+  const tamperedReq = new Request('https://www.myjeementor.com/api/finance', {
+    headers: { cookie: `mjm_fees_admin=${token}tampered` }
+  });
+  assert.equal(hasAdminSession(tamperedReq), false);
+
+  // No cookie request
+  const noCookieReq = new Request('https://www.myjeementor.com/api/finance');
+  assert.equal(hasAdminSession(noCookieReq), false);
+
+  // Clear cookie header
+  const clearHeader = clearSessionCookie();
+  assert.ok(clearHeader.includes('Max-Age=0'));
+});
+
+test('handleFinanceRequest: Auth status check and protected actions', async () => {
+  // Test public auth-status action
+  const statusReq = new Request('https://www.myjeementor.com/api/finance?action=auth-status');
+  const statusRes = await handleFinanceRequest(statusReq);
+  const statusData = await statusRes.json();
+  assert.equal(statusRes.status, 200);
+  assert.equal(statusData.ok, true);
+  assert.equal(statusData.isSetupRequired, false); // because we set password in previous test
+
+  // Test unauthorized request to protected endpoint (summary)
+  const unauthReq = new Request('https://www.myjeementor.com/api/finance?action=summary');
+  const unauthRes = await handleFinanceRequest(unauthReq);
+  assert.equal(unauthRes.status, 401);
+  const unauthData = await unauthRes.json();
+  assert.equal(unauthData.code, 'AUTH_REQUIRED');
+
+  // Test authorized request with session cookie
+  const cookieHeader = makeSessionCookie();
+  const token = cookieHeader.split(';')[0].replace('mjm_fees_admin=', '');
+  const authReq = new Request('https://www.myjeementor.com/api/finance?action=summary', {
+    headers: { cookie: `mjm_fees_admin=${token}` }
+  });
+  const authRes = await handleFinanceRequest(authReq);
+  assert.equal(authRes.status, 200);
+  const authData = await authRes.json();
+  assert.equal(authData.ok, true);
+  assert.ok(authData.revenue);
+
+  // Clean up test credentials so storage stays pristine
+  deleteSetting('admin_password_hash');
+  deleteSetting('admin_password_salt');
+  deleteSetting('admin_session_secret');
+  deleteSetting('admin_password_created_at');
 });
