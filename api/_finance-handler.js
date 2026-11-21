@@ -1,13 +1,21 @@
 import {
   getFinanceConnectionStatus,
   getFinanceSpreadsheetId,
-  getOAuthConfig,
-  generateAuthUrl,
-  exchangeAuthCode,
-  createFinanceSpreadsheet,
-  connectExistingSpreadsheet,
-  getValidAccessToken,
-  verifySpreadsheet
+  getFinanceWebAppUrl,
+  getFinanceSheetSecret,
+  verifySpreadsheetConnection,
+  testFinanceReadWrite,
+  getExpenses,
+  addExpense,
+  deleteExpense,
+  getSalaries,
+  addSalary,
+  getEmployees,
+  addEmployee,
+  getOtherIncome,
+  addOtherIncome,
+  getCategories,
+  getAuditLog
 } from '../server/finance-service.js';
 import { setSetting, getSetting } from '../server/finance-db.js';
 import {
@@ -32,6 +40,10 @@ function sanitizeFinanceMessage(error) {
   const sensitiveKeys = [
     'Finance_PASSWORDS',
     'ADMIN_PASSWORD',
+    'FINANCE_SHEET_SECRET',
+    'FINANCE_WEBAPP_URL',
+    'SHEET_SECRET',
+    'SHEET_WEBAPP_URL',
     'GOOGLE_CLIENT_SECRET',
     'GOOGLE_REFRESH_TOKEN',
     'GOOGLE_ACCESS_TOKEN'
@@ -41,9 +53,7 @@ function sanitizeFinanceMessage(error) {
       message = message.split(process.env[name]).join('[redacted]');
     }
   }
-  const dbRefresh = getSetting('google_refresh_token');
-  if (dbRefresh) message = message.split(dbRefresh).join('[redacted]');
-  const dbSecret = getSetting('google_client_secret');
+  const dbSecret = getSetting('finance_sheet_secret');
   if (dbSecret) message = message.split(dbSecret).join('[redacted]');
   return message.slice(0, 500);
 }
@@ -145,30 +155,7 @@ export async function handleFinanceRequest(request) {
       return json({ ok: true }, 200, { 'set-cookie': clearFinanceSessionCookie() });
     }
 
-    // 5. OAuth callback endpoint (from Google redirect)
-    if (method === 'GET' && action === 'oauth-callback') {
-      const code = url.searchParams.get('code');
-      const error = url.searchParams.get('error');
-
-      if (error) {
-        return Response.redirect(new URL(`/finance.html?error=${encodeURIComponent(error)}`, url.origin).toString(), 302);
-      }
-
-      if (!code) {
-        return Response.redirect(new URL('/finance.html?error=no_code_provided', url.origin).toString(), 302);
-      }
-
-      const redirectUri = new URL('/api/finance?action=oauth-callback', url.origin).toString();
-      const tokenData = await exchangeAuthCode(code, redirectUri);
-      const accessToken = tokenData.access_token || (await getValidAccessToken());
-
-      // Automatically create Finance Google Spreadsheet in user's Google Drive
-      await createFinanceSpreadsheet(accessToken);
-
-      return Response.redirect(new URL('/finance.html?setup=success', url.origin).toString(), 302);
-    }
-
-    // 6. All other management endpoints STRICTLY REQUIRE Finance Admin Authentication
+    // 5. All other management endpoints STRICTLY REQUIRE Finance Admin Authentication
     if (!hasFinanceSession(request)) {
       // Allow read-only status check so UI can display connection pills if permitted
       if (method === 'GET' && action === 'status') {
@@ -192,23 +179,44 @@ export async function handleFinanceRequest(request) {
         return json({ ok: true, authenticated: true, isSetupRequired: false, ...status });
       }
 
-      if (action === 'auth-url') {
-        const { clientId } = getOAuthConfig();
-        if (!clientId) {
-          return json({
-            ok: false,
-            needsConfig: true,
-            message: 'Google OAuth Client ID is not configured. Please configure it in settings or environment variables.'
-          }, 400);
-        }
-        const redirectUri = new URL('/api/finance?action=oauth-callback', url.origin).toString();
-        const authUrl = generateAuthUrl(redirectUri);
-        return json({ ok: true, authUrl });
+      if (action === 'expenses') {
+        const category = url.searchParams.get('category') || '';
+        const search = url.searchParams.get('search') || '';
+        const expenses = await getExpenses({ category, search });
+        return json({ ok: true, expenses });
+      }
+
+      if (action === 'salaries') {
+        const period = url.searchParams.get('period') || '';
+        const salaries = await getSalaries({ period });
+        return json({ ok: true, salaries });
+      }
+
+      if (action === 'employees') {
+        const employees = await getEmployees();
+        return json({ ok: true, employees });
+      }
+
+      if (action === 'other-income') {
+        const records = await getOtherIncome();
+        return json({ ok: true, records });
+      }
+
+      if (action === 'categories') {
+        const categories = await getCategories();
+        return json({ ok: true, categories });
+      }
+
+      if (action === 'audit-log') {
+        const limit = Number(url.searchParams.get('limit')) || 100;
+        const logs = await getAuditLog(limit);
+        return json({ ok: true, logs });
       }
 
       if (action === 'summary') {
         const status = await getFinanceConnectionStatus();
-        // Read student fee revenue directly from Google Sheets via SHEET_SECRET
+
+        // 1. Read student fee revenue directly from Fee Register via SHEET_SECRET (Read-only)
         let feeTotal = 0;
         let feeCount = 0;
         try {
@@ -221,6 +229,38 @@ export async function handleFinanceRequest(request) {
           console.warn('Could not read fee summary:', fErr.message);
         }
 
+        // 2. Read live expenses & salaries from Finance spreadsheet
+        let operationalExpenses = 0;
+        let salariesDisbursed = 0;
+        let otherIncomeTotal = 0;
+
+        if (status.hasConfig) {
+          try {
+            const expList = await getExpenses();
+            operationalExpenses = expList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          } catch (eErr) {
+            console.warn('Could not fetch expenses for summary:', eErr.message);
+          }
+
+          try {
+            const salList = await getSalaries();
+            salariesDisbursed = salList.reduce((sum, s) => sum + (Number(s.netPaid) || 0), 0);
+          } catch (sErr) {
+            console.warn('Could not fetch salaries for summary:', sErr.message);
+          }
+
+          try {
+            const incList = await getOtherIncome();
+            otherIncomeTotal = incList.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+          } catch (iErr) {
+            console.warn('Could not fetch other income for summary:', iErr.message);
+          }
+        }
+
+        const totalInflow = feeTotal + otherIncomeTotal;
+        const totalOutflow = operationalExpenses + salariesDisbursed;
+        const netMargin = totalInflow - totalOutflow;
+
         return json({
           ok: true,
           status: status.status,
@@ -229,15 +269,15 @@ export async function handleFinanceRequest(request) {
           revenue: {
             feeCollection: feeTotal,
             feeTransactions: feeCount,
-            otherIncome: 0,
-            totalInflow: feeTotal
+            otherIncome: otherIncomeTotal,
+            totalInflow
           },
           expenses: {
-            operationalExpenses: 0,
-            salariesDisbursed: 0,
-            totalOutflow: 0
+            operationalExpenses,
+            salariesDisbursed,
+            totalOutflow
           },
-          netMargin: feeTotal
+          netMargin
         });
       }
 
@@ -249,34 +289,87 @@ export async function handleFinanceRequest(request) {
       const body = await request.json().catch(() => ({}));
 
       if (action === 'save-config') {
-        const { clientId, clientSecret, refreshToken, spreadsheetId, feeSpreadsheetId } = body;
-        if (clientId !== undefined) setSetting('google_client_id', String(clientId).trim());
-        if (clientSecret !== undefined) setSetting('google_client_secret', String(clientSecret).trim());
-        if (refreshToken !== undefined) setSetting('google_refresh_token', String(refreshToken).trim());
+        const { webappUrl, secret, spreadsheetId, feeSpreadsheetId } = body;
+        if (webappUrl !== undefined) setSetting('finance_webapp_url', String(webappUrl).trim());
+        if (secret !== undefined) setSetting('finance_sheet_secret', String(secret).trim());
         if (spreadsheetId !== undefined) setSetting('finance_spreadsheet_id', String(spreadsheetId).trim());
         if (feeSpreadsheetId !== undefined) setSetting('fee_spreadsheet_id', String(feeSpreadsheetId).trim());
 
         const updatedStatus = await getFinanceConnectionStatus();
-        return json({ ok: true, message: 'Configuration saved successfully.', status: updatedStatus });
-      }
-
-      if (action === 'auto-create') {
-        const accessToken = await getValidAccessToken();
-        const result = await createFinanceSpreadsheet(accessToken);
-        return json(result);
-      }
-
-      if (action === 'connect-existing') {
-        const spreadsheetId = body?.spreadsheetId || getFinanceSpreadsheetId();
-        const result = await connectExistingSpreadsheet(spreadsheetId);
-        return json(result);
+        return json({ ok: true, message: 'Finance configuration saved successfully.', status: updatedStatus });
       }
 
       if (action === 'sync') {
-        const spreadsheetId = getFinanceSpreadsheetId();
-        const accessToken = await getValidAccessToken();
-        const verified = await verifySpreadsheet(spreadsheetId, accessToken);
-        return json(verified);
+        const result = await verifySpreadsheetConnection();
+        return json({ ok: true, message: 'Finance spreadsheet verified and synced.', ...result });
+      }
+
+      if (action === 'test-connection') {
+        const testResult = await testFinanceReadWrite('Admin Verification', clientIp);
+        return json(testResult);
+      }
+
+      if (action === 'add-expense') {
+        const amount = Number(body?.amount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return json({ ok: false, message: 'Enter a valid expense amount greater than zero.' }, 400);
+        }
+        const result = await addExpense({
+          ...body,
+          amount,
+          clientIp,
+          recordedBy: body?.recordedBy || 'Admin'
+        });
+        return json(result, 201);
+      }
+
+      if (action === 'delete-expense') {
+        const id = String(body?.id || '').trim();
+        if (!id) {
+          return json({ ok: false, message: 'Expense ID is required.' }, 400);
+        }
+        const result = await deleteExpense(id, 'Admin', clientIp);
+        return json(result);
+      }
+
+      if (action === 'add-salary') {
+        const employeeName = String(body?.employeeName || '').trim();
+        if (!employeeName) {
+          return json({ ok: false, message: 'Employee name is required.' }, 400);
+        }
+        const result = await addSalary({
+          ...body,
+          clientIp,
+          actor: 'Admin'
+        });
+        return json(result, 201);
+      }
+
+      if (action === 'add-employee') {
+        const name = String(body?.name || '').trim();
+        if (!name) {
+          return json({ ok: false, message: 'Employee full name is required.' }, 400);
+        }
+        const result = await addEmployee({
+          ...body,
+          clientIp,
+          actor: 'Admin'
+        });
+        return json(result, 201);
+      }
+
+      if (action === 'add-other-income') {
+        const amount = Number(body?.amount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return json({ ok: false, message: 'Enter a valid income amount greater than zero.' }, 400);
+        }
+        const result = await addOtherIncome({
+          ...body,
+          amount,
+          clientIp,
+          receivedBy: 'Admin'
+        });
+        return json(result, 201);
       }
 
       return json({ ok: false, message: 'Invalid POST action.' }, 404);

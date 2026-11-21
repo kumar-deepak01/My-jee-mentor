@@ -8,9 +8,10 @@ import {
   TARGET_GOOGLE_ACCOUNT,
   getFinanceSpreadsheetId,
   getSpreadsheetUrl,
-  getOAuthConfig,
-  generateAuthUrl,
-  getFinanceConnectionStatus
+  getFinanceWebAppUrl,
+  getFinanceSheetSecret,
+  getFinanceConnectionStatus,
+  callFinanceSheet
 } from '../server/finance-service.js';
 import {
   getSetting,
@@ -315,59 +316,78 @@ test('Finance Google Integration: Target account and spreadsheet configuration',
   delete process.env.FINANCE_SPREADSHEET_ID;
 });
 
-test('Finance Google OAuth: Minimum scopes, login_hint, offline access, and consent prompt', () => {
-  // Missing client ID throws
-  delete process.env.GOOGLE_CLIENT_ID;
-  deleteSetting('google_client_id');
-  assert.throws(() => {
-    generateAuthUrl('https://www.myjeementor.com/api/finance?action=oauth-callback');
-  }, /Client ID is not configured/);
+test('Finance Apps Script Integration: Web App URL, Secret & Settings fallbacks', () => {
+  // Clear env and settings
+  delete process.env.FINANCE_WEBAPP_URL;
+  delete process.env.FINANCE_SHEET_SECRET;
+  delete process.env.SHEET_WEBAPP_URL;
+  delete process.env.SHEET_SECRET;
+  deleteSetting('finance_webapp_url');
+  deleteSetting('finance_sheet_secret');
 
-  // Configured client ID generates correct URL
-  process.env.GOOGLE_CLIENT_ID = 'mock-client-id-1234.apps.googleusercontent.com';
-  const redirectUri = 'https://www.myjeementor.com/api/finance?action=oauth-callback';
-  const authUrlStr = generateAuthUrl(redirectUri);
+  assert.equal(getFinanceWebAppUrl(), '');
+  assert.equal(getFinanceSheetSecret(), '');
 
-  const parsedUrl = new URL(authUrlStr);
-  assert.equal(parsedUrl.origin, 'https://accounts.google.com');
-  assert.equal(parsedUrl.pathname, '/o/oauth2/v2/auth');
-  assert.equal(parsedUrl.searchParams.get('client_id'), 'mock-client-id-1234.apps.googleusercontent.com');
-  assert.equal(parsedUrl.searchParams.get('redirect_uri'), redirectUri);
-  assert.equal(parsedUrl.searchParams.get('response_type'), 'code');
-  assert.equal(parsedUrl.searchParams.get('access_type'), 'offline');
-  assert.equal(parsedUrl.searchParams.get('prompt'), 'consent');
-  assert.equal(parsedUrl.searchParams.get('login_hint'), 'amjeementor@gmail.com');
-  // Minimum scope check: Must have spreadsheets, must NOT have excessive drive scopes
-  assert.equal(parsedUrl.searchParams.get('scope'), 'https://www.googleapis.com/auth/spreadsheets');
-  assert.equal(parsedUrl.searchParams.get('scope')?.includes('drive'), false);
+  // Setting override
+  setSetting('finance_webapp_url', 'https://script.google.com/macros/s/AKfy_setting/exec');
+  setSetting('finance_sheet_secret', 'SettingSecret123');
+  assert.equal(getFinanceWebAppUrl(), 'https://script.google.com/macros/s/AKfy_setting/exec');
+  assert.equal(getFinanceSheetSecret(), 'SettingSecret123');
 
-  delete process.env.GOOGLE_CLIENT_ID;
+  // Environment override takes priority over setting
+  process.env.FINANCE_WEBAPP_URL = 'https://script.google.com/macros/s/AKfy_env/exec';
+  process.env.FINANCE_SHEET_SECRET = 'EnvSecret456';
+  assert.equal(getFinanceWebAppUrl(), 'https://script.google.com/macros/s/AKfy_env/exec');
+  assert.equal(getFinanceSheetSecret(), 'EnvSecret456');
+
+  // Cleanup
+  delete process.env.FINANCE_WEBAPP_URL;
+  delete process.env.FINANCE_SHEET_SECRET;
+  deleteSetting('finance_webapp_url');
+  deleteSetting('finance_sheet_secret');
+});
+
+test('Finance callFinanceSheet validates missing URL and secret', async () => {
+  delete process.env.FINANCE_WEBAPP_URL;
+  delete process.env.FINANCE_SHEET_SECRET;
+  delete process.env.SHEET_WEBAPP_URL;
+  delete process.env.SHEET_SECRET;
+  deleteSetting('finance_webapp_url');
+  deleteSetting('finance_sheet_secret');
+
+  await assert.rejects(async () => {
+    await callFinanceSheet('GET', { action: 'status' });
+  }, /FINANCE_WEBAPP_URL/);
+
+  setSetting('finance_webapp_url', 'https://script.google.com/macros/s/AKfy_test/exec');
+  await assert.rejects(async () => {
+    await callFinanceSheet('GET', { action: 'status' });
+  }, /FINANCE_SHEET_SECRET/);
+
+  deleteSetting('finance_webapp_url');
 });
 
 test('Finance Status & Security: Never exposes secrets or tokens in status', async () => {
-  setSetting('google_client_id', 'test-client-id.apps.googleusercontent.com');
-  setSetting('google_client_secret', 'SuperSecretClientKey999');
-  setSetting('google_refresh_token', '1//0SecretRefreshToken123');
+  process.env.FINANCE_WEBAPP_URL = 'https://script.google.com/macros/s/AKfy_secret_test/exec';
+  process.env.FINANCE_SHEET_SECRET = 'SuperSecretSheetKey999';
 
   const status = await getFinanceConnectionStatus();
   assert.equal(status.googleAccount, 'amjeementor@gmail.com');
-  assert.equal(status.hasOAuthConfig, true);
-  assert.equal(status.hasRefreshToken, true);
+  assert.equal(status.hasConfig, true);
+  assert.equal(status.hasWebAppUrl, true);
+  assert.equal(status.hasSecret, true);
   assert.equal(status.spreadsheetId, '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8');
   assert.ok(status.spreadsheetUrl.includes('13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8'));
+  assert.equal(status.integrationMethod, 'Google Apps Script Web App');
 
-  // Ensure secrets are NEVER present in status object
-  assert.equal('google_client_secret' in status, false);
-  assert.equal('google_refresh_token' in status, false);
-  assert.equal('clientSecret' in status, false);
-  assert.equal('refreshToken' in status, false);
+  // Ensure secrets and tokens are NEVER present in status object
+  assert.equal('FINANCE_SHEET_SECRET' in status, false);
+  assert.equal('secret' in status, false);
   assert.equal('client_secret' in status, false);
   assert.equal('refresh_token' in status, false);
-  assert.equal(JSON.stringify(status).includes('SuperSecretClientKey999'), false);
-  assert.equal(JSON.stringify(status).includes('1//0SecretRefreshToken123'), false);
+  assert.equal(JSON.stringify(status).includes('SuperSecretSheetKey999'), false);
 
-  deleteSetting('google_client_id');
-  deleteSetting('google_client_secret');
-  deleteSetting('google_refresh_token');
+  delete process.env.FINANCE_WEBAPP_URL;
+  delete process.env.FINANCE_SHEET_SECRET;
 });
 
