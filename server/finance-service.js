@@ -137,7 +137,6 @@ export function getFinanceWebAppUrl() {
   const url = (
     process.env.FINANCE_WEBAPP_URL ||
     getSetting('finance_webapp_url') ||
-    process.env.SHEET_WEBAPP_URL ||
     ''
   ).trim();
   return url;
@@ -145,13 +144,12 @@ export function getFinanceWebAppUrl() {
 
 /**
  * Returns configured Finance Apps Script secret.
- * Checks environment variable FINANCE_SHEET_SECRET first, then stored setting, then SHEET_SECRET fallback.
+ * Checks environment variable FINANCE_SHEET_SECRET first, then stored setting.
  */
 export function getFinanceSheetSecret() {
   const secret = (
     process.env.FINANCE_SHEET_SECRET ||
     getSetting('finance_sheet_secret') ||
-    process.env.SHEET_SECRET ||
     ''
   ).trim();
   return secret;

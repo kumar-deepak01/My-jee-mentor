@@ -301,7 +301,7 @@ export function financePageMarkup() {
                     <span class="fn-kpi-label">Total Income</span>
                   </div>
                   <div class="fn-kpi-val" data-kpi="totalIncome">₹0</div>
-                  <div class="fn-kpi-sub pos" data-kpi-sub="totalIncome">+24.8% vs Oct 2026</div>
+                  <div class="fn-kpi-sub pos" data-kpi-sub="totalIncome">Tuition fees &amp; other inflow</div>
                 </article>
 
                 <!-- 2: Total Expenses -->
@@ -313,7 +313,7 @@ export function financePageMarkup() {
                     <span class="fn-kpi-label">Total Expenses</span>
                   </div>
                   <div class="fn-kpi-val" data-kpi="totalExpenses">₹0</div>
-                  <div class="fn-kpi-sub neg" data-kpi-sub="totalExpenses">+12.3% vs Oct 2026</div>
+                  <div class="fn-kpi-sub" data-kpi-sub="totalExpenses">Operational &amp; payroll outflow</div>
                 </article>
 
                 <!-- 3: Net Profit -->
@@ -337,7 +337,7 @@ export function financePageMarkup() {
                     <span class="fn-kpi-label">Fee Collection</span>
                   </div>
                   <div class="fn-kpi-val" data-kpi="feeCollection">₹0</div>
-                  <div class="fn-kpi-sub" data-kpi-sub="feeCollection">42 Transactions</div>
+                  <div class="fn-kpi-sub" data-kpi-sub="feeCollection">Verified Fee Receipts</div>
                 </article>
 
                 <!-- 5: Marketing Expense -->
@@ -349,7 +349,7 @@ export function financePageMarkup() {
                     <span class="fn-kpi-label">Marketing Expense</span>
                   </div>
                   <div class="fn-kpi-val" data-kpi="marketingExpense">₹0</div>
-                  <div class="fn-kpi-sub" data-kpi-sub="marketingExpense">0% of Total Expense</div>
+                  <div class="fn-kpi-sub" data-kpi-sub="marketingExpense">0.0% of Total Expense</div>
                 </article>
 
                 <!-- 6: Teacher Salary -->
@@ -361,7 +361,7 @@ export function financePageMarkup() {
                     <span class="fn-kpi-label">Teacher Salary</span>
                   </div>
                   <div class="fn-kpi-val" data-kpi="teacherSalary">₹0</div>
-                  <div class="fn-kpi-sub" data-kpi-sub="teacherSalary">Faculty &amp; Staff</div>
+                  <div class="fn-kpi-sub" data-kpi-sub="teacherSalary">0 Disbursed</div>
                 </article>
               </div>
 
@@ -398,7 +398,7 @@ export function financePageMarkup() {
                         <div>
                           <h3 class="fn-card-title">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--fn-orange)" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0110 10H12V2z"></path></svg>
-                            <span>Expense Breakdown (Nov 2026)</span>
+                            <span>Expense Breakdown</span>
                           </h3>
                         </div>
                       </div>
@@ -431,7 +431,7 @@ export function financePageMarkup() {
                         <div>
                           <h3 class="fn-card-title">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--fn-orange)" stroke-width="2.2"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2 3-2 3 2V8z"></path></svg>
-                            <span>Recent Transactions (Nov 2026)</span>
+                            <span>Recent Transactions</span>
                           </h3>
                         </div>
                         <button type="button" class="btn btn-link" data-nav-target="transactions" style="font-size: 0.78rem; color: var(--fn-orange); font-weight: 700; border: none; background: none; cursor: pointer;">
@@ -924,24 +924,24 @@ export function financePageMarkup() {
               </div>
               <div class="finance-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
                 <article class="fn-kpi-card">
-                  <div class="fn-kpi-label">Total Ad Spend (Nov 2026)</div>
+                  <div class="fn-kpi-label">Total Ad Spend</div>
                   <div class="fn-kpi-val" data-mktg="totalSpend" style="color: var(--fn-orange);">₹0</div>
                   <div class="fn-kpi-sub">Google + Meta Ads</div>
                 </article>
                 <article class="fn-kpi-card">
                   <div class="fn-kpi-label">Campaign Leads Generated</div>
-                  <div class="fn-kpi-val" data-mktg="leads">185</div>
-                  <div class="fn-kpi-sub pos">+18% this month</div>
+                  <div class="fn-kpi-val" data-mktg="leads">0</div>
+                  <div class="fn-kpi-sub">From Marketing Ads</div>
                 </article>
                 <article class="fn-kpi-card">
                   <div class="fn-kpi-label">Cost per Lead (CPL)</div>
                   <div class="fn-kpi-val" data-mktg="cpl">₹0</div>
-                  <div class="fn-kpi-sub">Estimated Acquisition</div>
+                  <div class="fn-kpi-sub">Acquisition Economics</div>
                 </article>
                 <article class="fn-kpi-card">
                   <div class="fn-kpi-label">Ad Spend ROI</div>
-                  <div class="fn-kpi-val" data-mktg="roi" style="color: var(--fn-green);">5.0x</div>
-                  <div class="fn-kpi-sub pos">Revenue / Ad Spend</div>
+                  <div class="fn-kpi-val" data-mktg="roi" style="color: var(--fn-green);">0.0x</div>
+                  <div class="fn-kpi-sub">Revenue / Ad Spend</div>
                 </article>
               </div>
 
@@ -957,15 +957,15 @@ export function financePageMarkup() {
                   <ul class="fn-check-list" style="margin-top: 14px;">
                     <li class="fn-check-item">
                       <span class="fn-check-icon">✓</span>
-                      <span><strong>Google Search Ads:</strong> Highest conversion rate for JEE Main crash courses.</span>
+                      <span><strong>Google Search Ads:</strong> High-intent student search queries for JEE Main &amp; Advanced courses.</span>
                     </li>
                     <li class="fn-check-item">
                       <span class="fn-check-icon">✓</span>
-                      <span><strong>Meta (Instagram/FB):</strong> Lowest Cost Per Inquiry (CPL) for foundation batches.</span>
+                      <span><strong>Meta (Instagram/FB):</strong> Lead generation and foundation course inquiries.</span>
                     </li>
                     <li class="fn-check-item">
                       <span class="fn-check-icon">✓</span>
-                      <span><strong>Direct Counselling:</strong> 42 fee enrollments finalized through WhatsApp counselor follow-ups.</span>
+                      <span><strong>Performance Tracking:</strong> All ad spend synchronized live from verified marketing expenses.</span>
                     </li>
                   </ul>
                 </article>
@@ -1323,15 +1323,19 @@ export function initFinancePage() {
 
   // Render Dashboard KPIs, Charts & Tables
   function renderDashboard() {
-    const expenses = financeState.expenses;
-    const salaries = financeState.salaries;
-    const otherIncome = financeState.otherIncome;
-    const feeRecords = financeState.feeRecords;
+    const expenses = financeState.expenses || [];
+    const salaries = financeState.salaries || [];
+    const otherIncome = (financeState.otherIncome || []).filter(i => {
+      const src = String(i.source || '').toLowerCase();
+      const desc = String(i.description || '').toLowerCase();
+      return !src.includes('fee collection') && !src.includes('tuition fee');
+    });
+    const feeRecords = financeState.feeRecords || [];
     const summary = financeState.summary || {};
 
     // 1. Calculate Real Totals
-    const feeTotal = summary.revenue?.feeCollection || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const feeCount = summary.revenue?.feeTransactions || feeRecords.length;
+    const feeTotal = Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const feeCount = Number(summary.revenue?.feeTransactions) || feeRecords.length;
     const otherIncomeTotal = otherIncome.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
     const totalIncome = feeTotal + otherIncomeTotal;
 
@@ -1342,17 +1346,17 @@ export function initFinancePage() {
     const netProfit = totalIncome - totalExpenses;
     const margin = totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : '0.0';
 
-    // Marketing Expense calculation
+    // Marketing Expense calculation - ONLY from verified marketing/ads expenses
     const marketingExpense = expenses
-      .filter(e => /marketing|ads|google|meta|facebook|banner/i.test(e.category || ''))
+      .filter(e => /marketing|ads|google|meta|facebook|adwords|campaign|banner/i.test((e.category || '') + ' ' + (e.description || '')))
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const mktgPct = totalExpenses > 0 ? ((marketingExpense / totalExpenses) * 100).toFixed(1) : '0.0';
 
-    // Teacher Salary calculation
+    // Teacher Salary calculation - ONLY from verified disbursed teacher salaries
     const teacherSalary = salaries
-      .filter(s => /faculty|teacher|professor|tutor|academic/i.test(s.role || ''))
+      .filter(s => /faculty|teacher|professor|tutor|academic/i.test((s.role || '') + ' ' + (s.employeeName || '')))
       .reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
-    const teacherCount = salaries.filter(s => /faculty|teacher/i.test(s.role || '')).length || financeState.employees.filter(e => /faculty|teacher/i.test(e.role || '')).length;
+    const teacherCount = salaries.filter(s => /faculty|teacher|professor|tutor|academic/i.test(s.role || '')).length;
 
     // Update KPI DOM Nodes
     const kpiNodes = {
@@ -1373,15 +1377,19 @@ export function initFinancePage() {
 
     // Subtitles
     const kpiSubs = {
+      totalIncome: dashboardPanel.querySelector('[data-kpi-sub="totalIncome"]'),
+      totalExpenses: dashboardPanel.querySelector('[data-kpi-sub="totalExpenses"]'),
       netProfit: dashboardPanel.querySelector('[data-kpi-sub="netProfit"]'),
       feeCollection: dashboardPanel.querySelector('[data-kpi-sub="feeCollection"]'),
       marketingExpense: dashboardPanel.querySelector('[data-kpi-sub="marketingExpense"]'),
       teacherSalary: dashboardPanel.querySelector('[data-kpi-sub="teacherSalary"]')
     };
+    if (kpiSubs.totalIncome) kpiSubs.totalIncome.textContent = `${feeCount} verified fee receipts`;
+    if (kpiSubs.totalExpenses) kpiSubs.totalExpenses.textContent = totalExpenses === 0 ? '₹0 recorded expenses' : `${expenses.length + salaries.length} payments recorded`;
     if (kpiSubs.netProfit) kpiSubs.netProfit.textContent = `Margin: ${margin}%`;
     if (kpiSubs.feeCollection) kpiSubs.feeCollection.textContent = `${feeCount} Transactions`;
     if (kpiSubs.marketingExpense) kpiSubs.marketingExpense.textContent = `${mktgPct}% of Total Expense`;
-    if (kpiSubs.teacherSalary) kpiSubs.teacherSalary.textContent = `${teacherCount} Teachers / Faculty`;
+    if (kpiSubs.teacherSalary) kpiSubs.teacherSalary.textContent = `${teacherCount} Disbursed`;
 
     // Render Charts
     renderTrendBarChart(totalIncome, totalExpenses, netProfit);
@@ -1395,19 +1403,50 @@ export function initFinancePage() {
     const container = dashboardPanel.querySelector('[data-chart-trend-container]');
     if (!container) return;
 
-    // Construct 6-month continuous series ending with current month
-    const months = ['Jun \'26', 'Jul \'26', 'Aug \'26', 'Sep \'26', 'Oct \'26', 'Nov \'26'];
-    const data = [
-      { month: 'Jun \'26', income: 240000, expense: 120000, profit: 120000 },
-      { month: 'Jul \'26', income: 300000, expense: 160000, profit: 140000 },
-      { month: 'Aug \'26', income: 350000, expense: 190000, profit: 160000 },
-      { month: 'Sep \'26', income: 420000, expense: 250000, profit: 170000 },
-      { month: 'Oct \'26', income: 510000, expense: 320000, profit: 190000 },
-      { month: 'Nov \'26', income: currIncome || 715500, expense: currExpense || 418200, profit: currProfit || 297300 }
-    ];
+    // Dynamic 6-month continuous series ending with current month
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('en-US', { month: 'short' }) + " '" + String(d.getFullYear()).slice(-2);
+      months.push({ key, label });
+    }
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense, d.profit]), 1000000);
-    const upperLimit = Math.ceil(maxVal / 200000) * 200000;
+    const data = months.map(m => {
+      let inc = 0;
+      let exp = 0;
+
+      (financeState.feeRecords || []).forEach(f => {
+        if (String(f.date || '').startsWith(m.key)) inc += (Number(f.amount) || 0);
+      });
+      (financeState.otherIncome || []).forEach(i => {
+        if (String(i.date || '').startsWith(m.key)) inc += (Number(i.amount) || 0);
+      });
+      (financeState.expenses || []).forEach(e => {
+        if (String(e.date || '').startsWith(m.key)) exp += (Number(e.amount) || 0);
+      });
+      (financeState.salaries || []).forEach(s => {
+        const d = s.paymentDate || s.date || '';
+        if (String(d).startsWith(m.key)) exp += (Number(s.netPaid || s.basicSalary) || 0);
+      });
+
+      if (m.key === currentMonthKey) {
+        inc = Math.max(inc, currIncome || 0);
+        exp = Math.max(exp, currExpense || 0);
+      }
+
+      return {
+        month: m.label,
+        income: inc,
+        expense: exp,
+        profit: inc - exp
+      };
+    });
+
+    const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense, d.profit]), 100000);
+    const upperLimit = Math.max(100000, Math.ceil(maxVal / 50000) * 50000);
 
     const width = 500;
     const height = 210;
@@ -1432,19 +1471,15 @@ export function initFinancePage() {
 
     const barsSvg = data.map((d, i) => {
       const gX = padL + i * groupW + groupW * 0.15;
-      const hInc = Math.max(2, (d.income / upperLimit) * chartH);
-      const hExp = Math.max(2, (d.expense / upperLimit) * chartH);
-      const hPrf = Math.max(2, (Math.max(0, d.profit) / upperLimit) * chartH);
+      const hInc = d.income > 0 ? Math.max(3, (d.income / upperLimit) * chartH) : 0;
+      const hExp = d.expense > 0 ? Math.max(3, (d.expense / upperLimit) * chartH) : 0;
+      const hPrf = d.profit > 0 ? Math.max(3, (d.profit / upperLimit) * chartH) : 0;
 
       return `
         <g class="chart-group">
-          <!-- Income bar (green) -->
-          <rect x="${gX}" y="${padT + chartH - hInc}" width="${barW}" height="${hInc}" fill="#22c55e" rx="2"/>
-          <!-- Expense bar (coral) -->
-          <rect x="${gX + barW + 2}" y="${padT + chartH - hExp}" width="${barW}" height="${hExp}" fill="#f87171" rx="2"/>
-          <!-- Profit bar (blue) -->
-          <rect x="${gX + (barW + 2) * 2}" y="${padT + chartH - hPrf}" width="${barW}" height="${hPrf}" fill="#3b82f6" rx="2"/>
-          <!-- Month label -->
+          ${hInc > 0 ? `<rect x="${gX}" y="${padT + chartH - hInc}" width="${barW}" height="${hInc}" fill="#22c55e" rx="2"><title>Income: ${formatInr(d.income)}</title></rect>` : ''}
+          ${hExp > 0 ? `<rect x="${gX + barW + 2}" y="${padT + chartH - hExp}" width="${barW}" height="${hExp}" fill="#f87171" rx="2"><title>Expense: ${formatInr(d.expense)}</title></rect>` : ''}
+          ${hPrf > 0 ? `<rect x="${gX + (barW + 2) * 2}" y="${padT + chartH - hPrf}" width="${barW}" height="${hPrf}" fill="#3b82f6" rx="2"><title>Profit: ${formatInr(d.profit)}</title></rect>` : ''}
           <text x="${gX + barW * 1.5 + 2}" y="${height - 6}" font-size="9.5" fill="#64748b" text-anchor="middle" font-weight="500">${d.month}</text>
         </g>
       `;
@@ -1463,18 +1498,24 @@ export function initFinancePage() {
     const container = dashboardPanel.querySelector('[data-donut-container]');
     if (!container) return;
 
+    const tSal = salaries
+      .filter(s => /faculty|teacher|professor|tutor|academic/i.test((s.role || '') + ' ' + (s.employeeName || '')))
+      .reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
+
+    const mExp = expenses
+      .filter(e => /marketing|ads|google|meta|facebook|banner/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
     const techExp = expenses
-      .filter(e => /tech|server|hosting|software|domain/i.test(e.category || ''))
-      .reduce((sum, e) => sum + (Number(e.amount) || 0), 40000);
+      .filter(e => /tech|server|hosting|software|domain/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     const counselorSal = salaries
-      .filter(s => /counsel/i.test(s.role || ''))
-      .reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 30000);
+      .filter(s => /counsel/i.test((s.role || '') + ' ' + (s.employeeName || '')))
+      .reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
 
-    const tSal = teacherSal || 180000;
-    const mExp = mktgExp || 142000;
-    const otherExp = Math.max(10000, (totalExp || 418200) - (tSal + mExp + techExp + counselorSal));
-    const fullTotal = tSal + mExp + techExp + counselorSal + otherExp;
+    const otherExp = Math.max(0, totalExp - (tSal + mExp + techExp + counselorSal));
+    const fullTotal = totalExp;
 
     const segments = [
       { label: 'Teacher Salary', amount: tSal, color: '#3b82f6' },
@@ -1484,32 +1525,38 @@ export function initFinancePage() {
       { label: 'Other (Ops, Tools, etc.)', amount: otherExp, color: '#ec4899' }
     ];
 
-    // Compute SVG pie slices
-    let cumAngle = 0;
     const r = 58;
     const cx = 75;
     const cy = 75;
     const strokeW = 24;
 
-    const paths = segments.map(seg => {
-      const pct = seg.amount / fullTotal;
-      const angle = pct * 360;
-      const startAngle = cumAngle;
-      cumAngle += angle;
+    let paths = '';
+    if (fullTotal === 0) {
+      // Empty state: clean neutral muted ring
+      paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="${strokeW}"/>`;
+    } else {
+      let cumAngle = 0;
+      const rRad = r * 2 * Math.PI;
+      paths = segments.map(seg => {
+        if (seg.amount <= 0) return '';
+        const pct = seg.amount / fullTotal;
+        const angle = pct * 360;
+        const startAngle = cumAngle;
+        cumAngle += angle;
 
-      const rRad = (r * 2 * Math.PI);
-      const dash = (pct * rRad);
-      const space = rRad - dash;
-      const offset = -((startAngle / 360) * rRad);
+        const dash = pct * rRad;
+        const space = rRad - dash;
+        const offset = -((startAngle / 360) * rRad);
 
-      return `
-        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${strokeW}"
-          stroke-dasharray="${dash} ${space}" stroke-dashoffset="${offset}" transform="rotate(-90 ${cx} ${cy})"/>
-      `;
-    }).join('');
+        return `
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${strokeW}"
+            stroke-dasharray="${dash} ${space}" stroke-dashoffset="${offset}" transform="rotate(-90 ${cx} ${cy})"/>
+        `;
+      }).join('');
+    }
 
     const legendRows = segments.map(seg => {
-      const pctStr = ((seg.amount / fullTotal) * 100).toFixed(1) + '%';
+      const pctStr = fullTotal > 0 ? ((seg.amount / fullTotal) * 100).toFixed(1) + '%' : '0.0%';
       return `
         <div class="fn-donut-row">
           <div class="fn-donut-row-left">
@@ -1545,12 +1592,19 @@ export function initFinancePage() {
     const container = dashboardPanel.querySelector('[data-cat-bars-container]');
     if (!container) return;
 
-    const tSal = salaries.filter(s => /faculty|teacher/i.test(s.role || '')).reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 180000);
-    const mExp = expenses.filter(e => /marketing|ads|google|meta/i.test(e.category || '')).reduce((sum, e) => sum + (Number(e.amount) || 0), 142000);
-    const techExp = expenses.filter(e => /tech|server|hosting|software/i.test(e.category || '')).reduce((sum, e) => sum + (Number(e.amount) || 0), 40000);
-    const cSal = salaries.filter(s => /counsel/i.test(s.role || '')).reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 30000);
-    const fullTotal = totalExp || (tSal + mExp + techExp + cSal + 26200);
-    const oExp = Math.max(10000, fullTotal - (tSal + mExp + techExp + cSal));
+    const tSal = salaries
+      .filter(s => /faculty|teacher|professor|tutor|academic/i.test((s.role || '') + ' ' + (s.employeeName || '')))
+      .reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
+    const mExp = expenses
+      .filter(e => /marketing|ads|google|meta|facebook|banner/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const techExp = expenses
+      .filter(e => /tech|server|hosting|software|domain/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const cSal = salaries
+      .filter(s => /counsel/i.test((s.role || '') + ' ' + (s.employeeName || '')))
+      .reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
+    const oExp = Math.max(0, totalExp - (tSal + mExp + techExp + cSal));
 
     const cats = [
       { name: 'Teacher Salary', amount: tSal, color: '#3b82f6' },
@@ -1561,7 +1615,7 @@ export function initFinancePage() {
     ];
 
     container.innerHTML = cats.map(c => {
-      const pct = Math.min(100, (c.amount / fullTotal) * 100).toFixed(1);
+      const pct = totalExp > 0 ? Math.min(100, (c.amount / totalExp) * 100).toFixed(1) : '0.0';
       return `
         <div class="fn-cat-row">
           <div class="fn-cat-row-head">
@@ -1581,12 +1635,12 @@ export function initFinancePage() {
     const tbody = dashboardPanel.querySelector('[data-recent-tx-rows]');
     if (!tbody) return;
 
-    // Combine fee receipts, expenses and salaries into a unified recent array
+    // Combine verified fee receipts, expenses, other income and salaries
     const combined = [];
 
-    (financeState.expenses || []).slice(0, 10).forEach(e => {
+    (financeState.expenses || []).forEach(e => {
       combined.push({
-        date: e.date || '2026-11-21',
+        date: e.date || '',
         type: 'Expense',
         category: e.category || 'Expense',
         details: e.description || e.paidTo || '-',
@@ -1594,9 +1648,9 @@ export function initFinancePage() {
       });
     });
 
-    (financeState.feeRecords || []).slice(0, 10).forEach(f => {
+    (financeState.feeRecords || []).forEach(f => {
       combined.push({
-        date: f.date || '2026-11-21',
+        date: f.date || '',
         type: 'Income',
         category: 'Fee Collection',
         details: `${f.studentName || 'Student'} (${f.receiptNo || 'Fee'})`,
@@ -1604,9 +1658,19 @@ export function initFinancePage() {
       });
     });
 
-    (financeState.salaries || []).slice(0, 5).forEach(s => {
+    (financeState.otherIncome || []).forEach(inc => {
       combined.push({
-        date: s.paymentDate || '2026-11-20',
+        date: inc.date || '',
+        type: 'Income',
+        category: inc.source || 'Other Income',
+        details: inc.description || 'Income',
+        amount: Number(inc.amount) || 0
+      });
+    });
+
+    (financeState.salaries || []).forEach(s => {
+      combined.push({
+        date: s.paymentDate || s.date || '',
         type: 'Expense',
         category: 'Teacher Salary',
         details: `${s.employeeName || 'Staff'} (${s.period || 'Salary'})`,
@@ -1614,15 +1678,12 @@ export function initFinancePage() {
       });
     });
 
-    // If empty, display standard reference preview transactions
+    // Sort newest first
+    combined.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
     if (combined.length === 0) {
-      combined.push(
-        { date: '21 Nov 2026', type: 'Expense', category: 'Marketing - Google Ads', details: 'JEE Nov Campaign', amount: -5000 },
-        { date: '21 Nov 2026', type: 'Income', category: 'Fee Collection', details: 'Student Fee (MJM-2026-0045)', amount: 8000 },
-        { date: '20 Nov 2026', type: 'Expense', category: 'Teacher Salary', details: 'November Salary (Batch 1)', amount: -30000 },
-        { date: '20 Nov 2026', type: 'Expense', category: 'Technical Team', details: 'Platform & Server (Monthly)', amount: -10000 },
-        { date: '19 Nov 2026', type: 'Income', category: 'Fee Collection', details: 'Student Fee (MJM-2026-0044)', amount: 5000 }
-      );
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 24px;">No transactions recorded yet.</td></tr>';
+      return;
     }
 
     tbody.innerHTML = combined.slice(0, 5).map(tx => `
@@ -1852,27 +1913,62 @@ export function initFinancePage() {
     const container = dashboardPanel.querySelector('[data-mktg-platform-bars]');
     if (!container) return;
 
-    const googleAds = financeState.expenses
-      .filter(e => /google/i.test((e.category || '') + (e.description || '')))
-      .reduce((sum, e) => sum + (Number(e.amount) || 0), 85000);
-    const metaAds = financeState.expenses
-      .filter(e => /meta|facebook|insta/i.test((e.category || '') + (e.description || '')))
-      .reduce((sum, e) => sum + (Number(e.amount) || 0), 45000);
-    const youtubeAds = 8000;
-    const offlinePrint = 4000;
-    const totalMktg = googleAds + metaAds + youtubeAds + offlinePrint;
+    const expenses = financeState.expenses || [];
+
+    const googleAds = expenses
+      .filter(e => /google/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const metaAds = expenses
+      .filter(e => /meta|facebook|insta/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const youtubeAds = expenses
+      .filter(e => /youtube/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const offlinePrint = expenses
+      .filter(e => /print|banner|flyer|pamphlet|offline/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const otherMktg = expenses
+      .filter(e => /marketing|ads|promotion/i.test(e.category || '') &&
+        !/google|meta|facebook|insta|youtube|print|banner|flyer/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const totalMktg = googleAds + metaAds + youtubeAds + offlinePrint + otherMktg;
 
     const totalEl = dashboardPanel.querySelector('[data-mktg="totalSpend"]');
+    const leadsEl = dashboardPanel.querySelector('[data-mktg="leads"]');
     const cplEl = dashboardPanel.querySelector('[data-mktg="cpl"]');
+    const roiEl = dashboardPanel.querySelector('[data-mktg="roi"]');
+
     if (totalEl) totalEl.textContent = formatInr(totalMktg);
-    if (cplEl) cplEl.textContent = `₹${Math.round(totalMktg / 185)}`;
+
+    if (totalMktg === 0) {
+      if (leadsEl) leadsEl.textContent = '0';
+      if (cplEl) cplEl.textContent = '₹0';
+      if (roiEl) roiEl.textContent = '0.0x';
+      container.innerHTML = `
+        <div style="text-align: center; color: #94a3b8; padding: 28px 16px;">
+          <p style="margin: 0; font-size: 0.88rem;">No marketing or advertising expenses recorded in Google Sheets yet.</p>
+          <p style="margin: 6px 0 0; font-size: 0.78rem;">Add Google Ads or Meta Ads in Quick Add to track real campaign ROI.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const totalRevenue = Number(financeState.summary?.revenue?.totalInflow) ||
+      (financeState.feeRecords || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const roi = totalMktg > 0 && totalRevenue > 0 ? (totalRevenue / totalMktg).toFixed(1) + 'x' : '0.0x';
+    if (roiEl) roiEl.textContent = roi;
 
     const platforms = [
       { name: 'Google Ads (Search & Discovery)', amount: googleAds, color: '#f97316' },
       { name: 'Meta Ads (Instagram & Facebook)', amount: metaAds, color: '#3b82f6' },
       { name: 'YouTube Video Ads', amount: youtubeAds, color: '#ef4444' },
-      { name: 'Offline Banners & Flyers', amount: offlinePrint, color: '#a855f7' }
-    ];
+      { name: 'Offline Banners & Print', amount: offlinePrint, color: '#a855f7' }
+    ].filter(p => p.amount > 0);
+
+    if (platforms.length === 0 && otherMktg > 0) {
+      platforms.push({ name: 'General Marketing & Promotions', amount: otherMktg, color: '#f97316' });
+    }
 
     container.innerHTML = platforms.map(p => {
       const pct = ((p.amount / totalMktg) * 100).toFixed(1);
@@ -1892,15 +1988,31 @@ export function initFinancePage() {
 
   // 11. Reports (P&L)
   function renderReports() {
+    const expenses = financeState.expenses || [];
+    const salaries = financeState.salaries || [];
+    const feeRecords = financeState.feeRecords || [];
+    const otherIncome = (financeState.otherIncome || []).filter(i => {
+      const src = String(i.source || '').toLowerCase();
+      const desc = String(i.description || '').toLowerCase();
+      return !src.includes('fee collection') && !src.includes('tuition fee');
+    });
     const summary = financeState.summary || {};
-    const totalIncome = summary.revenue?.totalInflow || 715500;
-    const feeCol = summary.revenue?.feeCollection || 715500;
-    const otherInc = summary.revenue?.otherIncome || 0;
-    const operational = summary.expenses?.operationalExpenses || 238200;
-    const salaries = summary.expenses?.salariesDisbursed || 180000;
-    const totalOut = operational + salaries;
+
+    const feeCol = Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const otherInc = otherIncome.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const totalIncome = feeCol + otherInc;
+
+    const operational = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const salariesTotal = salaries.reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
+    const totalOut = operational + salariesTotal;
+
+    const marketingExp = expenses
+      .filter(e => /marketing|ads|google|meta|facebook|banner/i.test((e.category || '') + ' ' + (e.description || '')))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const otherOperational = Math.max(0, operational - marketingExp);
+
     const net = totalIncome - totalOut;
-    const margin = totalIncome > 0 ? ((net / totalIncome) * 100).toFixed(1) : '0';
+    const margin = totalIncome > 0 ? ((net / totalIncome) * 100).toFixed(1) : '0.0';
 
     const nodes = {
       inflow: dashboardPanel.querySelector('[data-pl="inflow"]'),
@@ -1918,9 +2030,9 @@ export function initFinancePage() {
     if (nodes.fees) nodes.fees.textContent = formatInr(feeCol);
     if (nodes.otherIncome) nodes.otherIncome.textContent = formatInr(otherInc);
     if (nodes.outflow) nodes.outflow.textContent = formatInr(totalOut);
-    if (nodes.salaries) nodes.salaries.textContent = formatInr(salaries);
-    if (nodes.marketing) nodes.marketing.textContent = formatInr(142000);
-    if (nodes.otherExp) nodes.otherExp.textContent = formatInr(Math.max(0, operational - 142000));
+    if (nodes.salaries) nodes.salaries.textContent = formatInr(salariesTotal);
+    if (nodes.marketing) nodes.marketing.textContent = formatInr(marketingExp);
+    if (nodes.otherExp) nodes.otherExp.textContent = formatInr(otherOperational);
     if (nodes.net) nodes.net.textContent = formatInr(net);
     if (nodes.margin) nodes.margin.textContent = `${margin}%`;
   }
@@ -1932,6 +2044,25 @@ export function initFinancePage() {
       return;
     }
 
+    const expenses = financeState.expenses || [];
+    const salaries = financeState.salaries || [];
+    const feeRecords = financeState.feeRecords || [];
+    const otherIncome = (financeState.otherIncome || []).filter(i => {
+      const src = String(i.source || '').toLowerCase();
+      const desc = String(i.description || '').toLowerCase();
+      return !src.includes('fee collection') && !src.includes('tuition fee');
+    });
+    const summary = financeState.summary || {};
+
+    const feeCol = Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const otherInc = otherIncome.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const totalIncome = feeCol + otherInc;
+
+    const operational = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const salariesTotal = salaries.reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
+    const totalOut = operational + salariesTotal;
+    const net = totalIncome - totalOut;
+
     const wb = window.XLSX.utils.book_new();
 
     if (type === 'master' || type === 'summary') {
@@ -1940,13 +2071,13 @@ export function initFinancePage() {
         ['Generated On', new Date().toLocaleString('en-IN')],
         [''],
         ['Metric', 'Amount (INR)'],
-        ['Total Revenue Inflow', financeState.summary?.revenue?.totalInflow || 715500],
-        ['Student Tuition Fees', financeState.summary?.revenue?.feeCollection || 715500],
-        ['Other Income Streams', financeState.summary?.revenue?.otherIncome || 0],
-        ['Total Operating Outflow', (financeState.summary?.expenses?.operationalExpenses || 0) + (financeState.summary?.expenses?.salariesDisbursed || 0)],
-        ['Operational Expenses', financeState.summary?.expenses?.operationalExpenses || 0],
-        ['Salaries & Honorarium', financeState.summary?.expenses?.salariesDisbursed || 0],
-        ['Net Operating Profit', financeState.summary?.netMargin || 297300]
+        ['Total Revenue Inflow', totalIncome],
+        ['Student Tuition Fees', feeCol],
+        ['Other Income Streams', otherInc],
+        ['Total Operating Outflow', totalOut],
+        ['Operational Expenses', operational],
+        ['Salaries & Honorarium', salariesTotal],
+        ['Net Operating Profit', net]
       ];
       const wsPnl = window.XLSX.utils.aoa_to_sheet(pnlData);
       window.XLSX.utils.book_append_sheet(wb, wsPnl, 'P&L Summary');

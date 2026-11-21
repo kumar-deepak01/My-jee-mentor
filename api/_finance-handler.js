@@ -201,7 +201,13 @@ export async function handleFinanceRequest(request) {
 
       if (action === 'other-income') {
         const records = await getOtherIncome();
-        return json({ ok: true, records });
+        // Safeguard: Ensure no fee collections or tuition receipts leaked into other income
+        const cleanRecords = records.filter(i => {
+          const src = String(i.source || '').toLowerCase();
+          const desc = String(i.description || '').toLowerCase();
+          return !src.includes('fee collection') && !src.includes('tuition fee');
+        });
+        return json({ ok: true, records: cleanRecords });
       }
 
       if (action === 'categories') {
@@ -253,7 +259,14 @@ export async function handleFinanceRequest(request) {
 
           try {
             const incList = await getOtherIncome();
-            otherIncomeTotal = incList.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+            // Filter out any potential fee collection duplicates
+            otherIncomeTotal = incList
+              .filter(i => {
+                const src = String(i.source || '').toLowerCase();
+                const desc = String(i.description || '').toLowerCase();
+                return !src.includes('fee collection') && !src.includes('tuition fee');
+              })
+              .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
           } catch (iErr) {
             console.warn('Could not fetch other income for summary:', iErr.message);
           }
