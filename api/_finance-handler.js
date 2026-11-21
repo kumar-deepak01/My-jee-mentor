@@ -1,5 +1,7 @@
 import {
   getFinanceConnectionStatus,
+  getFinanceSpreadsheetId,
+  getOAuthConfig,
   generateAuthUrl,
   exchangeAuthCode,
   createFinanceSpreadsheet,
@@ -24,6 +26,27 @@ import { fetchRawFeeRecords } from './_fees-handler.js';
 
 const json = (body, status = 200, headers = {}) =>
   Response.json(body, { status, headers: { 'cache-control': 'no-store', ...headers } });
+
+function sanitizeFinanceMessage(error) {
+  let message = String(error?.message || error || 'Finance service error.');
+  const sensitiveKeys = [
+    'Finance_PASSWORDS',
+    'ADMIN_PASSWORD',
+    'GOOGLE_CLIENT_SECRET',
+    'GOOGLE_REFRESH_TOKEN',
+    'GOOGLE_ACCESS_TOKEN'
+  ];
+  for (const name of sensitiveKeys) {
+    if (process.env[name]) {
+      message = message.split(process.env[name]).join('[redacted]');
+    }
+  }
+  const dbRefresh = getSetting('google_refresh_token');
+  if (dbRefresh) message = message.split(dbRefresh).join('[redacted]');
+  const dbSecret = getSetting('google_client_secret');
+  if (dbSecret) message = message.split(dbSecret).join('[redacted]');
+  return message.slice(0, 500);
+}
 
 function getClientIp(request) {
   return (
@@ -170,6 +193,14 @@ export async function handleFinanceRequest(request) {
       }
 
       if (action === 'auth-url') {
+        const { clientId } = getOAuthConfig();
+        if (!clientId) {
+          return json({
+            ok: false,
+            needsConfig: true,
+            message: 'Google OAuth Client ID is not configured. Please configure it in settings or environment variables.'
+          }, 400);
+        }
         const redirectUri = new URL('/api/finance?action=oauth-callback', url.origin).toString();
         const authUrl = generateAuthUrl(redirectUri);
         return json({ ok: true, authUrl });
@@ -218,13 +249,15 @@ export async function handleFinanceRequest(request) {
       const body = await request.json().catch(() => ({}));
 
       if (action === 'save-config') {
-        const { clientId, clientSecret, feeSpreadsheetId } = body;
+        const { clientId, clientSecret, refreshToken, spreadsheetId, feeSpreadsheetId } = body;
         if (clientId !== undefined) setSetting('google_client_id', String(clientId).trim());
         if (clientSecret !== undefined) setSetting('google_client_secret', String(clientSecret).trim());
+        if (refreshToken !== undefined) setSetting('google_refresh_token', String(refreshToken).trim());
+        if (spreadsheetId !== undefined) setSetting('finance_spreadsheet_id', String(spreadsheetId).trim());
         if (feeSpreadsheetId !== undefined) setSetting('fee_spreadsheet_id', String(feeSpreadsheetId).trim());
 
         const updatedStatus = await getFinanceConnectionStatus();
-        return json({ ok: true, message: 'Configuration saved.', status: updatedStatus });
+        return json({ ok: true, message: 'Configuration saved successfully.', status: updatedStatus });
       }
 
       if (action === 'auto-create') {
@@ -234,19 +267,13 @@ export async function handleFinanceRequest(request) {
       }
 
       if (action === 'connect-existing') {
-        const { spreadsheetId } = body;
-        if (!spreadsheetId) {
-          return json({ ok: false, message: 'Spreadsheet ID is required.' }, 400);
-        }
+        const spreadsheetId = body?.spreadsheetId || getFinanceSpreadsheetId();
         const result = await connectExistingSpreadsheet(spreadsheetId);
         return json(result);
       }
 
       if (action === 'sync') {
-        const spreadsheetId = getSetting('finance_spreadsheet_id') || process.env.FINANCE_SPREADSHEET_ID;
-        if (!spreadsheetId) {
-          return json({ ok: false, message: 'No Finance Spreadsheet is configured.' }, 400);
-        }
+        const spreadsheetId = getFinanceSpreadsheetId();
         const accessToken = await getValidAccessToken();
         const verified = await verifySpreadsheet(spreadsheetId, accessToken);
         return json(verified);
@@ -257,7 +284,8 @@ export async function handleFinanceRequest(request) {
 
     return json({ ok: false, message: 'Method not allowed.' }, 405);
   } catch (error) {
-    console.error('Finance API error:', error);
-    return json({ ok: false, code: 'FINANCE_ERROR', message: error.message || 'Finance service error.' }, 500);
+    const safeMsg = sanitizeFinanceMessage(error);
+    console.error('Finance API error:', safeMsg);
+    return json({ ok: false, code: 'FINANCE_ERROR', message: safeMsg }, 500);
   }
 }

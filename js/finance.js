@@ -108,10 +108,9 @@ export function financePageMarkup() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
               </div>
               <div>
-                <h3 class="finance-setup-title">Automated Google Sheets Initialization</h3>
+                <h3 class="finance-setup-title">Google Account Connection &amp; Sheets Authorization</h3>
                 <p class="finance-setup-desc">
-                  Initialize <strong>"My JEE Mentor – Finance Management"</strong> in your own Google Drive.
-                  Automatically creates 6 configured worksheets: <em>Expenses, Salaries, Employees, OtherIncome, Categories,</em> and <em>AuditLog</em> with styled headers.
+                  Connect authorized Google account <strong>amjeementor@gmail.com</strong> with minimum Google Sheets permissions to link spreadsheet <strong>13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8</strong>.
                 </p>
               </div>
             </div>
@@ -120,15 +119,15 @@ export function financePageMarkup() {
             <div class="finance-checklist" data-finance-checklist>
               <div class="checklist-item" data-check="drive">
                 <span class="checklist-icon">○</span>
-                <span>Personal Google Drive Authorization</span>
+                <span>Google Account: amjeementor@gmail.com</span>
               </div>
               <div class="checklist-item" data-check="sheet">
                 <span class="checklist-icon">○</span>
-                <span>Spreadsheet Creation: "My JEE Mentor – Finance Management"</span>
+                <span>Spreadsheet: 13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8</span>
               </div>
               <div class="checklist-item" data-check="tabs">
                 <span class="checklist-icon">○</span>
-                <span>6 Worksheets &amp; Headers Initialized</span>
+                <span>6 Worksheets Configured</span>
               </div>
               <div class="checklist-item" data-check="access">
                 <span class="checklist-icon">○</span>
@@ -139,40 +138,57 @@ export function financePageMarkup() {
             <!-- Setup Actions -->
             <div class="finance-setup-actions">
               <a href="#" class="btn btn-primary finance-btn-oauth" data-btn-oauth>
-                <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2 inline-block"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>
-                <span>Authorize &amp; Auto-Create Finance Spreadsheet</span>
+                <svg viewBox="0 0 24 24" class="w-5 h-5 mr-2 inline-block"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>
+                <span data-oauth-text>Connect Google Account (amjeementor@gmail.com)</span>
               </a>
 
+              <button type="button" class="btn btn-outline" data-btn-quick-connect>
+                Verify &amp; Connect Target Spreadsheet
+              </button>
+
               <button type="button" class="btn btn-outline" data-toggle-manual-setup>
-                Connect Existing Spreadsheet ID / Settings
+                ⚙ OAuth &amp; Direct Token Settings
               </button>
             </div>
 
             <!-- Manual / Advanced Setup Accordion (collapsed by default) -->
             <div class="finance-manual-setup" data-manual-setup-box hidden>
               <hr class="finance-divider">
-              <h4>Connect Existing Google Spreadsheet ID</h4>
-              <p class="text-sm text-gray-500 mb-3">If you already created a spreadsheet or want to link a specific sheet, enter its ID below. We will verify and automatically add any missing worksheets.</p>
+              <h4>Target Google Spreadsheet Connection</h4>
+              <p class="text-sm text-gray-500 mb-3">Target spreadsheet ID configured for My JEE Mentor Finance Management. Click Verify &amp; Connect to test access.</p>
               <form class="finance-connect-form" data-form-connect-existing>
                 <div class="finance-input-row">
-                  <input type="text" name="spreadsheetId" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" required class="fees-filter-input">
+                  <input type="text" name="spreadsheetId" value="13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8" placeholder="13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8" required class="fees-filter-input">
                   <button type="submit" class="btn btn-primary" data-btn-connect-existing>Verify &amp; Connect</button>
                 </div>
               </form>
 
               <hr class="finance-divider">
-              <h4>Google Cloud OAuth Settings (Optional)</h4>
-              <p class="text-sm text-gray-500 mb-3">Configure your own Google Cloud OAuth 2.0 Client credentials if self-hosting outside default environment.</p>
+              <h4>Google Cloud OAuth &amp; Refresh Token Credentials</h4>
+              <p class="text-sm text-gray-500 mb-2">
+                Authorized Redirect URI: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.82rem; user-select: all;">https://www.myjeementor.com/api/finance?action=oauth-callback</code>
+              </p>
+              <p class="text-sm text-gray-500 mb-3">
+                Authorized Account: <strong>amjeementor@gmail.com</strong> • Minimum Scope: <code>https://www.googleapis.com/auth/spreadsheets</code>
+              </p>
               <form class="finance-oauth-config-form" data-form-oauth-config>
                 <div class="finance-grid-two">
-                  <label>Google Client ID
+                  <label>Google Client ID (GOOGLE_CLIENT_ID)
                     <input type="text" name="clientId" placeholder="xxxx.apps.googleusercontent.com" class="fees-filter-input">
                   </label>
-                  <label>Google Client Secret
+                  <label>Google Client Secret (GOOGLE_CLIENT_SECRET)
                     <input type="password" name="clientSecret" placeholder="••••••••••••••••" class="fees-filter-input">
                   </label>
                 </div>
-                <button type="submit" class="btn btn-outline mt-2" data-btn-save-config>Save OAuth Credentials</button>
+                <div class="finance-grid-two" style="margin-top: 10px;">
+                  <label>Direct Refresh Token (GOOGLE_REFRESH_TOKEN - optional)
+                    <input type="password" name="refreshToken" placeholder="1//0xxxx... (optional direct token)" class="fees-filter-input">
+                  </label>
+                  <label>Target Spreadsheet ID
+                    <input type="text" name="spreadsheetId" value="13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8" placeholder="13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8" class="fees-filter-input">
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-outline mt-2" data-btn-save-config>Save Configuration</button>
               </form>
             </div>
           </section>
@@ -425,6 +441,19 @@ export function initFinancePage() {
       const res = await api(ENDPOINT, { query: { action: 'status' } });
       setStatus(res.status || 'Not Connected', res.spreadsheetUrl);
 
+      const oauthText = dashboardPanel.querySelector('[data-oauth-text]');
+      if (res.hasRefreshToken) {
+        updateChecklist({ drive: true });
+        if (oauthText) oauthText.textContent = 'Reconnect Google Account (amjeementor@gmail.com)';
+      } else {
+        updateChecklist({ drive: false });
+        if (oauthText) oauthText.textContent = 'Connect Google Account (amjeementor@gmail.com)';
+      }
+
+      if (res.status === 'Connected') {
+        updateChecklist({ drive: true, sheet: true, tabs: true, access: true });
+      }
+
       if (res.lastSyncedAt && lastSyncedEl) {
         const d = new Date(res.lastSyncedAt);
         lastSyncedEl.textContent = `Last synced: ${d.toLocaleDateString('en-IN')} ${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
@@ -629,11 +658,57 @@ export function initFinancePage() {
     if (manualSetupBox) manualSetupBox.hidden = !manualSetupBox.hidden;
   });
 
+  btnOAuth?.addEventListener('click', async e => {
+    const currentHref = btnOAuth.getAttribute('href');
+    if (currentHref && currentHref !== '#' && !currentHref.startsWith('javascript:')) {
+      return; // Normal browser navigation to Google OAuth URL
+    }
+    e.preventDefault();
+    try {
+      const authUrlRes = await api(ENDPOINT, { query: { action: 'auth-url' } });
+      if (authUrlRes.ok && authUrlRes.authUrl) {
+        btnOAuth.href = authUrlRes.authUrl;
+        window.location.href = authUrlRes.authUrl;
+      }
+    } catch (err) {
+      if (manualSetupBox) manualSetupBox.hidden = false;
+      showAlert('Google OAuth Client ID & Secret are required before connecting. Please configure them below or configure GOOGLE_CLIENT_ID in Vercel.', true);
+      const clientIdInput = formOAuthConfig?.querySelector('input[name="clientId"]');
+      if (clientIdInput) clientIdInput.focus();
+    }
+  });
+
+  const btnQuickConnect = dashboardPanel.querySelector('[data-btn-quick-connect]');
+  btnQuickConnect?.addEventListener('click', async () => {
+    btnQuickConnect.disabled = true;
+    showAlert('Verifying and connecting target Finance spreadsheet (13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8)…', false);
+    try {
+      const res = await api(ENDPOINT, {
+        method: 'POST',
+        query: { action: 'connect-existing' },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spreadsheetId: '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8' })
+      });
+      if (res.ok) {
+        showAlert('Finance spreadsheet successfully connected & verified!', false);
+        loadStatus();
+      }
+    } catch (err) {
+      if (err.message && err.message.includes('No Google Refresh Token')) {
+        showAlert('Google Authorization Required: Click "Connect Google Account (amjeementor@gmail.com)" first to authorize access, or enter your Refresh Token in settings below.', true);
+      } else {
+        showAlert(`Connection error: ${err.message}`, true);
+      }
+    } finally {
+      btnQuickConnect.disabled = false;
+    }
+  });
+
   formConnectExisting?.addEventListener('submit', async e => {
     e.preventDefault();
     const btn = formConnectExisting.querySelector('[data-btn-connect-existing]');
     if (btn) btn.disabled = true;
-    const spreadsheetId = formConnectExisting.elements.spreadsheetId.value.trim();
+    const spreadsheetId = formConnectExisting.elements.spreadsheetId.value.trim() || '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8';
     showAlert(`Connecting and verifying spreadsheet ${spreadsheetId}…`, false);
     try {
       const res = await api(ENDPOINT, {
@@ -649,7 +724,11 @@ export function initFinancePage() {
         loadStatus();
       }
     } catch (err) {
-      showAlert(`Connection failed: ${err.message}`, true);
+      if (err.message && err.message.includes('No Google Refresh Token')) {
+        showAlert('Google Authorization Required: Click "Connect Google Account (amjeementor@gmail.com)" first to authorize access, or enter your Refresh Token in settings below.', true);
+      } else {
+        showAlert(`Connection failed: ${err.message}`, true);
+      }
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -659,19 +738,21 @@ export function initFinancePage() {
     e.preventDefault();
     const btn = formOAuthConfig.querySelector('[data-btn-save-config]');
     if (btn) btn.disabled = true;
-    const clientId = formOAuthConfig.elements.clientId.value.trim();
-    const clientSecret = formOAuthConfig.elements.clientSecret.value.trim();
+    const clientId = formOAuthConfig.elements.clientId?.value?.trim();
+    const clientSecret = formOAuthConfig.elements.clientSecret?.value?.trim();
+    const refreshToken = formOAuthConfig.elements.refreshToken?.value?.trim();
+    const spreadsheetId = formOAuthConfig.elements.spreadsheetId?.value?.trim();
     try {
       await api(ENDPOINT, {
         method: 'POST',
         query: { action: 'save-config' },
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, clientSecret })
+        body: JSON.stringify({ clientId, clientSecret, refreshToken, spreadsheetId })
       });
-      showAlert('Google OAuth credentials saved. You can now click "Authorize with Google Account".', false);
+      showAlert('Configuration saved successfully! Refreshing status…', false);
       loadStatus();
     } catch (err) {
-      showAlert(`Failed to save OAuth config: ${err.message}`, true);
+      showAlert(`Failed to save configuration: ${err.message}`, true);
     } finally {
       if (btn) btn.disabled = false;
     }

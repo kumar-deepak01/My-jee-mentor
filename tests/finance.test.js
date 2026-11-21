@@ -4,7 +4,12 @@ import {
   FINANCE_SPREADSHEET_TITLE,
   FINANCE_SCHEMAS,
   SHEET_NAMES,
+  DEFAULT_FINANCE_SPREADSHEET_ID,
+  TARGET_GOOGLE_ACCOUNT,
+  getFinanceSpreadsheetId,
   getSpreadsheetUrl,
+  getOAuthConfig,
+  generateAuthUrl,
   getFinanceConnectionStatus
 } from '../server/finance-service.js';
 import {
@@ -287,3 +292,82 @@ test('Cross-Portal Auth Independence: One portal password does not authenticate 
   delete process.env.SHEET_WEBAPP_URL;
   delete process.env.SHEET_SECRET;
 });
+
+test('Finance Google Integration: Target account and spreadsheet configuration', () => {
+  assert.equal(DEFAULT_FINANCE_SPREADSHEET_ID, '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8');
+  assert.equal(TARGET_GOOGLE_ACCOUNT, 'amjeementor@gmail.com');
+
+  // Default fallback
+  delete process.env.FINANCE_SPREADSHEET_ID;
+  deleteSetting('finance_spreadsheet_id');
+  assert.equal(getFinanceSpreadsheetId(), '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8');
+
+  // Environment override
+  process.env.FINANCE_SPREADSHEET_ID = 'CustomEnvSpreadsheetId12345';
+  assert.equal(getFinanceSpreadsheetId(), 'CustomEnvSpreadsheetId12345');
+
+  // Setting override
+  setSetting('finance_spreadsheet_id', 'CustomSettingSpreadsheetId67890');
+  assert.equal(getFinanceSpreadsheetId(), 'CustomSettingSpreadsheetId67890');
+
+  // Cleanup
+  deleteSetting('finance_spreadsheet_id');
+  delete process.env.FINANCE_SPREADSHEET_ID;
+});
+
+test('Finance Google OAuth: Minimum scopes, login_hint, offline access, and consent prompt', () => {
+  // Missing client ID throws
+  delete process.env.GOOGLE_CLIENT_ID;
+  deleteSetting('google_client_id');
+  assert.throws(() => {
+    generateAuthUrl('https://www.myjeementor.com/api/finance?action=oauth-callback');
+  }, /Client ID is not configured/);
+
+  // Configured client ID generates correct URL
+  process.env.GOOGLE_CLIENT_ID = 'mock-client-id-1234.apps.googleusercontent.com';
+  const redirectUri = 'https://www.myjeementor.com/api/finance?action=oauth-callback';
+  const authUrlStr = generateAuthUrl(redirectUri);
+
+  const parsedUrl = new URL(authUrlStr);
+  assert.equal(parsedUrl.origin, 'https://accounts.google.com');
+  assert.equal(parsedUrl.pathname, '/o/oauth2/v2/auth');
+  assert.equal(parsedUrl.searchParams.get('client_id'), 'mock-client-id-1234.apps.googleusercontent.com');
+  assert.equal(parsedUrl.searchParams.get('redirect_uri'), redirectUri);
+  assert.equal(parsedUrl.searchParams.get('response_type'), 'code');
+  assert.equal(parsedUrl.searchParams.get('access_type'), 'offline');
+  assert.equal(parsedUrl.searchParams.get('prompt'), 'consent');
+  assert.equal(parsedUrl.searchParams.get('login_hint'), 'amjeementor@gmail.com');
+  // Minimum scope check: Must have spreadsheets, must NOT have excessive drive scopes
+  assert.equal(parsedUrl.searchParams.get('scope'), 'https://www.googleapis.com/auth/spreadsheets');
+  assert.equal(parsedUrl.searchParams.get('scope')?.includes('drive'), false);
+
+  delete process.env.GOOGLE_CLIENT_ID;
+});
+
+test('Finance Status & Security: Never exposes secrets or tokens in status', async () => {
+  setSetting('google_client_id', 'test-client-id.apps.googleusercontent.com');
+  setSetting('google_client_secret', 'SuperSecretClientKey999');
+  setSetting('google_refresh_token', '1//0SecretRefreshToken123');
+
+  const status = await getFinanceConnectionStatus();
+  assert.equal(status.googleAccount, 'amjeementor@gmail.com');
+  assert.equal(status.hasOAuthConfig, true);
+  assert.equal(status.hasRefreshToken, true);
+  assert.equal(status.spreadsheetId, '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8');
+  assert.ok(status.spreadsheetUrl.includes('13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8'));
+
+  // Ensure secrets are NEVER present in status object
+  assert.equal('google_client_secret' in status, false);
+  assert.equal('google_refresh_token' in status, false);
+  assert.equal('clientSecret' in status, false);
+  assert.equal('refreshToken' in status, false);
+  assert.equal('client_secret' in status, false);
+  assert.equal('refresh_token' in status, false);
+  assert.equal(JSON.stringify(status).includes('SuperSecretClientKey999'), false);
+  assert.equal(JSON.stringify(status).includes('1//0SecretRefreshToken123'), false);
+
+  deleteSetting('google_client_id');
+  deleteSetting('google_client_secret');
+  deleteSetting('google_refresh_token');
+});
+

@@ -113,6 +113,20 @@ export const FINANCE_SCHEMAS = {
 
 export const SHEET_NAMES = Object.keys(FINANCE_SCHEMAS);
 
+export const DEFAULT_FINANCE_SPREADSHEET_ID = '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8';
+export const TARGET_GOOGLE_ACCOUNT = 'amjeementor@gmail.com';
+
+/**
+ * Returns the active or default Finance Google Spreadsheet ID.
+ */
+export function getFinanceSpreadsheetId() {
+  return (
+    getSetting('finance_spreadsheet_id') ||
+    process.env.FINANCE_SPREADSHEET_ID ||
+    DEFAULT_FINANCE_SPREADSHEET_ID
+  );
+}
+
 export function getSpreadsheetUrl(spreadsheetId) {
   if (!spreadsheetId) return '';
   return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
@@ -129,16 +143,18 @@ export function getOAuthConfig() {
 
 /**
  * Generates Google OAuth 2.0 authorization URL.
+ * Requests minimum required permissions (https://www.googleapis.com/auth/spreadsheets)
+ * and hints the authorized target account (amjeementor@gmail.com).
  */
 export function generateAuthUrl(redirectUri, state = 'finance_setup') {
   const { clientId } = getOAuthConfig();
   if (!clientId) {
-    throw new Error('Google OAuth Client ID is not configured. Please add it in settings.');
+    throw new Error('Google OAuth Client ID is not configured. Please add it in settings or environment.');
   }
 
+  // Minimum required Google Sheets permissions:
   const scopes = [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive.file'
+    'https://www.googleapis.com/auth/spreadsheets'
   ];
 
   const params = new URLSearchParams({
@@ -148,6 +164,7 @@ export function generateAuthUrl(redirectUri, state = 'finance_setup') {
     scope: scopes.join(' '),
     access_type: 'offline',
     prompt: 'consent',
+    login_hint: TARGET_GOOGLE_ACCOUNT,
     state
   });
 
@@ -240,30 +257,32 @@ export async function getValidAccessToken() {
 }
 
 /**
- * Creates the "My JEE Mentor – Finance Management" spreadsheet in the user's Google Drive.
- * Initializes all 6 sheets with column headers and initial seed data.
+ * Connects and verifies the Finance Management spreadsheet in Google Drive.
+ * Connects to the target spreadsheet (13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8)
+ * and initializes missing worksheets without duplicating or overwriting data.
  */
 export async function createFinanceSpreadsheet(accessToken) {
-  // Idempotency check: Don't create if already configured and valid
-  const existingId = getSetting('finance_spreadsheet_id') || process.env.FINANCE_SPREADSHEET_ID;
-  if (existingId) {
+  // Idempotency check: Always prefer configured or default target spreadsheet
+  const targetId = getFinanceSpreadsheetId();
+  if (targetId) {
     try {
-      const verified = await verifySpreadsheet(existingId, accessToken);
+      const verified = await verifySpreadsheet(targetId, accessToken);
       if (verified.ok) {
         return {
           ok: true,
-          spreadsheetId: existingId,
-          spreadsheetUrl: getSpreadsheetUrl(existingId),
+          spreadsheetId: targetId,
+          spreadsheetUrl: getSpreadsheetUrl(targetId),
           alreadyExisted: true,
-          message: 'Finance spreadsheet is already configured and verified.'
+          missingSheetsAdded: verified.missingSheetsAdded,
+          message: 'Target Finance Google Spreadsheet successfully connected and verified.'
         };
       }
-    } catch {
-      // If existing spreadsheet is invalid or inaccessible, proceed to create new
+    } catch (err) {
+      console.warn('Target spreadsheet verification warning:', err.message);
     }
   }
 
-  // 1. Create Spreadsheet with all sheets
+  // Fallback: Create new spreadsheet only if no target ID is available
   const sheetsPayload = SHEET_NAMES.map(sheetName => ({
     properties: {
       title: sheetName,
@@ -500,13 +519,15 @@ export async function verifySpreadsheet(spreadsheetId, accessToken) {
 
 /**
  * Connects an existing Spreadsheet ID provided by the admin.
+ * If no ID is provided, connects the target default spreadsheet (13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8).
  */
 export async function connectExistingSpreadsheet(spreadsheetId) {
-  if (!spreadsheetId) {
+  const targetId = spreadsheetId || getFinanceSpreadsheetId();
+  if (!targetId) {
     throw new Error('Please provide a valid Google Spreadsheet ID.');
   }
 
-  const cleanId = String(spreadsheetId).trim().match(/[-\w]{25,}/)?.[0] || spreadsheetId.trim();
+  const cleanId = String(targetId).trim().match(/[-\w]{25,}/)?.[0] || String(targetId).trim();
   const accessToken = await getValidAccessToken();
 
   return await verifySpreadsheet(cleanId, accessToken);
@@ -516,7 +537,7 @@ export async function connectExistingSpreadsheet(spreadsheetId) {
  * Returns comprehensive connection status for the Finance Portal.
  */
 export async function getFinanceConnectionStatus() {
-  const spreadsheetId = getSetting('finance_spreadsheet_id') || process.env.FINANCE_SPREADSHEET_ID || '';
+  const spreadsheetId = getFinanceSpreadsheetId();
   const lastError = getSetting('finance_last_error') || '';
   const lastSyncedAt = getSetting('finance_last_synced_at') || '';
   const { clientId, clientSecret } = getOAuthConfig();
@@ -525,10 +546,10 @@ export async function getFinanceConnectionStatus() {
   const hasRefreshToken = Boolean(refreshToken);
 
   let status = 'Setup Required';
-  if (!hasOAuthConfig && !spreadsheetId) {
+  if (!hasOAuthConfig && !hasRefreshToken) {
     status = 'Setup Required';
-  } else if (!spreadsheetId) {
-    status = hasRefreshToken ? 'Not Connected' : 'Setup Required';
+  } else if (!hasRefreshToken) {
+    status = 'Not Connected';
   } else if (lastError) {
     status = 'Sync Error';
   } else {
@@ -542,6 +563,7 @@ export async function getFinanceConnectionStatus() {
 
   return {
     status, // 'Connected' | 'Not Connected' | 'Setup Required' | 'Sync Error'
+    googleAccount: TARGET_GOOGLE_ACCOUNT,
     spreadsheetId,
     spreadsheetUrl: getSpreadsheetUrl(spreadsheetId),
     lastSyncedAt,
