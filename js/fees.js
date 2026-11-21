@@ -1,30 +1,154 @@
 import {downloadReceiptPdf,formatFeeDate} from './fee-receipt.js';
 import {renderFeeAnalyticsMarkup,initFeeAnalytics,updateFeeAnalyticsData} from './fee-analytics.js';
+import {renderPhoneFieldMarkup,initPhoneComponent} from './intl-phone.js';
 const ENDPOINT='/api/fees';
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const localDate=()=>{const now=new Date();return`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`};
 const formatMoney=value=>new Intl.NumberFormat('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);
 
-export function feesPageMarkup(){return `<section class="fees-portal"><div class="container"><section class="fees-panel fees-login-panel" data-fees-auth><span class="eyebrow">ADMIN LOGIN</span><h2>Enter admin password</h2><form data-fees-login><label for="feesPassword">Admin password</label><div class="fees-login-row"><input id="feesPassword" name="password" type="password" required autocomplete="current-password" maxlength="300"><button class="btn btn-primary" type="submit" data-fees-login-button>Unlock</button></div><p class="fees-status" data-fees-login-status role="status" aria-live="polite"></p></form></section><section class="fees-dashboard" data-fees-dashboard hidden><div class="fees-dashboard-head"><div><span class="eyebrow">PRIVATE FEE REGISTER</span><h2>Fee Collection &amp; Receipt</h2></div><button class="btn btn-outline" type="button" data-fees-logout>Logout</button></div>${renderFeeAnalyticsMarkup()}<section class="fees-panel"><h3>Record a fee payment</h3><p class="fees-help">A receipt downloads only after the payment record is saved to the fee sheet.</p><form class="fees-form" data-fees-form><label>Student Name *<input name="studentName" required maxlength="100" autocomplete="name"></label><label>Parent Name<input name="parentName" maxlength="100"></label><label>Phone *<input name="phone" type="tel" required maxlength="30" inputmode="tel" autocomplete="tel" placeholder="+917304256203"></label><label>Course *<select name="course" required><option value="">Select course</option><option>JEE</option><option>NEET</option><option>Foundation</option></select></label><label>Batch<input name="batch" maxlength="80" placeholder="e.g. Class 11 Evening"></label><label>Fee Period<input name="feePeriod" maxlength="50" placeholder="e.g. October 2026"></label><label>Amount (₹) *<input name="amount" type="number" required min="0.01" max="99999999.99" step="0.01" inputmode="decimal"></label><label>Payment Mode *<select name="paymentMode" required><option value="">Select payment mode</option><option>Cash</option><option>UPI</option><option>Card</option><option>Bank Transfer</option></select></label><label>Balance Due (₹)<input name="balanceDue" type="number" min="0" max="99999999.99" step="0.01" inputmode="decimal" placeholder="0.00"></label><label>Collected By<input name="collectedBy" maxlength="100"></label><label>Date *<input name="date" type="date" required></label><label class="fees-full-field">Remarks<textarea name="remarks" rows="3" maxlength="500"></textarea></label><div class="fees-form-footer fees-full-field"><p class="fees-status" data-fees-form-status role="status" aria-live="polite"></p><button class="btn btn-primary" type="submit" data-fees-save>Save &amp; Download Receipt</button></div></form></section><section class="fees-panel fees-history-panel"><div class="fees-history-heading"><div><span class="eyebrow">SAVED IN GOOGLE SHEETS</span><h3>Receipt History</h3></div><button class="btn btn-outline fees-refresh" type="button" data-fees-refresh>Refresh</button></div><form class="fees-filters" data-fees-filters><label>Search name, phone or receipt no.<input name="search" type="search" maxlength="100" placeholder="Search fee records"></label><label>Collection date<input name="date" type="date"></label><button class="btn btn-primary" type="submit">Search</button><button class="btn btn-outline" type="reset" data-fees-clear>Clear</button></form><p class="fees-status" data-fees-history-status role="status" aria-live="polite"></p><div class="fees-table-wrap"><table class="fees-table"><thead><tr><th>Receipt</th><th>Date</th><th>Student</th><th>Course / Batch</th><th>Amount</th><th>Mode</th><th>Action</th></tr></thead><tbody data-fees-rows><tr><td colspan="7">Enter the admin password to load records.</td></tr></tbody></table></div></section></section></div></section>`}
+const formatWaNumber=phone=>{
+  if(!phone)return'';
+  const digits=String(phone).replace(/\D/g,'');
+  if(!digits)return'';
+  if(digits.length===10)return'91'+digits;
+  return digits;
+};
+
+export function feesPageMarkup(){
+  return `<section class="fees-portal"><div class="container"><section class="fees-panel fees-login-panel" data-fees-auth><span class="eyebrow">ADMIN LOGIN</span><h2>Enter admin password</h2><form data-fees-login><label for="feesPassword">Admin password</label><div class="fees-login-row"><input id="feesPassword" name="password" type="password" required autocomplete="current-password" maxlength="300"><button class="btn btn-primary" type="submit" data-fees-login-button>Unlock</button></div><p class="fees-status" data-fees-login-status role="status" aria-live="polite"></p></form></section><section class="fees-dashboard" data-fees-dashboard hidden><div class="fees-dashboard-head"><div><span class="eyebrow">PRIVATE FEE REGISTER</span><h2>Fee Collection &amp; Receipt</h2></div><button class="btn btn-outline" type="button" data-fees-logout>Logout</button></div>${renderFeeAnalyticsMarkup()}<section class="fees-panel"><h3>Record a fee payment</h3><p class="fees-help">A receipt downloads only after the payment record is saved to the fee sheet.</p><form class="fees-form" data-fees-form><label>Student Name *<input name="studentName" required maxlength="100" autocomplete="name"></label><label>Parent Name<input name="parentName" maxlength="100"></label>${renderPhoneFieldMarkup()}<label>Course *<select name="course" required><option value="">Select course</option><option>JEE</option><option>NEET</option><option>Foundation</option></select></label><label>Batch<input name="batch" maxlength="80" placeholder="e.g. Class 11 Evening"></label><label>Fee Period<input name="feePeriod" maxlength="50" placeholder="e.g. October 2026"></label><label>Amount (₹) *<input name="amount" type="number" required min="0.01" max="99999999.99" step="0.01" inputmode="decimal"></label><label>Payment Mode *<select name="paymentMode" required><option value="">Select payment mode</option><option>Cash</option><option>UPI</option><option>Card</option><option>Bank Transfer</option></select></label><label>Balance Due (₹)<input name="balanceDue" type="number" min="0" max="99999999.99" step="0.01" inputmode="decimal" placeholder="0.00"></label><label>Collected By<input name="collectedBy" maxlength="100"></label><label>Date *<input name="date" type="date" required></label><label class="fees-full-field">Remarks<textarea name="remarks" rows="3" maxlength="500"></textarea></label><div class="fees-form-footer fees-full-field"><p class="fees-status" data-fees-form-status role="status" aria-live="polite"></p><button class="btn btn-primary" type="submit" data-fees-save>Save &amp; Download Receipt</button></div></form></section><section class="fees-panel fees-history-panel"><div class="fees-history-heading"><div><span class="eyebrow">SAVED IN GOOGLE SHEETS</span><h3>Receipt History</h3></div><button class="btn btn-outline fees-refresh" type="button" data-fees-refresh>Refresh</button></div><form class="fees-filters" data-fees-filters><label>Search name, phone or receipt no.<input name="search" type="search" maxlength="100" placeholder="Search fee records"></label><label>Collection date<input name="date" type="date"></label><button class="btn btn-primary" type="submit">Search</button><button class="btn btn-outline" type="reset" data-fees-clear>Clear</button></form><p class="fees-status" data-fees-history-status role="status" aria-live="polite"></p><div class="fees-table-wrap"><table class="fees-table"><thead><tr><th>Receipt</th><th>Date</th><th>Student</th><th>Course / Batch</th><th>Amount</th><th>Mode</th><th>Action</th></tr></thead><tbody data-fees-rows><tr><td colspan="7">Enter the admin password to load records.</td></tr></tbody></table></div></section></section></div></section>`;
+}
 
 async function api(action,options={}){const{query,...fetchOptions}=options,url=new URL(ENDPOINT,location.origin);if(action)url.searchParams.set('action',action);for(const[key,value]of Object.entries(query||{}))if(value)url.searchParams.set(key,value);const response=await fetch(url,{credentials:'same-origin',cache:'no-store',...fetchOptions}),payload=await response.json().catch(()=>({message:'The fee service returned an invalid response.'}));if(!response.ok)throw Object.assign(new Error(payload.message||'Fee request failed.'),{status:response.status});return payload}
+
 export function initFeesPage(){
   const auth=document.querySelector('[data-fees-auth]'),dashboard=document.querySelector('[data-fees-dashboard]');if(!auth||!dashboard)return;
   const loginForm=auth.querySelector('[data-fees-login]'),loginStatus=auth.querySelector('[data-fees-login-status]'),loginButton=auth.querySelector('[data-fees-login-button]'),feeForm=dashboard.querySelector('[data-fees-form]'),feeStatus=dashboard.querySelector('[data-fees-form-status]'),saveButton=dashboard.querySelector('[data-fees-save]'),historyStatus=dashboard.querySelector('[data-fees-history-status]'),rows=dashboard.querySelector('[data-fees-rows]'),filters=dashboard.querySelector('[data-fees-filters]');let records=[];let allRecords=[];
   initFeeAnalytics({onRefreshRequested:()=>loadHistory(true)});
   feeForm.elements.date.value=localDate();
-  const phoneInput=feeForm.elements.phone,phoneIsValid=value=>/^\+?[0-9-]+$/.test(value)&&((value.match(/[0-9]/g)||[]).length>=10)&&((value.match(/[0-9]/g)||[]).length<=15);
-  phoneInput.addEventListener('input',()=>{const filtered=phoneInput.value.replace(/[^0-9+-]/g,'').replace(/(?!^)\+/g,'');if(filtered!==phoneInput.value)phoneInput.value=filtered;phoneInput.setCustomValidity(phoneIsValid(filtered)?'':'Enter 10 to 15 digits; only a leading + and hyphens are allowed.')});
-  phoneInput.addEventListener('change',()=>phoneInput.setCustomValidity(phoneIsValid(phoneInput.value)?'':'Enter 10 to 15 digits; only a leading + and hyphens are allowed.'));
-  feeForm.addEventListener('reset',()=>setTimeout(()=>phoneInput.setCustomValidity(''),0));
+  
+  const phoneComp=initPhoneComponent(feeForm);
+  feeForm.addEventListener('reset',()=>setTimeout(()=>{if(phoneComp)phoneComp.selectCountry({iso2:'IN',name:'India',dialCode:'+91',flag:'🇮🇳'},false)},0));
+
   const setStatus=(node,message,error=false)=>{node.textContent=message;node.classList.toggle('is-error',error);node.classList.toggle('is-success',Boolean(message)&&!error)};
   const showDashboard=()=>{auth.hidden=true;dashboard.hidden=false;loadHistory()};
   const showLogin=message=>{dashboard.hidden=true;auth.hidden=false;if(message)setStatus(loginStatus,message,true)};
-  const drawRows=()=>{rows.innerHTML=records.length?records.map((record,index)=>`<tr><td><strong>${escapeHtml(record.receiptNo)}</strong></td><td>${escapeHtml(formatFeeDate(record.date))}</td><td>${escapeHtml(record.studentName)}${record.parentName?`<small>${escapeHtml(record.parentName)}</small>`:''}</td><td>${escapeHtml(record.course)}${record.batch?`<small>${escapeHtml(record.batch)}</small>`:''}</td><td>₹${escapeHtml(formatMoney(record.amount))}</td><td>${escapeHtml(record.paymentMode)}</td><td><button type="button" class="fees-download-again" data-fees-download="${index}">Download PDF Again</button></td></tr>`).join(''):'<tr><td colspan="7" class="fees-empty-row">No fee records match this search.</td></tr>'};
-  const loadHistory=async(forceFull=false)=>{setStatus(historyStatus,'Loading fee records…');rows.innerHTML='<tr><td colspan="7">Loading from Google Sheets…</td></tr>';if(forceFull)filters.reset();const data=new FormData(filters),query=forceFull?{}:Object.fromEntries([...data].map(([key,value])=>[key,String(value).trim()]).filter(([,value])=>value));try{const result=await api('',{method:'GET',query});records=Array.isArray(result.records)?result.records:[];drawRows();setStatus(historyStatus,`${records.length} record${records.length===1?'':'s'} loaded.`);if(Object.keys(query).length===0){allRecords=records;updateFeeAnalyticsData(allRecords)}}catch(error){if(error.status===401){showLogin('Session expired. Please sign in again.');return}rows.innerHTML='<tr><td colspan="7">Fee history could not be loaded.</td></tr>';setStatus(historyStatus,error.message||'Google Sheets is unavailable. Try again.',true)}};
-  loginForm.addEventListener('submit',async event=>{event.preventDefault();loginButton.disabled=true;setStatus(loginStatus,'Checking password…');try{await api('login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:loginForm.elements.password.value})});loginForm.reset();setStatus(loginStatus,'');showDashboard()}catch(error){setStatus(loginStatus,error.message,true)}finally{loginButton.disabled=false}});
-  dashboard.addEventListener('click',async event=>{const download=event.target.closest('[data-fees-download]');if(download){const record=records[Number(download.dataset.feesDownload)];if(!record)return;download.disabled=true;try{await downloadReceiptPdf(record)}catch(error){setStatus(historyStatus,error.message,true)}finally{download.disabled=false}return}if(event.target.closest('[data-fees-refresh]'))loadHistory(true);if(event.target.closest('[data-fees-logout]')){try{await api('logout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({})})}catch{}showLogin('You have been logged out.')}});
-  filters.addEventListener('submit',event=>{event.preventDefault();loadHistory()});filters.addEventListener('reset',()=>setTimeout(loadHistory,0));
-  feeForm.addEventListener('submit',async event=>{event.preventDefault();if(!feeForm.reportValidity())return;saveButton.disabled=true;setStatus(feeStatus,'Saving payment to Google Sheets…');const data=Object.fromEntries(new FormData(feeForm));try{const saved=await api('collect',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});if(!saved.receiptNo||!saved.record)throw new Error('Google Sheets did not confirm the save. No receipt was generated.');setStatus(feeStatus,`Saved as ${saved.receiptNo}. Preparing receipt…`);try{await downloadReceiptPdf(saved.record);setStatus(feeStatus,`Payment saved. Receipt ${saved.receiptNo} downloaded.`)}catch(error){setStatus(feeStatus,`Payment saved as ${saved.receiptNo}, but the PDF could not be generated: ${error.message}`,true)}feeForm.reset();feeForm.elements.date.value=localDate();loadHistory(true)}catch(error){if(error.status===401){showLogin('Session expired. Please sign in again.');return}setStatus(feeStatus,error.message||'Payment was not saved. No receipt was generated.',true)}finally{saveButton.disabled=false}});
+
+  const drawRows=()=>{
+    rows.innerHTML=records.length?records.map((record,index)=>{
+      const wa=formatWaNumber(record.phone);
+      return `<tr>
+        <td><strong>${escapeHtml(record.receiptNo)}</strong></td>
+        <td>${escapeHtml(formatFeeDate(record.date))}</td>
+        <td>
+          <div class="fees-student-cell">
+            <strong>${escapeHtml(record.studentName)}</strong>
+            ${record.parentName?`<small class="fees-parent-name">${escapeHtml(record.parentName)}</small>`:''}
+            ${record.phone?`
+              <div class="fees-phone-cell-links">
+                <a href="tel:${escapeHtml(record.phone)}" class="fees-phone-link" title="Call ${escapeHtml(record.phone)}">
+                  <span>📞</span> ${escapeHtml(record.phone)}
+                </a>
+                ${wa?`<a href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" class="fees-wa-link" title="Chat on WhatsApp">
+                  <span>💬</span> WhatsApp
+                </a>`:''}
+              </div>`:''}
+          </div>
+        </td>
+        <td>${escapeHtml(record.course)}${record.batch?`<small>${escapeHtml(record.batch)}</small>`:''}</td>
+        <td>₹${escapeHtml(formatMoney(record.amount))}</td>
+        <td>${escapeHtml(record.paymentMode)}</td>
+        <td><button type="button" class="fees-download-again" data-fees-download="${index}">Download PDF Again</button></td>
+      </tr>`;
+    }).join(''):'<tr><td colspan="7" class="fees-empty-row">No fee records match this search.</td></tr>';
+  };
+
+  const loadHistory=async(forceFull=false)=>{
+    setStatus(historyStatus,'Loading fee records…');
+    rows.innerHTML='<tr><td colspan="7">Loading from Google Sheets…</td></tr>';
+    if(forceFull)filters.reset();
+    const data=new FormData(filters),query=forceFull?{}:Object.fromEntries([...data].map(([key,value])=>[key,String(value).trim()]).filter(([,value])=>value));
+    try{
+      const result=await api('',{method:'GET',query});
+      records=Array.isArray(result.records)?result.records:[];
+      drawRows();
+      setStatus(historyStatus,`${records.length} record${records.length===1?'':'s'} loaded.`);
+      if(Object.keys(query).length===0){allRecords=records;updateFeeAnalyticsData(allRecords)}
+    }catch(error){
+      if(error.status===401){showLogin('Session expired. Please sign in again.');return}
+      rows.innerHTML='<tr><td colspan="7">Fee history could not be loaded.</td></tr>';
+      setStatus(historyStatus,error.message||'Google Sheets is unavailable. Try again.',true);
+    }
+  };
+
+  loginForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    loginButton.disabled=true;
+    setStatus(loginStatus,'Checking password…');
+    try{
+      await api('login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:loginForm.elements.password.value})});
+      loginForm.reset();
+      setStatus(loginStatus,'');
+      showDashboard();
+    }catch(error){
+      setStatus(loginStatus,error.message,true);
+    }finally{
+      loginButton.disabled=false;
+    }
+  });
+
+  dashboard.addEventListener('click',async event=>{
+    const download=event.target.closest('[data-fees-download]');
+    if(download){
+      const record=records[Number(download.dataset.feesDownload)];
+      if(!record)return;
+      download.disabled=true;
+      try{await downloadReceiptPdf(record)}catch(error){setStatus(historyStatus,error.message,true)}finally{download.disabled=false}
+      return;
+    }
+    if(event.target.closest('[data-fees-refresh]'))loadHistory(true);
+    if(event.target.closest('[data-fees-logout]')){
+      try{await api('logout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({})})}catch{}
+      showLogin('You have been logged out.');
+    }
+  });
+
+  filters.addEventListener('submit',event=>{event.preventDefault();loadHistory()});
+  filters.addEventListener('reset',()=>setTimeout(loadHistory,0));
+
+  feeForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(phoneComp){
+      const phoneRes=phoneComp.validate();
+      if(!phoneRes.isValid){
+        feeForm.elements.phone?.focus();
+        setStatus(feeStatus,phoneRes.error||'Please enter a valid phone number.',true);
+        return;
+      }
+    }
+    if(!feeForm.reportValidity())return;
+    saveButton.disabled=true;
+    setStatus(feeStatus,'Saving payment to Google Sheets…');
+    const data=Object.fromEntries(new FormData(feeForm));
+    if(phoneComp&&phoneComp.getE164()){
+      data.phone=phoneComp.getE164();
+      data.phoneCountry=phoneComp.getCountry().iso2;
+      data.phoneDialCode=phoneComp.getCountry().dialCode;
+    }
+    try{
+      const saved=await api('collect',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});
+      if(!saved.receiptNo||!saved.record)throw new Error('Google Sheets did not confirm the save. No receipt was generated.');
+      setStatus(feeStatus,`Saved as ${saved.receiptNo}. Preparing receipt…`);
+      try{await downloadReceiptPdf(saved.record);setStatus(feeStatus,`Payment saved. Receipt ${saved.receiptNo} downloaded.`)}catch(error){setStatus(feeStatus,`Payment saved as ${saved.receiptNo}, but the PDF could not be generated: ${error.message}`,true)}
+      feeForm.reset();
+      feeForm.elements.date.value=localDate();
+      loadHistory(true);
+    }catch(error){
+      if(error.status===401){showLogin('Session expired. Please sign in again.');return}
+      setStatus(feeStatus,error.message||'Payment was not saved. No receipt was generated.',true);
+    }finally{
+      saveButton.disabled=false;
+    }
+  });
+
   api('session').then(showDashboard).catch(()=>{});
 }

@@ -1,4 +1,5 @@
 import {createHmac,createHash,timingSafeEqual} from 'node:crypto';
+import {parsePhoneNumberFromString} from 'libphonenumber-js';
 
 const COOKIE='mjm_fees_admin',SESSION_SECONDS=4*60*60,loginAttempts=new Map();
 const json=(body,status=200,headers={})=>Response.json(body,{status,headers:{'cache-control':'no-store',...headers}});
@@ -81,11 +82,31 @@ function clearLoginAttempts(request){
 const text=(value,max)=>typeof value==='string'?value.trim().replace(/[\u0000-\u001f\u007f]/g,'').slice(0,max):'';
 const COURSES=new Set(['JEE','NEET','Foundation']),PAYMENT_MODES=new Set(['Cash','UPI','Card','Bank Transfer']);
 
-function validateRecord(body){
-  const studentName=text(body?.studentName,100),parentName=text(body?.parentName,100),phone=text(body?.phone,30),course=text(body?.course,30),batch=text(body?.batch,80),feePeriod=text(body?.feePeriod,50),collectedBy=text(body?.collectedBy,100),remarks=text(body?.remarks,500),date=text(body?.date,10),paymentMode=text(body?.paymentMode,30),amount=Number(body?.amount),balanceDue=body?.balanceDue===''||body?.balanceDue==null?0:Number(body.balanceDue);
+export function validateRecord(body){
+  const studentName=text(body?.studentName,100),parentName=text(body?.parentName,100),rawPhone=text(body?.phone,30),course=text(body?.course,30),batch=text(body?.batch,80),feePeriod=text(body?.feePeriod,50),collectedBy=text(body?.collectedBy,100),remarks=text(body?.remarks,500),date=text(body?.date,10),paymentMode=text(body?.paymentMode,30),amount=Number(body?.amount),balanceDue=body?.balanceDue===''||body?.balanceDue==null?0:Number(body.balanceDue);
   if(!studentName)throw new FeesError(400,'STUDENT_REQUIRED','Student name is required.');
-  const phoneDigits=(phone.match(/[0-9]/g)||[]).length;
-  if(!/^\+?[0-9-]+$/.test(phone)||phoneDigits<10||phoneDigits>15)throw new FeesError(400,'PHONE_INVALID','Enter 10 to 15 digits; only a leading + and hyphens are allowed.');
+
+  const countryIso = text(body?.phoneCountry || body?.countryIso || 'IN', 10).toUpperCase() || 'IN';
+  let normalizedPhone = '';
+  if (rawPhone) {
+    try {
+      let parsed = parsePhoneNumberFromString(rawPhone);
+      if (!parsed || !parsed.isValid()) {
+        parsed = parsePhoneNumberFromString(rawPhone, countryIso);
+      }
+      if (parsed && parsed.isValid()) {
+        normalizedPhone = parsed.format('E.164');
+      }
+    } catch {}
+    if (!normalizedPhone) {
+      const digits = (rawPhone.match(/[0-9]/g) || []).length;
+      if (/^\+?[0-9\s-]+$/.test(rawPhone) && digits >= 10 && digits <= 15) {
+        normalizedPhone = rawPhone.startsWith('+') ? rawPhone.replace(/[\s-]/g, '') : `+91${rawPhone.replace(/[\s-]/g, '')}`;
+      }
+    }
+  }
+  if (!normalizedPhone) throw new FeesError(400,'PHONE_INVALID','Enter a valid international phone number with country code (e.g. +91 98765 43210).');
+  const phone = normalizedPhone;
   if(!Number.isFinite(amount)||amount<=0||amount>99999999.99)throw new FeesError(400,'AMOUNT_INVALID','Enter a valid amount greater than zero.');
   if(!COURSES.has(course))throw new FeesError(400,'COURSE_INVALID','Select a valid course.');
   if(!PAYMENT_MODES.has(paymentMode))throw new FeesError(400,'PAYMENT_MODE_INVALID','Select a valid payment mode.');
