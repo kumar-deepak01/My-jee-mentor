@@ -211,14 +211,18 @@ export async function callFinanceSheet(method, { action = 'status', query = {}, 
     if (!payload) {
       const trimmed = (rawText || '').trim();
       if (trimmed.startsWith('<') || trimmed.includes('<html') || trimmed.includes('<!DOCTYPE')) {
+        const bodySnippet = trimmed.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
         if (trimmed.includes('accounts.google.com') || trimmed.includes('ServiceLogin') || trimmed.includes('Sign in - Google Accounts')) {
-          throw new Error('Google Apps Script Web App requires Google sign-in. In Google Apps Script, click Deploy > Manage deployments > Edit > set "Who has access" to "Anyone" and redeploy.');
+          throw new Error('Google Apps Script requires Google authentication. In Apps Script, click Deploy > Manage deployments > Edit > set "Who has access" to "Anyone" and save.');
+        }
+        if (trimmed.includes('Script function not found') || bodySnippet.includes('Script function not found')) {
+          throw new Error(`Google Apps Script error: ${bodySnippet.slice(0, 200) || 'Script function not found: doPost'}. The deployed script on Google Cloud is missing doPost(e). Replace Code.gs with the complete apps-script/Finance.gs handler.`);
         }
         if (trimmed.includes('Script error') || trimmed.includes('Exception:') || trimmed.includes('Authorization Required')) {
-          const bodySnippet = trimmed.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
-          throw new Error(`Google Apps Script error: ${bodySnippet}`);
+          throw new Error(`Google Apps Script error: ${bodySnippet.slice(0, 250)}`);
         }
-        throw new Error('Google Apps Script returned an unexpected HTML page instead of JSON. Ensure Web App is deployed with "Who has access" set to "Anyone".');
+        throw new Error(`Google Apps Script returned an HTML page instead of JSON: ${bodySnippet.slice(0, 200) || trimmed.slice(0, 200)}`);
       }
       throw new Error(`Google Sheets did not return valid JSON (HTTP ${response.status}): ${rawText.slice(0, 150)}`);
     }

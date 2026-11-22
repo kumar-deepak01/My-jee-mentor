@@ -166,6 +166,35 @@ function getNextId(sheet, prefix) {
 }
 
 /**
+ * Safe Initialization / Schema Verification:
+ * Opens existing spreadsheet 13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8.
+ * Ensures all 6 worksheets exist with their correct schemas.
+ * NEVER creates a duplicate spreadsheet or overwrites existing data.
+ */
+function initFinanceSpreadsheet() {
+  const spreadsheet = getSpreadsheet();
+  const spreadsheetId = spreadsheet.getId();
+  const spreadsheetUrl = spreadsheet.getUrl();
+
+  const sheetNames = Object.keys(SCHEMAS);
+  const counts = {};
+  sheetNames.forEach(function(name) {
+    const s = ensureSheet(spreadsheet, name);
+    counts[name] = Math.max(0, s.getLastRow() - 1);
+  });
+
+  return {
+    success: true,
+    ok: true,
+    message: 'Finance spreadsheet verified and active.',
+    spreadsheetId: spreadsheetId,
+    spreadsheetUrl: spreadsheetUrl,
+    title: spreadsheet.getName(),
+    sheets: counts
+  };
+}
+
+/**
  * Handle GET requests
  */
 function doGet(e) {
@@ -184,6 +213,12 @@ function doGet(e) {
     }
 
     const spreadsheet = getSpreadsheet();
+
+    // 0. Safe Initialization (verify existing spreadsheet without creating duplicates)
+    if (action === 'init') {
+      const result = initFinanceSpreadsheet();
+      return jsonOutput(result);
+    }
 
     // 1. Status / Connection check
     if (action === 'status' || action === 'ping') {

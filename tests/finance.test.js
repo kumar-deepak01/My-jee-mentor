@@ -472,7 +472,17 @@ test('Finance Apps Script Web App: Robust response parsing and HTML error diagno
 
     await assert.rejects(async () => {
       await callFinanceSheet('POST', { action: 'add-expense', body: { amount: 2000 } });
-    }, /Google Apps Script Web App requires Google sign-in/);
+    }, /Google Apps Script requires Google authentication/);
+
+    // 2b. HTML "Script function not found: doPost" when doPost is missing from Apps Script
+    globalThis.fetch = async () => new Response(
+      '<!DOCTYPE html><html><head><title>Error</title></head><body>Script function not found: doPost</body></html>',
+      { status: 200, headers: { 'content-type': 'text/html' } }
+    );
+
+    await assert.rejects(async () => {
+      await callFinanceSheet('POST', { action: 'add-expense', body: { amount: 2000 } });
+    }, /Script function not found/i);
 
     // 3. HTML Apps Script Exception error
     globalThis.fetch = async () => new Response(
