@@ -475,15 +475,57 @@ export async function handleFinanceRequest(request) {
       if (action === 'add-expense') {
         const amount = Number(body?.amount);
         if (!Number.isFinite(amount) || amount <= 0) {
-          return json({ ok: false, message: 'Enter a valid expense amount greater than zero.' }, 400);
+          return json({ success: false, ok: false, message: 'Enter a valid expense amount greater than zero.' }, 400);
         }
-        const result = await addExpense({
-          ...body,
-          amount,
-          clientIp,
-          recordedBy: body?.recordedBy || 'Admin'
-        });
-        return json(result, 201);
+        const category = String(body?.category || '').trim();
+        if (!category) {
+          return json({ success: false, ok: false, message: 'Expense category is required.' }, 400);
+        }
+
+        const date = String(body?.date || '').trim() || getKolkataYmd();
+        const description = String(body?.description || body?.notes || '').trim();
+        const paymentMode = String(body?.paymentMode || 'UPI').trim();
+        const paidTo = String(body?.paidTo || 'Institute Expense').trim();
+        const notes = String(body?.notes || body?.remarks || '').trim();
+        const billUrl = String(body?.billUrl || '').trim();
+
+        try {
+          const result = await addExpense({
+            date,
+            category,
+            description,
+            amount,
+            paymentMode,
+            paidTo,
+            billUrl,
+            notes,
+            clientIp,
+            recordedBy: body?.recordedBy || 'Admin'
+          });
+
+          return json({
+            success: true,
+            ok: true,
+            message: result.message || 'Expense saved successfully',
+            expenseId: result.expenseId || result.id,
+            expense: result.data || {
+              id: result.expenseId || result.id,
+              date,
+              category,
+              description,
+              amount,
+              paymentMode,
+              paidTo,
+              notes
+            }
+          }, 201);
+        } catch (err) {
+          return json({
+            success: false,
+            ok: false,
+            message: err.message || 'Failed to save expense in Google Sheets.'
+          }, 502);
+        }
       }
 
       if (action === 'delete-expense') {

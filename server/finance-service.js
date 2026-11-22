@@ -200,10 +200,40 @@ export async function callFinanceSheet(method, { action = 'status', query = {}, 
       redirect: 'follow'
     });
 
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload || payload.ok !== true) {
-      throw new Error(payload?.message || `Google Sheets did not confirm request (HTTP ${response.status}).`);
+    const rawText = await response.text();
+    let payload = null;
+    try {
+      payload = JSON.parse(rawText);
+    } catch {
+      payload = null;
     }
+
+    if (!payload) {
+      const trimmed = (rawText || '').trim();
+      if (trimmed.startsWith('<') || trimmed.includes('<html') || trimmed.includes('<!DOCTYPE')) {
+        if (trimmed.includes('accounts.google.com') || trimmed.includes('ServiceLogin') || trimmed.includes('Sign in - Google Accounts')) {
+          throw new Error('Google Apps Script Web App requires Google sign-in. In Google Apps Script, click Deploy > Manage deployments > Edit > set "Who has access" to "Anyone" and redeploy.');
+        }
+        if (trimmed.includes('Script error') || trimmed.includes('Exception:') || trimmed.includes('Authorization Required')) {
+          const bodySnippet = trimmed.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+          throw new Error(`Google Apps Script error: ${bodySnippet}`);
+        }
+        throw new Error('Google Apps Script returned an unexpected HTML page instead of JSON. Ensure Web App is deployed with "Who has access" set to "Anyone".');
+      }
+      throw new Error(`Google Sheets did not return valid JSON (HTTP ${response.status}): ${rawText.slice(0, 150)}`);
+    }
+
+    const isSuccess = Boolean(payload && (payload.success === true || payload.ok === true));
+    if (!response.ok || !isSuccess) {
+      const errMsg = payload?.message || payload?.error || payload?.details || `Google Sheets request failed (HTTP ${response.status}).`;
+      throw new Error(errMsg);
+    }
+
+    // Normalize payload properties
+    payload.success = true;
+    payload.ok = true;
+    if (!payload.expenseId && payload.id) payload.expenseId = payload.id;
+    if (!payload.message) payload.message = 'Expense saved successfully';
 
     return payload;
   } catch (err) {

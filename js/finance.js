@@ -1545,9 +1545,26 @@ async function api(endpoint, options = {}) {
     cache: 'no-store',
     ...fetchOptions
   });
-  const payload = await response.json().catch(() => ({ message: 'Invalid response from server.' }));
-  if (!response.ok) {
-    throw Object.assign(new Error(payload.message || 'Request failed.'), { status: response.status });
+
+  const rawText = await response.text();
+  let payload = null;
+  try {
+    payload = JSON.parse(rawText);
+  } catch {
+    const trimmed = (rawText || '').trim();
+    if (trimmed.startsWith('<') || trimmed.includes('<html') || trimmed.includes('<!DOCTYPE')) {
+      if (trimmed.includes('accounts.google.com') || trimmed.includes('ServiceLogin')) {
+        throw Object.assign(new Error('Google Apps Script requires sign-in. Set "Who has access" to "Anyone" in Apps Script deployment.'), { status: response.status });
+      }
+      throw Object.assign(new Error('Server returned an HTML page instead of JSON. Please check server logs.'), { status: response.status });
+    }
+    throw Object.assign(new Error(rawText.slice(0, 150) || 'Invalid response from server.'), { status: response.status });
+  }
+
+  const isSuccess = response.ok && (payload.success === true || payload.ok === true || (response.status < 400 && payload.success !== false && payload.ok !== false));
+  if (!isSuccess) {
+    const errMsg = payload.message || payload.error || payload.details || `Request failed (HTTP ${response.status}).`;
+    throw Object.assign(new Error(errMsg), { status: response.status, payload });
   }
   return payload;
 }
@@ -2946,15 +2963,37 @@ export function initFinancePage() {
 
   // Form Submissions
   // 1. Quick Add Expense Form
+  let isSubmittingQuickExpense = false;
   quickExpenseForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (isSubmittingQuickExpense) return;
+
+    const data = Object.fromEntries(new FormData(quickExpenseForm));
+    const amount = Number(data.amount);
+    const category = String(data.category || '').trim();
+
+    if (!category) {
+      if (quickExpenseStatus) {
+        quickExpenseStatus.textContent = 'Please select an expense category.';
+        quickExpenseStatus.className = 'fees-status is-error';
+      }
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      if (quickExpenseStatus) {
+        quickExpenseStatus.textContent = 'Please enter a valid amount greater than ₹0.';
+        quickExpenseStatus.className = 'fees-status is-error';
+      }
+      return;
+    }
+
+    isSubmittingQuickExpense = true;
     if (quickExpenseBtn) quickExpenseBtn.disabled = true;
     if (quickExpenseStatus) {
       quickExpenseStatus.textContent = 'Saving expense to Google Sheets…';
       quickExpenseStatus.className = 'fees-status';
     }
 
-    const data = Object.fromEntries(new FormData(quickExpenseForm));
     try {
       const res = await api(ENDPOINT, {
         method: 'POST',
@@ -2962,15 +3001,18 @@ export function initFinancePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
+      const confirmedId = res.expenseId || res.id || res?.expense?.id;
+      if ((res.success || res.ok) && confirmedId) {
         if (quickExpenseStatus) {
-          quickExpenseStatus.textContent = `✓ Saved as ${res.expenseId}!`;
+          quickExpenseStatus.textContent = `✓ ${res.message || 'Saved successfully'} (${confirmedId})!`;
           quickExpenseStatus.className = 'fees-status is-success';
         }
         quickExpenseForm.reset();
-        quickExpenseForm.elements.date.value = getKolkataYmd();
-        showAlert(`Expense ${res.expenseId} successfully saved to Google Sheets!`, false);
+        if (quickExpenseForm.elements.date) quickExpenseForm.elements.date.value = getKolkataYmd();
+        showAlert(`Expense ${confirmedId} successfully saved to Google Sheets!`, false);
         loadAllData();
+      } else {
+        throw new Error(res.message || 'Google Sheets did not confirm the save. No expense ID returned.');
       }
     } catch (err) {
       if (quickExpenseStatus) {
@@ -2978,13 +3020,28 @@ export function initFinancePage() {
         quickExpenseStatus.className = 'fees-status is-error';
       }
     } finally {
+      isSubmittingQuickExpense = false;
       if (quickExpenseBtn) quickExpenseBtn.disabled = false;
     }
   });
 
   // 2. Full Income Form
+  let isSubmittingIncome = false;
   fullIncomeForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (isSubmittingIncome) return;
+
+    const data = Object.fromEntries(new FormData(fullIncomeForm));
+    const amount = Number(data.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      if (incomeFormStatus) {
+        incomeFormStatus.textContent = 'Please enter a valid income amount greater than ₹0.';
+        incomeFormStatus.className = 'fees-status is-error';
+      }
+      return;
+    }
+
+    isSubmittingIncome = true;
     const btn = fullIncomeForm.querySelector('[data-btn-save-income]');
     if (btn) btn.disabled = true;
     if (incomeFormStatus) {
@@ -2992,7 +3049,6 @@ export function initFinancePage() {
       incomeFormStatus.className = 'fees-status';
     }
 
-    const data = Object.fromEntries(new FormData(fullIncomeForm));
     try {
       const res = await api(ENDPOINT, {
         method: 'POST',
@@ -3000,15 +3056,18 @@ export function initFinancePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
+      const confirmedId = res.incomeId || res.id;
+      if ((res.success || res.ok) && confirmedId) {
         if (incomeFormStatus) {
-          incomeFormStatus.textContent = `✓ Saved as ${res.incomeId}!`;
+          incomeFormStatus.textContent = `✓ ${res.message || 'Saved'} (${confirmedId})!`;
           incomeFormStatus.className = 'fees-status is-success';
         }
         fullIncomeForm.reset();
-        fullIncomeForm.elements.date.value = getKolkataYmd();
-        showAlert(`Income stream ${res.incomeId} recorded in Google Sheets!`, false);
+        if (fullIncomeForm.elements.date) fullIncomeForm.elements.date.value = getKolkataYmd();
+        showAlert(`Income stream ${confirmedId} recorded in Google Sheets!`, false);
         loadAllData();
+      } else {
+        throw new Error(res.message || 'Google Sheets did not confirm the income save.');
       }
     } catch (err) {
       if (incomeFormStatus) {
@@ -3016,13 +3075,37 @@ export function initFinancePage() {
         incomeFormStatus.className = 'fees-status is-error';
       }
     } finally {
+      isSubmittingIncome = false;
       if (btn) btn.disabled = false;
     }
   });
 
   // 3. Full Expense Form
+  let isSubmittingFullExpense = false;
   fullExpenseForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (isSubmittingFullExpense) return;
+
+    const data = Object.fromEntries(new FormData(fullExpenseForm));
+    const amount = Number(data.amount);
+    const category = String(data.category || '').trim();
+
+    if (!category) {
+      if (expenseFormStatus) {
+        expenseFormStatus.textContent = 'Please select an expense category.';
+        expenseFormStatus.className = 'fees-status is-error';
+      }
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      if (expenseFormStatus) {
+        expenseFormStatus.textContent = 'Please enter a valid amount greater than ₹0.';
+        expenseFormStatus.className = 'fees-status is-error';
+      }
+      return;
+    }
+
+    isSubmittingFullExpense = true;
     const btn = fullExpenseForm.querySelector('[data-btn-save-expense]');
     if (btn) btn.disabled = true;
     if (expenseFormStatus) {
@@ -3030,7 +3113,6 @@ export function initFinancePage() {
       expenseFormStatus.className = 'fees-status';
     }
 
-    const data = Object.fromEntries(new FormData(fullExpenseForm));
     try {
       const res = await api(ENDPOINT, {
         method: 'POST',
@@ -3038,15 +3120,18 @@ export function initFinancePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
+      const confirmedId = res.expenseId || res.id || res?.expense?.id;
+      if ((res.success || res.ok) && confirmedId) {
         if (expenseFormStatus) {
-          expenseFormStatus.textContent = `✓ Saved as ${res.expenseId}!`;
+          expenseFormStatus.textContent = `✓ ${res.message || 'Saved successfully'} (${confirmedId})!`;
           expenseFormStatus.className = 'fees-status is-success';
         }
         fullExpenseForm.reset();
-        fullExpenseForm.elements.date.value = getKolkataYmd();
-        showAlert(`Expense ${res.expenseId} saved to Google Sheets!`, false);
+        if (fullExpenseForm.elements.date) fullExpenseForm.elements.date.value = getKolkataYmd();
+        showAlert(`Expense ${confirmedId} saved to Google Sheets!`, false);
         loadAllData();
+      } else {
+        throw new Error(res.message || 'Google Sheets did not confirm the save. No expense ID returned.');
       }
     } catch (err) {
       if (expenseFormStatus) {
@@ -3054,6 +3139,7 @@ export function initFinancePage() {
         expenseFormStatus.className = 'fees-status is-error';
       }
     } finally {
+      isSubmittingFullExpense = false;
       if (btn) btn.disabled = false;
     }
   });

@@ -391,3 +391,113 @@ test('Finance Status & Security: Never exposes secrets or tokens in status', asy
   delete process.env.FINANCE_SHEET_SECRET;
 });
 
+test('Finance Add Expense: rejects non-positive amount and missing category', async () => {
+  process.env.Finance_PASSWORDS = 'TestPassword123';
+  const cookie = makeFinanceSessionCookie();
+
+  // 1. Missing / invalid amount (0)
+  const reqZero = new Request('https://www.myjeementor.com/api/finance?action=add-expense', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie
+    },
+    body: JSON.stringify({ category: 'Office Rent', amount: 0 })
+  });
+  const resZero = await handleFinanceRequest(reqZero);
+  assert.equal(resZero.status, 400);
+  const dataZero = await resZero.json();
+  assert.equal(dataZero.success, false);
+  assert.ok(/greater than zero/i.test(dataZero.message));
+
+  // 2. Negative amount (-500)
+  const reqNeg = new Request('https://www.myjeementor.com/api/finance?action=add-expense', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie
+    },
+    body: JSON.stringify({ category: 'Office Rent', amount: -500 })
+  });
+  const resNeg = await handleFinanceRequest(reqNeg);
+  assert.equal(resNeg.status, 400);
+
+  // 3. Missing category
+  const reqNoCat = new Request('https://www.myjeementor.com/api/finance?action=add-expense', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie
+    },
+    body: JSON.stringify({ category: '   ', amount: 2000 })
+  });
+  const resNoCat = await handleFinanceRequest(reqNoCat);
+  assert.equal(resNoCat.status, 400);
+  const dataNoCat = await resNoCat.json();
+  assert.equal(dataNoCat.success, false);
+  assert.ok(/category is required/i.test(dataNoCat.message));
+
+  delete process.env.Finance_PASSWORDS;
+});
+
+test('Finance Apps Script Web App: Robust response parsing and HTML error diagnosis', async () => {
+  // Test simulated fetch responses
+  const originalFetch = globalThis.fetch;
+
+  try {
+    process.env.FINANCE_WEBAPP_URL = 'https://script.google.com/macros/s/AKfy_mock/exec';
+    process.env.FINANCE_SHEET_SECRET = 'MockSecret123';
+
+    // 1. Normal JSON success with success: true and expenseId
+    globalThis.fetch = async () => new Response(JSON.stringify({
+      success: true,
+      message: 'Expense saved successfully',
+      expenseId: 'EXP-2026-0042'
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+
+    const successResult = await callFinanceSheet('POST', {
+      action: 'add-expense',
+      body: { amount: 2000, category: 'Marketing - Google Ads' }
+    });
+    assert.equal(successResult.success, true);
+    assert.equal(successResult.ok, true);
+    assert.equal(successResult.expenseId, 'EXP-2026-0042');
+    assert.equal(successResult.message, 'Expense saved successfully');
+
+    // 2. HTML Google Sign-In page response (e.g. When deployed with "Only myself")
+    globalThis.fetch = async () => new Response(
+      '<!DOCTYPE html><html><head><title>Sign in - Google Accounts</title></head><body>accounts.google.com/ServiceLogin</body></html>',
+      { status: 200, headers: { 'content-type': 'text/html' } }
+    );
+
+    await assert.rejects(async () => {
+      await callFinanceSheet('POST', { action: 'add-expense', body: { amount: 2000 } });
+    }, /Google Apps Script Web App requires Google sign-in/);
+
+    // 3. HTML Apps Script Exception error
+    globalThis.fetch = async () => new Response(
+      '<!DOCTYPE html><html><head><title>Error</title></head><body>Exception: You do not have permission to call SpreadsheetApp.openById</body></html>',
+      { status: 200, headers: { 'content-type': 'text/html' } }
+    );
+
+    await assert.rejects(async () => {
+      await callFinanceSheet('POST', { action: 'add-expense', body: { amount: 2000 } });
+    }, /Exception: You do not have permission to call SpreadsheetApp\.openById/);
+
+    // 4. Apps Script failure JSON response
+    globalThis.fetch = async () => new Response(JSON.stringify({
+      success: false,
+      message: 'Expense category is required'
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+
+    await assert.rejects(async () => {
+      await callFinanceSheet('POST', { action: 'add-expense', body: { amount: 2000 } });
+    }, /Expense category is required/);
+
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.FINANCE_WEBAPP_URL;
+    delete process.env.FINANCE_SHEET_SECRET;
+  }
+});
+

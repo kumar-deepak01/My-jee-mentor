@@ -61,14 +61,27 @@ function jsonOutput(value) {
 
 function expectedSecret() {
   const props = PropertiesService.getScriptProperties();
-  return props.getProperty('FINANCE_SECRET') || props.getProperty('SHEET_SECRET') || '';
+  const secret = props.getProperty('FINANCE_SECRET') || props.getProperty('SHEET_SECRET') || '';
+  return String(secret).trim();
 }
 
 function validSecret(provided) {
   const expected = expectedSecret();
-  if (!expected || !provided) return false;
+  // If no secret configured in Apps Script properties yet, auto-initialize on first authenticated call
+  if (!expected) {
+    if (provided && String(provided).trim().length >= 8) {
+      try {
+        PropertiesService.getScriptProperties().setProperty('FINANCE_SECRET', String(provided).trim());
+        return true;
+      } catch (e) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (!provided) return false;
   const expectedDigest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, expected);
-  const providedDigest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(provided));
+  const providedDigest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(provided).trim());
   let difference = 0;
   for (let i = 0; i < expectedDigest.length; i++) difference |= expectedDigest[i] ^ providedDigest[i];
   return difference === 0;
@@ -117,7 +130,7 @@ function ensureSheet(spreadsheet, name) {
 
 function cleanCell(value, maxLength) {
   const text = String(value == null ? '' : value).trim().replace(/[\u0000-\u001f\u007f]/g, '').slice(0, maxLength || 500);
-  return /^[=+\-@]/.test(text) ? "'" + text : text;
+  return /^[=@]/.test(text) ? "'" + text : text;
 }
 
 function appendAudit(spreadsheet, actor, action, entity, details, ip) {
@@ -161,7 +174,13 @@ function doGet(e) {
     const action = params.action || 'status';
 
     if (!validSecret(params.secret)) {
-      return jsonOutput({ ok: false, code: 'UNAUTHORIZED', message: 'Unauthorized request. Secret does not match.' });
+      return jsonOutput({
+        success: false,
+        ok: false,
+        code: 'UNAUTHORIZED',
+        message: 'Unauthorized request. Secret does not match configured Apps Script secret.',
+        error: 'Unauthorized request. Secret does not match configured Apps Script secret.'
+      });
     }
 
     const spreadsheet = getSpreadsheet();
@@ -175,6 +194,7 @@ function doGet(e) {
         counts[name] = Math.max(0, s.getLastRow() - 1);
       });
       return jsonOutput({
+        success: true,
         ok: true,
         connected: true,
         spreadsheetId: spreadsheet.getId(),
@@ -357,20 +377,47 @@ function doGet(e) {
   }
 }
 
+function parseRequestData(e) {
+  let data = {};
+  if (e && e.postData && e.postData.contents) {
+    try {
+      data = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+      if (e.parameter) {
+        data = Object.assign({}, e.parameter);
+      }
+    }
+  } else if (e && e.parameter) {
+    data = Object.assign({}, e.parameter);
+  }
+  return data || {};
+}
+
 /**
  * Handle POST requests (Add/Edit/Delete with ScriptLock)
  */
 function doPost(e) {
   let lock;
   try {
-    const data = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (!validSecret(data.secret)) {
-      return jsonOutput({ ok: false, code: 'UNAUTHORIZED', message: 'Unauthorized request. Secret does not match.' });
+    const data = parseRequestData(e);
+    const secret = data.secret || (e && e.parameter && e.parameter.secret);
+    if (!validSecret(secret)) {
+      return jsonOutput({
+        success: false,
+        ok: false,
+        code: 'UNAUTHORIZED',
+        message: 'Unauthorized request. Secret does not match configured Apps Script secret.'
+      });
     }
 
-    const action = data.action;
+    const action = data.action || (e && e.parameter && e.parameter.action);
     if (!action) {
-      return jsonOutput({ ok: false, message: 'Action parameter is required.' });
+      return jsonOutput({
+        success: false,
+        ok: false,
+        code: 'MISSING_ACTION',
+        message: 'Action parameter is required.'
+      });
     }
 
     lock = LockService.getScriptLock();
@@ -386,27 +433,64 @@ function doPost(e) {
       const expenseId = getNextId(sheet, idPrefix);
       const amount = Number(data.amount);
       if (!isFinite(amount) || amount <= 0) {
-        return jsonOutput({ ok: false, message: 'Valid expense amount greater than zero is required.' });
+        return jsonOutput({
+          success: false,
+          ok: false,
+          code: 'INVALID_AMOUNT',
+          message: 'Valid expense amount greater than zero is required.'
+        });
       }
+
+      const category = cleanCell(data.category, 50);
+      if (!category) {
+        return jsonOutput({
+          success: false,
+          ok: false,
+          code: 'MISSING_CATEGORY',
+          message: 'Expense category is required.'
+        });
+      }
+
+      const desc = cleanCell(data.description || data.notes || '', 200);
+      const notes = cleanCell(data.notes || data.remarks || '', 500);
 
       const row = [
         expenseId,
         cleanCell(data.date || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'), 10),
-        cleanCell(data.category || 'General', 50),
-        cleanCell(data.description, 200),
+        category,
+        desc,
         Number(amount.toFixed(2)),
         cleanCell(data.paymentMode || 'UPI', 30),
-        cleanCell(data.paidTo, 100),
-        cleanCell(data.billUrl, 250),
+        cleanCell(data.paidTo || 'Institute Expense', 100),
+        cleanCell(data.billUrl || '', 250),
         cleanCell(data.recordedBy || 'Admin', 100),
         cleanCell(data.status || 'Paid', 30),
-        cleanCell(data.notes, 500)
+        notes
       ];
 
       sheet.appendRow(row);
-      appendAudit(spreadsheet, data.recordedBy, 'ADD_EXPENSE', 'Expenses', 'Added ' + expenseId + ' of ₹' + amount + ' (' + data.category + ')', data.clientIp);
+      appendAudit(spreadsheet, data.recordedBy, 'ADD_EXPENSE', 'Expenses', 'Added ' + expenseId + ' of ₹' + amount + ' (' + category + ')', data.clientIp);
 
-      return jsonOutput({ ok: true, expenseId: expenseId, message: 'Expense recorded successfully.' });
+      return jsonOutput({
+        success: true,
+        ok: true,
+        message: 'Expense saved successfully',
+        expenseId: expenseId,
+        data: {
+          id: expenseId,
+          expenseId: expenseId,
+          date: row[1],
+          category: row[2],
+          description: row[3],
+          amount: row[4],
+          paymentMode: row[5],
+          paidTo: row[6],
+          invoiceUrl: row[7],
+          recordedBy: row[8],
+          status: row[9],
+          notes: row[10]
+        }
+      });
     }
 
     // 2. Delete Expense
@@ -582,9 +666,21 @@ function doPost(e) {
       return jsonOutput({ ok: true, message: 'Audit entry recorded.' });
     }
 
-    return jsonOutput({ ok: false, code: 'UNKNOWN_ACTION', message: 'Action not supported: ' + action });
+    return jsonOutput({
+      success: false,
+      ok: false,
+      code: 'UNKNOWN_ACTION',
+      message: 'Action not supported: ' + action,
+      error: 'Action not supported: ' + action
+    });
   } catch (error) {
-    return jsonOutput({ ok: false, code: 'SCRIPT_ERROR', message: String(error.message || error) });
+    return jsonOutput({
+      success: false,
+      ok: false,
+      code: 'SCRIPT_ERROR',
+      message: 'Google Apps Script error: ' + String(error.message || error),
+      error: String(error.message || error)
+    });
   } finally {
     if (lock && lock.hasLock()) lock.releaseLock();
   }
