@@ -166,6 +166,30 @@ export function classifySalary(salary) {
 }
 
 /**
+ * Normalizes any supported date string or Date object into "YYYY-MM-DD" for reliable comparison.
+ * Handles: "YYYY-MM-DD", "DD-MM-YYYY", "DD/MM/YYYY", Date instances, and ISO strings.
+ */
+export function normalizeDateToYmd(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(val).trim();
+  const ymd = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(s);
+  if (ymd) {
+    return `${ymd[1]}-${ymd[2].padStart(2, '0')}-${ymd[3].padStart(2, '0')}`;
+  }
+  const dmy = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/.exec(s);
+  if (dmy) {
+    return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+  }
+  return s.slice(0, 10);
+}
+
+/**
  * Filters all dataset items between startDate and endDate (inclusive).
  * Dates must be YYYY-MM-DD.
  */
@@ -174,12 +198,12 @@ export function filterRecordsByPeriod(dataset = {}, startDate, endDate) {
   const end = String(endDate || '9999-99-99').trim().slice(0, 10);
 
   const feeRecords = (dataset.feeRecords || []).filter(r => {
-    const d = String(r.date || '').trim().slice(0, 10);
+    const d = normalizeDateToYmd(r.date);
     return d >= start && d <= end;
   });
 
   const otherIncome = (dataset.otherIncome || []).filter(r => {
-    const d = String(r.date || '').trim().slice(0, 10);
+    const d = normalizeDateToYmd(r.date);
     const src = String(r.source || '').toLowerCase();
     const desc = String(r.description || '').toLowerCase();
     const isFee = src.includes('fee collection') || src.includes('tuition fee') || desc.includes('tuition fee');
@@ -187,12 +211,12 @@ export function filterRecordsByPeriod(dataset = {}, startDate, endDate) {
   });
 
   const expenses = (dataset.expenses || []).filter(e => {
-    const d = String(e.date || '').trim().slice(0, 10);
+    const d = normalizeDateToYmd(e.date);
     return d >= start && d <= end;
   });
 
   const salaries = (dataset.salaries || []).filter(s => {
-    const d = String(s.paymentDate || s.date || '').trim().slice(0, 10);
+    const d = normalizeDateToYmd(s.paymentDate || s.date);
     // Only count disbursed salaries (not unpaid or pending commitments)
     const status = String(s.status || 'Paid').toLowerCase();
     const isDisbursed = status !== 'unpaid' && status !== 'pending' && status !== 'draft';
@@ -264,7 +288,7 @@ export function computeMonthBreakdown(dataset = {}, startDate, endDate) {
 
   // Tally Fee Collection
   for (const r of feeRecords) {
-    const d = String(r.date || '').trim().slice(0, 7);
+    const d = normalizeDateToYmd(r.date).slice(0, 7);
     if (d.length === 7) {
       const m = ensureMonth(d);
       m.feeCollection += (Number(r.amount) || 0);
@@ -273,7 +297,7 @@ export function computeMonthBreakdown(dataset = {}, startDate, endDate) {
 
   // Tally Other Income
   for (const r of otherIncome) {
-    const d = String(r.date || '').trim().slice(0, 7);
+    const d = normalizeDateToYmd(r.date).slice(0, 7);
     if (d.length === 7) {
       const m = ensureMonth(d);
       m.otherIncome += (Number(r.amount) || 0);
@@ -282,7 +306,7 @@ export function computeMonthBreakdown(dataset = {}, startDate, endDate) {
 
   // Tally Salaries
   for (const s of salaries) {
-    const d = String(s.paymentDate || s.date || '').trim().slice(0, 7);
+    const d = normalizeDateToYmd(s.paymentDate || s.date).slice(0, 7);
     if (d.length === 7) {
       const m = ensureMonth(d);
       const amt = Number(s.netPaid || s.basicSalary) || 0;
@@ -299,7 +323,7 @@ export function computeMonthBreakdown(dataset = {}, startDate, endDate) {
 
   // Tally Expenses
   for (const e of expenses) {
-    const d = String(e.date || '').trim().slice(0, 7);
+    const d = normalizeDateToYmd(e.date).slice(0, 7);
     if (d.length === 7) {
       const m = ensureMonth(d);
       const amt = Number(e.amount) || 0;

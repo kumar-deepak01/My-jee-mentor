@@ -16,7 +16,9 @@ import {
   formatInrInteger,
   getKolkataTimestamp,
   computeMonthBreakdown,
-  generateFinancialReportPdf
+  generateFinancialReportPdf,
+  filterRecordsByPeriod,
+  normalizeDateToYmd
 } from './finance-pdf.js';
 
 const ENDPOINT = '/api/finance';
@@ -291,17 +293,25 @@ export function financePageMarkup() {
                   <p class="finance-view-sub">Track income, expenses, profit and institute financial health in real-time <span style="color: #ea580c; font-weight: 600;">(Google Sheets &amp; Excel Powered)</span></p>
                 </div>
                 <div class="finance-view-controls">
-                  <select class="fn-select-control" data-fn-month-filter>
+                  <!-- Custom Date Range Controls (shown when Custom is selected) -->
+                  <div class="fn-dashboard-custom-range" data-fn-dashboard-custom-range style="display: none; align-items: center; gap: 6px;">
+                    <input type="date" class="fn-select-control" data-fn-dash-custom-start style="padding: 5px 8px; font-size: 0.8rem;" aria-label="Start Date">
+                    <span style="font-size: 0.78rem; color: #64748b; font-weight: 600;">to</span>
+                    <input type="date" class="fn-select-control" data-fn-dash-custom-end style="padding: 5px 8px; font-size: 0.8rem;" aria-label="End Date">
+                  </div>
+                  <select class="fn-select-control" data-fn-month-filter aria-label="Select Period">
                     <option value="current">📅 Nov 2026</option>
                     <option value="prev">Oct 2026</option>
                     <option value="all">All Time</option>
+                    <option value="custom">Custom Range…</option>
                   </select>
-                  <select class="fn-select-control" data-fn-view-type>
-                    <option value="monthly">Monthly</option>
+                  <select class="fn-select-control" data-fn-view-type aria-label="View Frequency">
+                    <option value="monthly" selected>Monthly</option>
                     <option value="quarterly">Quarterly</option>
                     <option value="annual">Annual</option>
+                    <option value="custom">Custom Range</option>
                   </select>
-                  <button type="button" class="btn-fn-export" data-quick-export-excel>
+                  <button type="button" class="btn-fn-export" data-quick-export-excel title="Export active dashboard view to Excel">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     <span>Export (Excel)</span>
                   </button>
@@ -416,7 +426,7 @@ export function financePageMarkup() {
                         <div>
                           <h3 class="fn-card-title">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--fn-orange)" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0110 10H12V2z"></path></svg>
-                            <span>Expense Breakdown</span>
+                            <span>Expense Breakdown <span data-dash-period-title="expense-breakdown">(Nov 2026)</span></span>
                           </h3>
                         </div>
                       </div>
@@ -434,7 +444,7 @@ export function financePageMarkup() {
                         <div>
                           <h3 class="fn-card-title">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--fn-orange)" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle></svg>
-                            <span>Expense by Category (₹)</span>
+                            <span>Expense by Category (₹) <span data-dash-period-title="expense-category"></span></span>
                           </h3>
                         </div>
                       </div>
@@ -449,7 +459,7 @@ export function financePageMarkup() {
                         <div>
                           <h3 class="fn-card-title">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--fn-orange)" stroke-width="2.2"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2 3-2 3 2V8z"></path></svg>
-                            <span>Recent Transactions</span>
+                            <span>Recent Transactions <span data-dash-period-title="recent-tx">(Nov 2026)</span></span>
                           </h3>
                         </div>
                         <button type="button" class="btn btn-link" data-nav-target="transactions" style="font-size: 0.78rem; color: var(--fn-orange); font-weight: 700; border: none; background: none; cursor: pointer;">
@@ -1705,6 +1715,7 @@ export function initFinancePage() {
       }
 
       // Render all dashboard cards, charts, and tables
+      populateDashboardPeriodOptions();
       renderDashboard();
       renderFeeDetailsTable();
       renderIncomeTable();
@@ -1725,21 +1736,237 @@ export function initFinancePage() {
     }
   }
 
+  // Dashboard Period Filter State & Helpers
+  const dashboardFilterState = {
+    viewType: 'monthly',
+    selectedPeriod: 'current',
+    customStart: '',
+    customEnd: ''
+  };
+
+  function getDashboardDateRange() {
+    const now = new Date();
+    const kolkataToday = getKolkataYmd(now);
+    const curY = Number(kolkataToday.slice(0, 4)) || 2026;
+    const curM = Number(kolkataToday.slice(5, 7)) || 11;
+
+    let startDate = '';
+    let endDate = '';
+    let periodLabel = '';
+    let activeMonthKey = '';
+
+    const { viewType, selectedPeriod, customStart, customEnd } = dashboardFilterState;
+
+    if (viewType === 'custom' || selectedPeriod === 'custom') {
+      startDate = customStart || `${curY}-01-01`;
+      endDate = customEnd || kolkataToday;
+      periodLabel = `${formatDateIndian(startDate)} – ${formatDateIndian(endDate)}`;
+      activeMonthKey = '';
+    } else if (selectedPeriod === 'all') {
+      startDate = '2000-01-01';
+      endDate = '2099-12-31';
+      periodLabel = 'All Time';
+      activeMonthKey = '';
+    } else if (viewType === 'quarterly') {
+      let qNum = 3;
+      let yr = curY;
+      if (selectedPeriod.startsWith('Q')) {
+        const parts = selectedPeriod.split('-');
+        qNum = Number(parts[0].replace('Q', '')) || 3;
+        yr = Number(parts[1]) || curY;
+      }
+      if (qNum === 1) {
+        startDate = `${yr}-04-01`;
+        endDate = `${yr}-06-30`;
+        periodLabel = `Q1 FY ${yr}-${String(yr + 1).slice(-2)}`;
+      } else if (qNum === 2) {
+        startDate = `${yr}-07-01`;
+        endDate = `${yr}-09-30`;
+        periodLabel = `Q2 FY ${yr}-${String(yr + 1).slice(-2)}`;
+      } else if (qNum === 3) {
+        startDate = `${yr}-10-01`;
+        endDate = `${yr}-12-31`;
+        periodLabel = `Q3 FY ${yr}-${String(yr + 1).slice(-2)}`;
+        activeMonthKey = `${yr}-11`;
+      } else {
+        startDate = `${yr + 1}-01-01`;
+        endDate = `${yr + 1}-03-31`;
+        periodLabel = `Q4 FY ${yr}-${String(yr + 1).slice(-2)}`;
+      }
+    } else if (viewType === 'annual') {
+      let yr = curY;
+      if (selectedPeriod.startsWith('FY-')) {
+        yr = Number(selectedPeriod.replace('FY-', '')) || curY;
+      } else if (/^\d{4}$/.test(selectedPeriod)) {
+        yr = Number(selectedPeriod);
+      }
+      const fy = getFinancialYearRange(yr);
+      startDate = fy.startDate;
+      endDate = fy.endDate;
+      periodLabel = fy.label;
+    } else {
+      // Monthly view (default)
+      let y = curY;
+      let m = curM;
+      if (selectedPeriod === 'current') {
+        y = curY;
+        m = curM;
+      } else if (selectedPeriod === 'prev') {
+        m = curM - 1;
+        if (m < 1) { m = 12; y = curY - 1; }
+      } else if (/^\d{4}-\d{2}$/.test(selectedPeriod)) {
+        const parts = selectedPeriod.split('-');
+        y = Number(parts[0]);
+        m = Number(parts[1]);
+      }
+      const range = getMonthDateRange(y, m);
+      startDate = range.startDate;
+      endDate = range.endDate;
+      periodLabel = `${MONTH_SHORT_NAMES[m - 1]} ${y}`;
+      activeMonthKey = `${y}-${String(m).padStart(2, '0')}`;
+    }
+
+    return { startDate, endDate, periodLabel, activeMonthKey };
+  }
+
+  function populateDashboardPeriodOptions() {
+    const periodSelect = dashboardPanel.querySelector('[data-fn-month-filter]');
+    const viewSelect = dashboardPanel.querySelector('[data-fn-view-type]');
+    const customRangeWrap = dashboardPanel.querySelector('[data-fn-dashboard-custom-range]');
+    if (!periodSelect || !viewSelect) return;
+
+    const currentVal = periodSelect.value || dashboardFilterState.selectedPeriod;
+    const viewType = dashboardFilterState.viewType;
+
+    const isCustom = viewType === 'custom' || currentVal === 'custom';
+    if (customRangeWrap) {
+      customRangeWrap.style.display = isCustom ? 'flex' : 'none';
+      const startInp = customRangeWrap.querySelector('[data-fn-dash-custom-start]');
+      const endInp = customRangeWrap.querySelector('[data-fn-dash-custom-end]');
+      const now = new Date();
+      const curYmd = getKolkataYmd(now);
+      const curYear = curYmd.slice(0, 4);
+      if (startInp && !startInp.value) {
+        startInp.value = dashboardFilterState.customStart || `${curYear}-01-01`;
+      }
+      if (endInp && !endInp.value) {
+        endInp.value = dashboardFilterState.customEnd || curYmd;
+      }
+    }
+
+    if (viewType === 'monthly') {
+      const now = new Date();
+      const curYmd = getKolkataYmd(now);
+      const curMonthKey = curYmd.slice(0, 7); // e.g. "2026-11"
+      const prevD = new Date(Number(curMonthKey.slice(0, 4)), Number(curMonthKey.slice(5, 7)) - 2, 1);
+      const prevMonthKey = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}`; // "2026-10"
+
+      const monthSet = new Set([curMonthKey, prevMonthKey]);
+      const scanDate = dStr => {
+        const s = normalizeDateToYmd(dStr);
+        if (/^\d{4}-\d{2}/.test(s)) monthSet.add(s.slice(0, 7));
+      };
+      (financeState.feeRecords || []).forEach(r => scanDate(r.date));
+      (financeState.expenses || []).forEach(e => scanDate(e.date));
+      (financeState.otherIncome || []).forEach(i => scanDate(i.date));
+      (financeState.salaries || []).forEach(s => scanDate(s.paymentDate || s.date));
+
+      const sortedMonths = Array.from(monthSet).sort().reverse();
+      let html = '';
+      for (const mKey of sortedMonths) {
+        const [y, m] = mKey.split('-').map(Number);
+        const name = `${MONTH_SHORT_NAMES[m - 1]} ${y}`;
+        const isCur = mKey === curMonthKey;
+        const optVal = isCur ? 'current' : (mKey === prevMonthKey ? 'prev' : mKey);
+        const label = isCur ? `📅 ${name}` : name;
+        html += `<option value="${optVal}">${escapeHtml(label)}</option>`;
+      }
+      html += '<option value="all">All Time</option>';
+      html += '<option value="custom">Custom Range…</option>';
+      periodSelect.innerHTML = html;
+
+      if (currentVal && periodSelect.querySelector(`option[value="${currentVal}"]`)) {
+        periodSelect.value = currentVal;
+      } else {
+        periodSelect.value = 'current';
+        dashboardFilterState.selectedPeriod = 'current';
+      }
+    } else if (viewType === 'quarterly') {
+      const now = new Date();
+      const curYmd = getKolkataYmd(now);
+      const curY = Number(curYmd.slice(0, 4)) || 2026;
+      let html = `
+        <option value="Q3-${curY}">Q3 FY ${curY}-${String(curY + 1).slice(-2)} (Oct - Dec ${curY})</option>
+        <option value="Q2-${curY}">Q2 FY ${curY}-${String(curY + 1).slice(-2)} (Jul - Sep ${curY})</option>
+        <option value="Q1-${curY}">Q1 FY ${curY}-${String(curY + 1).slice(-2)} (Apr - Jun ${curY})</option>
+        <option value="Q4-${curY - 1}">Q4 FY ${curY - 1}-${String(curY).slice(-2)} (Jan - Mar ${curY})</option>
+        <option value="all">All Time</option>
+        <option value="custom">Custom Range…</option>
+      `;
+      periodSelect.innerHTML = html;
+      if (currentVal && periodSelect.querySelector(`option[value="${currentVal}"]`)) {
+        periodSelect.value = currentVal;
+      } else {
+        periodSelect.value = `Q3-${curY}`;
+        dashboardFilterState.selectedPeriod = `Q3-${curY}`;
+      }
+    } else if (viewType === 'annual') {
+      const now = new Date();
+      const curYmd = getKolkataYmd(now);
+      const curY = Number(curYmd.slice(0, 4)) || 2026;
+      let html = `
+        <option value="FY-${curY}">FY ${curY}-${String(curY + 1).slice(-2)} (Apr ${curY} – Mar ${curY + 1})</option>
+        <option value="FY-${curY - 1}">FY ${curY - 1}-${String(curY).slice(-2)} (Apr ${curY - 1} – Mar ${curY})</option>
+        <option value="FY-${curY - 2}">FY ${curY - 2}-${String(curY - 1).slice(-2)}</option>
+        <option value="all">All Time</option>
+        <option value="custom">Custom Range…</option>
+      `;
+      periodSelect.innerHTML = html;
+      if (currentVal && periodSelect.querySelector(`option[value="${currentVal}"]`)) {
+        periodSelect.value = currentVal;
+      } else {
+        periodSelect.value = `FY-${curY}`;
+        dashboardFilterState.selectedPeriod = `FY-${curY}`;
+      }
+    } else if (viewType === 'custom') {
+      periodSelect.innerHTML = `
+        <option value="custom" selected>Custom Range…</option>
+        <option value="current">📅 Nov 2026</option>
+        <option value="all">All Time</option>
+      `;
+      periodSelect.value = 'custom';
+      dashboardFilterState.selectedPeriod = 'custom';
+    }
+  }
+
   // Render Dashboard KPIs, Charts & Tables
   function renderDashboard() {
-    const expenses = financeState.expenses || [];
-    const salaries = financeState.salaries || [];
-    const otherIncome = (financeState.otherIncome || []).filter(i => {
-      const src = String(i.source || '').toLowerCase();
-      const desc = String(i.description || '').toLowerCase();
-      return !src.includes('fee collection') && !src.includes('tuition fee');
-    });
-    const feeRecords = financeState.feeRecords || [];
-    const summary = financeState.summary || {};
+    const { startDate, endDate, periodLabel, activeMonthKey } = getDashboardDateRange();
+    const isAllTime = dashboardFilterState.selectedPeriod === 'all' && dashboardFilterState.viewType !== 'custom';
 
-    // 1. Calculate Real Totals
-    const feeTotal = Number(financeState.feeMetrics?.totalCollection) || Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const feeCount = Number(financeState.feeMetrics?.totalTransactions) || Number(summary.revenue?.feeTransactions) || feeRecords.length;
+    const { feeRecords, otherIncome, expenses, salaries } = isAllTime
+      ? {
+          feeRecords: financeState.feeRecords || [],
+          otherIncome: (financeState.otherIncome || []).filter(i => {
+            const src = String(i.source || '').toLowerCase();
+            const desc = String(i.description || '').toLowerCase();
+            return !src.includes('fee collection') && !src.includes('tuition fee');
+          }),
+          expenses: financeState.expenses || [],
+          salaries: (financeState.salaries || []).filter(s => {
+            const status = String(s.status || 'Paid').toLowerCase();
+            return status !== 'unpaid' && status !== 'pending' && status !== 'draft';
+          })
+        }
+      : filterRecordsByPeriod(financeState, startDate, endDate);
+
+    // 1. Calculate Real Totals for this period
+    const feeTotal = isAllTime
+      ? (Number(financeState.feeMetrics?.totalCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0))
+      : feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const feeCount = isAllTime
+      ? (Number(financeState.feeMetrics?.totalTransactions) || feeRecords.length)
+      : feeRecords.length;
     const otherIncomeTotal = otherIncome.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
     const totalIncome = feeTotal + otherIncomeTotal;
 
@@ -1750,13 +1977,13 @@ export function initFinancePage() {
     const netProfit = totalIncome - totalExpenses;
     const margin = totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : '0.0';
 
-    // Marketing Expense calculation - ONLY from verified marketing/ads expenses
+    // Marketing Expense calculation - ONLY from verified marketing/ads expenses in this period
     const marketingExpense = expenses
       .filter(e => /marketing|ads|google|meta|facebook|adwords|campaign|banner/i.test((e.category || '') + ' ' + (e.description || '')))
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const mktgPct = totalExpenses > 0 ? ((marketingExpense / totalExpenses) * 100).toFixed(1) : '0.0';
 
-    // Teacher Salary calculation - ONLY from verified disbursed teacher salaries
+    // Teacher Salary calculation - ONLY from verified disbursed teacher salaries in this period
     const teacherSalary = salaries
       .filter(s => /faculty|teacher|professor|tutor|academic/i.test((s.role || '') + ' ' + (s.employeeName || '')))
       .reduce((sum, s) => sum + (Number(s.netPaid || s.basicSalary) || 0), 0);
@@ -1788,22 +2015,30 @@ export function initFinancePage() {
       marketingExpense: dashboardPanel.querySelector('[data-kpi-sub="marketingExpense"]'),
       teacherSalary: dashboardPanel.querySelector('[data-kpi-sub="teacherSalary"]')
     };
-    if (kpiSubs.totalIncome) kpiSubs.totalIncome.textContent = `${feeCount} verified fee receipts`;
+    if (kpiSubs.totalIncome) kpiSubs.totalIncome.textContent = `${feeCount} verified fee receipts (${periodLabel})`;
     if (kpiSubs.totalExpenses) kpiSubs.totalExpenses.textContent = totalExpenses === 0 ? '₹0 recorded expenses' : `${expenses.length + salaries.length} payments recorded`;
     if (kpiSubs.netProfit) kpiSubs.netProfit.textContent = `Margin: ${margin}%`;
     if (kpiSubs.feeCollection) kpiSubs.feeCollection.textContent = `${feeCount} Transactions`;
     if (kpiSubs.marketingExpense) kpiSubs.marketingExpense.textContent = `${mktgPct}% of Total Expense`;
     if (kpiSubs.teacherSalary) kpiSubs.teacherSalary.textContent = `${teacherCount} Disbursed`;
 
-    // Render Charts
-    renderTrendBarChart(totalIncome, totalExpenses, netProfit);
+    // Update Card Period Titles
+    const titleBreakdown = dashboardPanel.querySelector('[data-dash-period-title="expense-breakdown"]');
+    if (titleBreakdown) titleBreakdown.textContent = `(${periodLabel})`;
+    const titleRecent = dashboardPanel.querySelector('[data-dash-period-title="recent-tx"]');
+    if (titleRecent) titleRecent.textContent = `(${periodLabel})`;
+    const titleCat = dashboardPanel.querySelector('[data-dash-period-title="expense-category"]');
+    if (titleCat) titleCat.textContent = `(${periodLabel})`;
+
+    // Render Charts & Tables
+    renderTrendBarChart(totalIncome, totalExpenses, netProfit, activeMonthKey);
     renderDonutChart(expenses, salaries, teacherSalary, marketingExpense, totalExpenses);
     renderCategoryBars(expenses, salaries, totalExpenses);
-    renderRecentTransactionsTable();
+    renderRecentTransactionsTable({ feeRecords, otherIncome, expenses, salaries }, periodLabel);
   }
 
   // 1. Income vs Expense Trend Bar Chart (SVG)
-  function renderTrendBarChart(currIncome, currExpense, currProfit) {
+  function renderTrendBarChart(currIncome, currExpense, currProfit, activeMonthKey) {
     const container = dashboardPanel.querySelector('[data-chart-trend-container]');
     if (!container) return;
 
@@ -1823,26 +2058,27 @@ export function initFinancePage() {
       let exp = 0;
 
       (financeState.feeRecords || []).forEach(f => {
-        if (String(f.date || '').startsWith(m.key)) inc += (Number(f.amount) || 0);
+        if (normalizeDateToYmd(f.date).startsWith(m.key)) inc += (Number(f.amount) || 0);
       });
       (financeState.otherIncome || []).forEach(i => {
-        if (String(i.date || '').startsWith(m.key)) inc += (Number(i.amount) || 0);
+        if (normalizeDateToYmd(i.date).startsWith(m.key)) inc += (Number(i.amount) || 0);
       });
       (financeState.expenses || []).forEach(e => {
-        if (String(e.date || '').startsWith(m.key)) exp += (Number(e.amount) || 0);
+        if (normalizeDateToYmd(e.date).startsWith(m.key)) exp += (Number(e.amount) || 0);
       });
       (financeState.salaries || []).forEach(s => {
         const d = s.paymentDate || s.date || '';
-        if (String(d).startsWith(m.key)) exp += (Number(s.netPaid || s.basicSalary) || 0);
+        if (normalizeDateToYmd(d).startsWith(m.key)) exp += (Number(s.netPaid || s.basicSalary) || 0);
       });
 
-      if (m.key === currentMonthKey) {
+      if (m.key === currentMonthKey && currIncome != null && activeMonthKey === currentMonthKey) {
         inc = Math.max(inc, currIncome || 0);
         exp = Math.max(exp, currExpense || 0);
       }
 
       return {
         month: m.label,
+        key: m.key,
         income: inc,
         expense: exp,
         profit: inc - exp
@@ -1875,16 +2111,18 @@ export function initFinancePage() {
 
     const barsSvg = data.map((d, i) => {
       const gX = padL + i * groupW + groupW * 0.15;
+      const isSelected = Boolean(activeMonthKey && d.key === activeMonthKey);
       const hInc = d.income > 0 ? Math.max(3, (d.income / upperLimit) * chartH) : 0;
       const hExp = d.expense > 0 ? Math.max(3, (d.expense / upperLimit) * chartH) : 0;
       const hPrf = d.profit > 0 ? Math.max(3, (d.profit / upperLimit) * chartH) : 0;
 
       return `
         <g class="chart-group">
+          ${isSelected ? `<rect x="${gX - 4}" y="${padT}" width="${barW * 3 + 12}" height="${chartH}" fill="rgba(249, 115, 22, 0.08)" rx="4"/>` : ''}
           ${hInc > 0 ? `<rect x="${gX}" y="${padT + chartH - hInc}" width="${barW}" height="${hInc}" fill="#22c55e" rx="2"><title>Income: ${formatInr(d.income)}</title></rect>` : ''}
           ${hExp > 0 ? `<rect x="${gX + barW + 2}" y="${padT + chartH - hExp}" width="${barW}" height="${hExp}" fill="#f87171" rx="2"><title>Expense: ${formatInr(d.expense)}</title></rect>` : ''}
           ${hPrf > 0 ? `<rect x="${gX + (barW + 2) * 2}" y="${padT + chartH - hPrf}" width="${barW}" height="${hPrf}" fill="#3b82f6" rx="2"><title>Profit: ${formatInr(d.profit)}</title></rect>` : ''}
-          <text x="${gX + barW * 1.5 + 2}" y="${height - 6}" font-size="9.5" fill="#64748b" text-anchor="middle" font-weight="500">${d.month}</text>
+          <text x="${gX + barW * 1.5 + 2}" y="${height - 6}" font-size="9.5" fill="${isSelected ? 'var(--fn-orange)' : '#64748b'}" text-anchor="middle" font-weight="${isSelected ? '700' : '500'}">${d.month}</text>
         </g>
       `;
     }).join('');
@@ -2035,14 +2273,21 @@ export function initFinancePage() {
   }
 
   // 4. Recent Transactions Table
-  function renderRecentTransactionsTable() {
+  function renderRecentTransactionsTable(filteredRecords, periodLabel) {
     const tbody = dashboardPanel.querySelector('[data-recent-tx-rows]');
     if (!tbody) return;
 
-    // Combine verified fee receipts, expenses, other income and salaries
+    const sourceData = filteredRecords || {
+      feeRecords: financeState.feeRecords || [],
+      otherIncome: financeState.otherIncome || [],
+      expenses: financeState.expenses || [],
+      salaries: financeState.salaries || []
+    };
+
+    // Combine verified fee receipts, expenses, other income and salaries for this period
     const combined = [];
 
-    (financeState.expenses || []).forEach(e => {
+    (sourceData.expenses || []).forEach(e => {
       combined.push({
         date: e.date || '',
         type: 'Expense',
@@ -2052,7 +2297,7 @@ export function initFinancePage() {
       });
     });
 
-    (financeState.feeRecords || []).forEach(f => {
+    (sourceData.feeRecords || []).forEach(f => {
       combined.push({
         date: f.date || '',
         type: 'Income',
@@ -2062,7 +2307,7 @@ export function initFinancePage() {
       });
     });
 
-    (financeState.otherIncome || []).forEach(inc => {
+    (sourceData.otherIncome || []).forEach(inc => {
       combined.push({
         date: inc.date || '',
         type: 'Income',
@@ -2072,7 +2317,7 @@ export function initFinancePage() {
       });
     });
 
-    (financeState.salaries || []).forEach(s => {
+    (sourceData.salaries || []).forEach(s => {
       combined.push({
         date: s.paymentDate || s.date || '',
         type: 'Expense',
@@ -2083,10 +2328,14 @@ export function initFinancePage() {
     });
 
     // Sort newest first
-    combined.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    combined.sort((a, b) => {
+      const da = normalizeDateToYmd(a.date);
+      const db = normalizeDateToYmd(b.date);
+      return db.localeCompare(da);
+    });
 
     if (combined.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 24px;">No transactions recorded yet.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 24px;">No transactions recorded for ${escapeHtml(periodLabel || 'this period')}.</td></tr>`;
       return;
     }
 
@@ -2868,23 +3117,35 @@ export function initFinancePage() {
   }
 
   // Native Multi-Sheet Excel Export function using SheetJS (XLSX)
-  function exportExcelFile(type = 'master') {
+  function exportExcelFile(type = 'master', { periodFilter = false } = {}) {
     if (!window.XLSX) {
       alert('Excel export tool is loading. Please try again in a few seconds.');
       return;
     }
 
-    const expenses = financeState.expenses || [];
-    const salaries = financeState.salaries || [];
-    const feeRecords = financeState.feeRecords || [];
-    const otherIncome = (financeState.otherIncome || []).filter(i => {
-      const src = String(i.source || '').toLowerCase();
-      const desc = String(i.description || '').toLowerCase();
-      return !src.includes('fee collection') && !src.includes('tuition fee');
-    });
+    const { startDate, endDate, periodLabel } = periodFilter ? getDashboardDateRange() : { startDate: '', endDate: '', periodLabel: 'All Time' };
+    const isFiltered = periodFilter && dashboardFilterState.selectedPeriod !== 'all';
+
+    const sourceData = isFiltered
+      ? filterRecordsByPeriod(financeState, startDate, endDate)
+      : {
+          feeRecords: financeState.feeRecords || [],
+          otherIncome: (financeState.otherIncome || []).filter(i => {
+            const src = String(i.source || '').toLowerCase();
+            const desc = String(i.description || '').toLowerCase();
+            return !src.includes('fee collection') && !src.includes('tuition fee');
+          }),
+          expenses: financeState.expenses || [],
+          salaries: financeState.salaries || []
+        };
+
+    const expenses = sourceData.expenses || [];
+    const salaries = sourceData.salaries || [];
+    const feeRecords = sourceData.feeRecords || [];
+    const otherIncome = sourceData.otherIncome || [];
     const summary = financeState.summary || {};
 
-    const feeCol = Number(summary.revenue?.feeCollection) || feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const feeCol = (!isFiltered && Number(summary.revenue?.feeCollection)) ? Number(summary.revenue.feeCollection) : feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
     const otherInc = otherIncome.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
     const totalIncome = feeCol + otherInc;
 
@@ -2897,8 +3158,9 @@ export function initFinancePage() {
 
     if (type === 'master' || type === 'summary') {
       const pnlData = [
-        ['MY JEE MENTOR - INSTITUTE FINANCIAL REPORT (P&L)'],
+        [`MY JEE MENTOR - INSTITUTE FINANCIAL REPORT (P&L)${isFiltered ? ' - ' + periodLabel : ''}`],
         ['Generated On', new Date().toLocaleString('en-IN')],
+        ['Period Scope', isFiltered ? periodLabel : 'All Historical Records (Consolidated)'],
         [''],
         ['Metric', 'Amount (INR)'],
         ['Total Revenue Inflow', totalIncome],
@@ -2916,7 +3178,7 @@ export function initFinancePage() {
     if (type === 'master' || type === 'expenses') {
       const expRows = [
         ['Expense ID', 'Date', 'Category', 'Description', 'Paid To / Vendor', 'Amount (INR)', 'Payment Mode', 'Notes'],
-        ...financeState.expenses.map(e => [e.id, e.date, e.category, e.description, e.paidTo, e.amount, e.paymentMode, e.notes || ''])
+        ...expenses.map(e => [e.id, e.date, e.category, e.description, e.paidTo, e.amount, e.paymentMode, e.notes || ''])
       ];
       const wsExp = window.XLSX.utils.aoa_to_sheet(expRows);
       window.XLSX.utils.book_append_sheet(wb, wsExp, 'Expenses');
@@ -2925,7 +3187,7 @@ export function initFinancePage() {
     if (type === 'master' || type === 'salaries') {
       const salRows = [
         ['Salary ID', 'Payment Date', 'Period', 'Employee Name', 'Role', 'Basic Salary (INR)', 'Bonus (INR)', 'Deductions (INR)', 'Net Paid (INR)', 'Mode'],
-        ...financeState.salaries.map(s => [s.id, s.paymentDate, s.period, s.employeeName, s.role, s.basicSalary, s.bonus, s.deductions, s.netPaid, s.paymentMode])
+        ...salaries.map(s => [s.id, s.paymentDate, s.period, s.employeeName, s.role, s.basicSalary, s.bonus, s.deductions, s.netPaid, s.paymentMode])
       ];
       const wsSal = window.XLSX.utils.aoa_to_sheet(salRows);
       window.XLSX.utils.book_append_sheet(wb, wsSal, 'Salaries & Payroll');
@@ -2934,7 +3196,7 @@ export function initFinancePage() {
     if (type === 'master' || type === 'fees') {
       const feeRows = [
         ['Receipt No', 'Date', 'Student Name', 'Parent Name', 'Phone', 'Course', 'Batch', 'Fee Period', 'Amount (INR)', 'Payment Mode', 'Balance Due (INR)', 'Status'],
-        ...financeState.feeRecords.map(f => [f.receiptNo, f.date, f.studentName, f.parentName, f.phone, f.course, f.batch, f.feePeriod || '-', f.amount, f.paymentMode, f.balanceDue || 0, 'Verified'])
+        ...feeRecords.map(f => [f.receiptNo, f.date, f.studentName, f.parentName, f.phone, f.course, f.batch, f.feePeriod || '-', f.amount, f.paymentMode, f.balanceDue || 0, 'Verified'])
       ];
       const wsFee = window.XLSX.utils.aoa_to_sheet(feeRows);
       window.XLSX.utils.book_append_sheet(wb, wsFee, 'Fee Receipts');
@@ -2943,13 +3205,14 @@ export function initFinancePage() {
     if (type === 'master' || type === 'income') {
       const incRows = [
         ['Income ID', 'Date', 'Source', 'Description', 'Amount (INR)', 'Payment Mode', 'Reference No', 'Received By'],
-        ...financeState.otherIncome.map(i => [i.id, i.date, i.source, i.description, i.amount, i.paymentMode, i.referenceNo, i.receivedBy])
+        ...otherIncome.map(i => [i.id, i.date, i.source, i.description, i.amount, i.paymentMode, i.referenceNo, i.receivedBy])
       ];
       const wsInc = window.XLSX.utils.aoa_to_sheet(incRows);
       window.XLSX.utils.book_append_sheet(wb, wsInc, 'Other Income');
     }
 
-    const filename = `MJM_Finance_Report_${type.toUpperCase()}_${getKolkataYmd()}.xlsx`;
+    const periodSuffix = isFiltered ? `_${periodLabel.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+    const filename = `MJM_Finance_Report_${type.toUpperCase()}${periodSuffix}_${getKolkataYmd()}.xlsx`;
     window.XLSX.writeFile(wb, filename);
   }
 
@@ -2958,7 +3221,7 @@ export function initFinancePage() {
     btn.addEventListener('click', () => exportExcelFile(btn.dataset.exportType));
   });
   dashboardPanel.querySelector('[data-quick-export-excel]')?.addEventListener('click', () => {
-    exportExcelFile('master');
+    exportExcelFile('master', { periodFilter: true });
   });
 
   // Form Submissions
@@ -3457,6 +3720,50 @@ export function initFinancePage() {
     } finally {
       if (btn) btn.disabled = false;
     }
+  });
+
+  // Dashboard Period Filter Listeners
+  const monthFilterSelect = dashboardPanel.querySelector('[data-fn-month-filter]');
+  const viewTypeSelect = dashboardPanel.querySelector('[data-fn-view-type]');
+  const customRangeContainer = dashboardPanel.querySelector('[data-fn-dashboard-custom-range]');
+  const customStartInput = customRangeContainer?.querySelector('[data-fn-dash-custom-start]');
+  const customEndInput = customRangeContainer?.querySelector('[data-fn-dash-custom-end]');
+
+  monthFilterSelect?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    dashboardFilterState.selectedPeriod = val;
+    if (val === 'custom') {
+      dashboardFilterState.viewType = 'custom';
+      if (viewTypeSelect) viewTypeSelect.value = 'custom';
+      if (customRangeContainer) customRangeContainer.style.display = 'flex';
+    } else {
+      if (customRangeContainer) customRangeContainer.style.display = 'none';
+    }
+    renderDashboard();
+  });
+
+  viewTypeSelect?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    dashboardFilterState.viewType = val;
+    if (val === 'custom') {
+      dashboardFilterState.selectedPeriod = 'custom';
+      populateDashboardPeriodOptions();
+      if (customRangeContainer) customRangeContainer.style.display = 'flex';
+    } else {
+      dashboardFilterState.selectedPeriod = val === 'monthly' ? 'current' : (val === 'quarterly' ? 'Q3-2026' : 'FY-2026');
+      populateDashboardPeriodOptions();
+    }
+    renderDashboard();
+  });
+
+  customStartInput?.addEventListener('change', (e) => {
+    dashboardFilterState.customStart = e.target.value;
+    renderDashboard();
+  });
+
+  customEndInput?.addEventListener('change', (e) => {
+    dashboardFilterState.customEnd = e.target.value;
+    renderDashboard();
   });
 
   // Financial Reports Controls & PDF Download Listeners

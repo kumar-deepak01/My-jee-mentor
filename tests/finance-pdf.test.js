@@ -9,7 +9,8 @@ import {
   classifyExpense,
   classifySalary,
   filterRecordsByPeriod,
-  computeMonthBreakdown
+  computeMonthBreakdown,
+  normalizeDateToYmd
 } from '../js/finance-pdf.js';
 
 test('getMonthDateRange: calculates exact month boundaries including leap years', () => {
@@ -119,6 +120,51 @@ test('filterRecordsByPeriod: excludes out-of-period records and unpaid salaries'
 
   assert.equal(filteredNov.salaries.length, 1);
   assert.equal(filteredNov.salaries[0].id, 'SAL-1');
+});
+
+test('normalizeDateToYmd: correctly normalizes ISO, YMD, DMY, and Date instances', () => {
+  assert.equal(normalizeDateToYmd('2026-11-21'), '2026-11-21');
+  assert.equal(normalizeDateToYmd('21-11-2026'), '2026-11-21');
+  assert.equal(normalizeDateToYmd('21/11/2026'), '2026-11-21');
+  assert.equal(normalizeDateToYmd('2026-10-05T10:30:00Z'), '2026-10-05');
+  assert.equal(normalizeDateToYmd(new Date(2026, 9, 15)), '2026-10-15');
+});
+
+test('filterRecordsByPeriod: isolates November vs October vs Custom date range accurately', () => {
+  const multiMonthData = {
+    feeRecords: [
+      { receiptNo: 'MJM-NOV-1', date: '2026-11-05', amount: 5000 },
+      { receiptNo: 'MJM-NOV-2', date: '21-11-2026', amount: 3000 },
+      { receiptNo: 'MJM-OCT-1', date: '2026-10-15', amount: 7000 },
+      { receiptNo: 'MJM-OCT-2', date: '30-10-2026', amount: 4500 }
+    ],
+    expenses: [
+      { id: 'EXP-NOV-1', date: '2026-11-10', amount: 2000, category: 'Marketing' },
+      { id: 'EXP-OCT-1', date: '2026-10-12', amount: 1500, category: 'Tech' }
+    ],
+    otherIncome: [],
+    salaries: []
+  };
+
+  // November filter
+  const nov = filterRecordsByPeriod(multiMonthData, '2026-11-01', '2026-11-30');
+  assert.equal(nov.feeRecords.length, 2);
+  assert.equal(nov.feeRecords.reduce((sum, r) => sum + r.amount, 0), 8000);
+  assert.equal(nov.expenses.length, 1);
+  assert.equal(nov.expenses[0].amount, 2000);
+
+  // October filter
+  const oct = filterRecordsByPeriod(multiMonthData, '2026-10-01', '2026-10-31');
+  assert.equal(oct.feeRecords.length, 2);
+  assert.equal(oct.feeRecords.reduce((sum, r) => sum + r.amount, 0), 11500);
+  assert.equal(oct.expenses.length, 1);
+  assert.equal(oct.expenses[0].amount, 1500);
+
+  // Custom filter (e.g. 1 Nov to 10 Nov)
+  const custom = filterRecordsByPeriod(multiMonthData, '2026-11-01', '2026-11-10');
+  assert.equal(custom.feeRecords.length, 1);
+  assert.equal(custom.feeRecords[0].receiptNo, 'MJM-NOV-1');
+  assert.equal(custom.expenses.length, 1);
 });
 
 test('computeMonthBreakdown: reconciles verified fee collection and computes net profit', () => {
