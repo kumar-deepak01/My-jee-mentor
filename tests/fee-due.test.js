@@ -9,8 +9,13 @@ import {
   formatMonthYear,
   isStudentActive,
   isPaymentForStudent,
+  nameMatches,
+  normalizeName,
+  matchReceiptsToStudents,
+  validateStudentData,
   calculateStudentLedger,
-  calculateDueMetrics
+  calculateDueMetrics,
+  TRACKING_START_DATE
 } from '../js/fee-due-calc.js';
 
 test('parseAdmissionDate handles varied formats and 2-digit years', () => {
@@ -20,7 +25,7 @@ test('parseAdmissionDate handles varied formats and 2-digit years', () => {
   assert.equal(d1.getMonth(), 4); // May
   assert.equal(d1.getDate(), 18);
 
-  // DD/MM/YY (e.g. 13/08/26)
+  // DD/MM/YY (e.g. 13/08/26 -> 13 Aug 2026)
   const d2 = parseAdmissionDate('13/08/26');
   assert.equal(d2.getFullYear(), 2026);
   assert.equal(d2.getMonth(), 7); // August
@@ -56,6 +61,18 @@ test('getOrdinalSuffix formats ordinal numbers', () => {
   assert.equal(getOrdinalSuffix(22), '22nd');
   assert.equal(getOrdinalSuffix(23), '23rd');
   assert.equal(getOrdinalSuffix(31), '31st');
+});
+
+test('isStudentActive checks active status correctly', () => {
+  assert.ok(isStudentActive('Active'));
+  assert.ok(isStudentActive('active'));
+  assert.ok(isStudentActive('enrolled'));
+  assert.ok(isStudentActive('yes'));
+  assert.ok(isStudentActive('true'));
+  assert.ok(isStudentActive(null)); // default active
+  assert.ok(!isStudentActive('Inactive'));
+  assert.ok(!isStudentActive('left'));
+  assert.ok(!isStudentActive('false'));
 });
 
 test('Month-end clamping: Admitted 31/07/2026 clamps across months', () => {
@@ -120,71 +137,244 @@ test('Leap year month-end clamping: Admitted 31/01/2028 clamps to 29 Feb 2028', 
   assert.equal(feb2028.getDate(), 29); // 2028 is leap year
 });
 
-test('Worked Example 1: MJM003 admitted 05/06/2026, fee 2500, paid 10000 on 23 Nov 2026', () => {
+test('Tracking Start Date Rule: Admitted 18/05/2026 evaluated on 24 Nov 2026 has exactly 2 cycles', () => {
   const student = {
-    studentId: 'MJM003',
-    studentName: 'Rohan Sharma',
-    parentName: 'Sanjay Sharma',
-    studentMobile: '9876543210',
-    parentMobile: '9876543211',
+    studentId: 'MJM001',
+    studentName: 'M. Vignesh',
+    parentName: 'Madhan',
+    studentMobile: '6363814536',
+    parentMobile: '9663394531',
     batch: 'Ranker',
-    class: 'Class 11',
+    class: 'Class 12',
     subject: 'Maths',
     monthlyFee: 2500,
-    admissionDate: '05/06/2026',
+    admissionDate: '18/05/2026',
     status: 'Active'
   };
 
-  const feeRecords = [
-    {
-      receiptNo: 'MJM-2026-0001',
-      date: '2026-06-05',
-      studentName: 'Rohan Sharma',
-      amount: 2500,
-      remarks: '[MJM003] June fee'
-    },
-    {
-      receiptNo: 'MJM-2026-0010',
-      date: '2026-07-05',
-      studentName: 'Rohan Sharma',
-      amount: 2500,
-      remarks: 'July fee'
-    },
-    {
-      receiptNo: 'MJM-2026-0020',
-      date: '2026-08-05',
-      studentName: 'Rohan Sharma',
-      amount: 5000,
-      remarks: 'August and September fee'
-    }
-  ]; // Total paid = 10,000
-
-  const refDate = new Date(2026, 10, 23); // 23 Nov 2026
+  const feeRecords = []; // No receipts
+  const refDate = new Date(2026, 10, 24); // 24 Nov 2026
   const ledger = calculateStudentLedger(student, feeRecords, refDate);
 
-  // 6 cycles: 5 Jun, 5 Jul, 5 Aug, 5 Sep, 5 Oct, 5 Nov
-  assert.equal(ledger.cycles.length, 6);
-  assert.equal(ledger.totalDue, 15000);
-  assert.equal(ledger.totalPaid, 10000);
+  // Admitted 18/05/2026: Cycles before 1 Oct 2026 (18 May, 18 Jun, 18 Jul, 18 Aug, 18 Sep) are settled.
+  // Counted cycles: 18 Oct 2026 and 18 Nov 2026 = exactly 2 cycles!
+  assert.equal(ledger.cycles.length, 2);
+  assert.equal(ledger.cycles[0].monthYear, 'October 2026');
+  assert.equal(ledger.cycles[0].cycleDate.getDate(), 18);
+  assert.equal(ledger.cycles[1].monthYear, 'November 2026');
+  assert.equal(ledger.cycles[1].cycleDate.getDate(), 18);
+
+  assert.equal(ledger.totalDue, 5000);
+  assert.equal(ledger.totalPaid, 0);
   assert.equal(ledger.outstanding, 5000);
-  assert.equal(ledger.advanceCredit, 0);
 
-  // FIFO check
-  assert.equal(ledger.cycles[0].status, 'PAID'); // Jun
-  assert.equal(ledger.cycles[1].status, 'PAID'); // Jul
-  assert.equal(ledger.cycles[2].status, 'PAID'); // Aug
-  assert.equal(ledger.cycles[3].status, 'PAID'); // Sep
-  assert.equal(ledger.cycles[4].status, 'UNPAID'); // Oct
-  assert.equal(ledger.cycles[5].status, 'UNPAID'); // Nov
-
-  // Oldest unpaid: 5 Oct 2026
-  assert.equal(ledger.oldestUnpaidDate.getDate(), 5);
+  // Overdue since 18 Oct 2026
+  assert.equal(ledger.oldestUnpaidDate.getDate(), 18);
   assert.equal(ledger.oldestUnpaidDate.getMonth(), 9); // October
-
-  // Overdue days between 5 Oct 2026 and 23 Nov 2026 = 49 days
-  assert.equal(ledger.daysOverdue, 49);
-  assert.equal(ledger.monthsPending, 2);
   assert.equal(ledger.status, 'OVERDUE');
+  // 37 days overdue (between 18 Oct 2026 and 24 Nov 2026)
+  assert.equal(ledger.daysOverdue, 37);
+  assert.equal(ledger.monthsPending, 2);
+});
+
+test('Month-end clamping with Tracking Start Date: Admitted 31/07/2026', () => {
+  const student = {
+    studentId: 'MJM006',
+    studentName: 'M. Sundaresan',
+    monthlyFee: 3000,
+    admissionDate: '31/07/2026',
+    status: 'Active'
+  };
+
+  // Evaluated on 24 Nov 2026:
+  // Cycles before 1 Oct 2026 (31 Jul, 31 Aug, 30 Sep) are skipped.
+  // 31 Oct 2026 is counted. 30 Nov 2026 is in future (> 24 Nov).
+  const ledger24Nov = calculateStudentLedger(student, [], new Date(2026, 10, 24));
+  assert.equal(ledger24Nov.cycles.length, 1);
+  assert.equal(ledger24Nov.cycles[0].monthYear, 'October 2026');
+  assert.equal(ledger24Nov.cycles[0].cycleDate.getDate(), 31);
+  assert.equal(ledger24Nov.totalDue, 3000);
+
+  // Evaluated on 30 Nov 2026:
+  // Both 31 Oct and 30 Nov (clamped to 30) are counted!
+  const ledger30Nov = calculateStudentLedger(student, [], new Date(2026, 10, 30));
+  assert.equal(ledger30Nov.cycles.length, 2);
+  assert.equal(ledger30Nov.cycles[0].cycleDate.getDate(), 31);
+  assert.equal(ledger30Nov.cycles[1].cycleDate.getDate(), 30);
+  assert.equal(ledger30Nov.totalDue, 6000);
+});
+
+test('Matching Engine: Receipt MJM-2026-0005 matches student MJM002 ("D. Adithya" vs "D.Adithya")', () => {
+  const students = [
+    {
+      studentId: 'MJM001',
+      studentName: 'M. Vignesh',
+      studentMobile: '6363814536',
+      parentMobile: '9663394531',
+      monthlyFee: 2500,
+      admissionDate: '18/05/2026',
+      status: 'Active'
+    },
+    {
+      studentId: 'MJM002',
+      studentName: 'D.Adithya',
+      parentName: 'D. Chennaiah',
+      studentMobile: '7013438004',
+      parentMobile: '7013438004',
+      batch: 'Ranker',
+      class: 'Class 11',
+      subject: 'Maths Physics',
+      monthlyFee: 2500,
+      admissionDate: '19/05/2026',
+      status: 'Active'
+    }
+  ];
+
+  const receipts = [
+    {
+      receiptNo: 'MJM-2026-0005',
+      date: '2026-10-21',
+      studentName: 'D. Adithya',
+      parentName: 'D. Chennaiah',
+      phone: '+917013438004',
+      course: 'JEE',
+      batch: 'Ranker',
+      feePeriod: 'October 2026',
+      amount: 5000,
+      remarks: 'Fee payment for 2 months'
+    }
+  ];
+
+  const { studentReceiptsMap, audit } = matchReceiptsToStudents(students, receipts);
+
+  assert.equal(audit.matchedCount, 1);
+  assert.equal(audit.unmatchedCount, 0);
+  assert.equal(audit.ambiguousCount, 0);
+
+  const matchedReceipts = studentReceiptsMap.get('MJM002');
+  assert.ok(matchedReceipts);
+  assert.equal(matchedReceipts.length, 1);
+  assert.equal(matchedReceipts[0].receiptNo, 'MJM-2026-0005');
+
+  // Ledger calculation on 24 Nov 2026
+  const refDate = new Date(2026, 10, 24);
+  const ledger = calculateStudentLedger(students[1], matchedReceipts, refDate);
+
+  // 2 cycles counted: 19 Oct (2500) and 19 Nov (2500) = 5000 due
+  assert.equal(ledger.cycles.length, 2);
+  assert.equal(ledger.totalDue, 5000);
+  assert.equal(ledger.totalPaid, 5000);
+  assert.equal(ledger.outstanding, 0);
+  assert.equal(ledger.status, 'PAID');
+  assert.equal(ledger.nextDueDate.getMonth(), 11); // December 19
+});
+
+test('Matching Engine: Sibling phone sharing disambiguation and ambiguity audit', () => {
+  const students = [
+    {
+      studentId: 'MJM025',
+      studentName: 'Dimple',
+      parentName: 'Raj kumar',
+      studentMobile: '9625620051',
+      parentMobile: '9829409264',
+      monthlyFee: 2500,
+      admissionDate: '13/08/2026',
+      status: 'Active'
+    },
+    {
+      studentId: 'MJM026',
+      studentName: 'Sarveshwaur bt',
+      parentName: 'Balamurugan',
+      studentMobile: '9123368240',
+      parentMobile: '9829409264', // Shares parent phone with MJM025
+      monthlyFee: 5000,
+      admissionDate: '13/08/2026',
+      status: 'Active'
+    }
+  ];
+
+  // Receipt 1: Shared phone, matches Dimple by name -> should match MJM025
+  // Receipt 2: Shared phone, unknown child name -> ambiguous!
+  const receipts = [
+    {
+      receiptNo: 'MJM-2026-0050',
+      studentName: 'Dimple',
+      phone: '9829409264',
+      amount: 2500,
+      date: '2026-10-15'
+    },
+    {
+      receiptNo: 'MJM-2026-0051',
+      studentName: 'Unknown Child',
+      phone: '9829409264',
+      amount: 2500,
+      date: '2026-10-16'
+    }
+  ];
+
+  const { studentReceiptsMap, audit } = matchReceiptsToStudents(students, receipts);
+
+  assert.equal(audit.matchedCount, 1);
+  assert.equal(audit.ambiguousCount, 1);
+  assert.equal(audit.unmatchedCount, 0);
+
+  const dimpleReceipts = studentReceiptsMap.get('MJM025');
+  assert.equal(dimpleReceipts.length, 1);
+  assert.equal(dimpleReceipts[0].receiptNo, 'MJM-2026-0050');
+
+  assert.equal(audit.ambiguousReceipts[0].receipt.receiptNo, 'MJM-2026-0051');
+});
+
+test('Matching Engine: Phone-only match without name match flagged as unmatched', () => {
+  const students = [
+    {
+      studentId: 'MJM003',
+      studentName: 'Rohan Sharma',
+      parentName: 'Sanjay Sharma',
+      studentMobile: '9876543210',
+      parentMobile: '9876543211',
+      monthlyFee: 2500,
+      admissionDate: '05/06/2026',
+      status: 'Active'
+    }
+  ];
+
+  // Phone matches Rohan's phone, but studentName is completely different
+  const receipts = [
+    {
+      receiptNo: 'MJM-2026-0099',
+      studentName: 'Pooja Verma',
+      phone: '9876543210',
+      amount: 2500,
+      date: '2026-10-10'
+    }
+  ];
+
+  const { audit } = matchReceiptsToStudents(students, receipts);
+  assert.equal(audit.matchedCount, 0);
+  assert.equal(audit.unmatchedCount, 1);
+  assert.ok(audit.unmatchedReceipts[0].reason.includes('name mismatch') || audit.unmatchedReceipts[0].reason.includes('receipt name is'));
+});
+
+test('Data Quality Validation: validateStudentData partitions invalid students', () => {
+  const students = [
+    { studentId: 'MJM001', studentName: 'Valid Student', admissionDate: '18/05/2026', monthlyFee: 2500 },
+    { studentId: '', studentName: 'No ID Student', admissionDate: '18/05/2026', monthlyFee: 2500 },
+    { studentId: 'MJM001', studentName: 'Duplicate ID', admissionDate: '20/05/2026', monthlyFee: 3000 },
+    { studentId: 'MJM004', studentName: 'Bad Date', admissionDate: 'invalid-date-string', monthlyFee: 2500 },
+    { studentId: 'MJM005', studentName: 'Zero Fee', admissionDate: '18/05/2026', monthlyFee: 0 }
+  ];
+
+  const { valid, needsAttention } = validateStudentData(students);
+
+  assert.equal(valid.length, 1);
+  assert.equal(valid[0].studentId, 'MJM001');
+
+  assert.equal(needsAttention.length, 4);
+  assert.equal(needsAttention[0].reason, 'Missing Student ID');
+  assert.equal(needsAttention[1].reason, 'Duplicate Student ID (MJM001)');
+  assert.ok(needsAttention[2].reason.includes('Invalid or missing admission date'));
+  assert.ok(needsAttention[3].reason.includes('Invalid or missing monthly fee'));
 });
 
 test('Status: DUE TODAY when cycle is due on reference date', () => {
@@ -192,21 +382,21 @@ test('Status: DUE TODAY when cycle is due on reference date', () => {
     studentId: 'MJM005',
     studentName: 'Aarav Patel',
     monthlyFee: 3000,
-    admissionDate: '23/05/2026',
+    admissionDate: '24/10/2026',
     status: 'Active'
   };
 
-  // On 23 Nov 2026, 7th cycle (23 Nov) is due today!
-  // Student paid for first 6 cycles: 6 * 3000 = 18000
+  // Evaluated on 24 Nov 2026:
+  // Cycles: 24 Oct (paid), 24 Nov (due today!)
   const feeRecords = [
-    { receiptNo: 'MJM-2026-0005', studentName: 'Aarav Patel', amount: 18000 }
+    { receiptNo: 'MJM-2026-0005', studentName: 'Aarav Patel', amount: 3000, date: '2026-10-24' }
   ];
 
-  const refDate = new Date(2026, 10, 23); // 23 Nov 2026
+  const refDate = new Date(2026, 10, 24); // 24 Nov 2026
   const ledger = calculateStudentLedger(student, feeRecords, refDate);
 
-  assert.equal(ledger.totalDue, 21000);
-  assert.equal(ledger.totalPaid, 18000);
+  assert.equal(ledger.totalDue, 6000);
+  assert.equal(ledger.totalPaid, 3000);
   assert.equal(ledger.outstanding, 3000);
   assert.equal(ledger.status, 'DUE TODAY');
   assert.equal(ledger.daysOverdue, 0);
@@ -217,14 +407,14 @@ test('Status: UPCOMING when student is fully paid and next cycle is <= 7 days aw
     studentId: 'MJM007',
     studentName: 'Priya Verma',
     monthlyFee: 4000,
-    admissionDate: '28/05/2026',
+    admissionDate: '28/09/2026',
     status: 'Active'
   };
 
   // Evaluate on 23 Nov 2026. Next cycle is 28 Nov 2026 (5 days away <= 7 days).
-  // Cycles up to 23 Nov: May 28, Jun 28, Jul 28, Aug 28, Sep 28, Oct 28 = 6 cycles (24000 due).
+  // Cycles from 1 Oct up to 23 Nov: 28 Oct (1 cycle = 4000 due).
   const feeRecords = [
-    { receiptNo: 'MJM-2026-0007', studentName: 'Priya Verma', amount: 24000 }
+    { receiptNo: 'MJM-2026-0007', studentName: 'Priya Verma', amount: 4000, date: '2026-10-28' }
   ];
 
   const refDate = new Date(2026, 10, 23); // 23 Nov 2026
@@ -233,29 +423,6 @@ test('Status: UPCOMING when student is fully paid and next cycle is <= 7 days aw
   assert.equal(ledger.outstanding, 0);
   assert.equal(ledger.status, 'UPCOMING');
   assert.equal(ledger.daysLeft, 5);
-});
-
-test('Status: PAID when fully paid and next cycle is > 7 days away', () => {
-  const student = {
-    studentId: 'MJM008',
-    studentName: 'Ananya Gupta',
-    monthlyFee: 4000,
-    admissionDate: '15/05/2026',
-    status: 'Active'
-  };
-
-  // Evaluate on 23 Nov 2026. Last due cycle was 15 Nov 2026.
-  // Next cycle is 15 Dec 2026 (22 days away > 7 days).
-  // Total due for 7 cycles: 7 * 4000 = 28000
-  const feeRecords = [
-    { receiptNo: 'MJM-2026-0008', studentName: 'Ananya Gupta', amount: 28000 }
-  ];
-
-  const refDate = new Date(2026, 10, 23);
-  const ledger = calculateStudentLedger(student, feeRecords, refDate);
-
-  assert.equal(ledger.outstanding, 0);
-  assert.equal(ledger.status, 'PAID');
 });
 
 test('Advance Credit: handles overpayment gracefully', () => {
@@ -270,7 +437,7 @@ test('Advance Credit: handles overpayment gracefully', () => {
   // Evaluate on 23 Nov 2026. Cycles: 1 Oct, 1 Nov = 2 cycles = 10000 due.
   // Student paid 15,000 (advance for Dec as well).
   const feeRecords = [
-    { receiptNo: 'MJM-2026-0009', studentName: 'Vikram Joshi', amount: 15000 }
+    { receiptNo: 'MJM-2026-0009', studentName: 'Vikram Joshi', amount: 15000, date: '2026-10-01' }
   ];
 
   const refDate = new Date(2026, 10, 23);
@@ -283,35 +450,14 @@ test('Advance Credit: handles overpayment gracefully', () => {
   assert.equal(ledger.status, 'PAID');
 });
 
-test('Student matching: matches by remarks studentId, exact name, or phone numbers', () => {
-  const student = {
-    studentId: 'MJM010',
-    studentName: 'Aditi Singh',
-    studentMobile: '9123456789',
-    parentMobile: '9876501234'
-  };
-
-  // ID in remarks
-  assert.ok(isPaymentForStudent({ remarks: 'Fee payment for [MJM010]' }, student));
-  // Exact name
-  assert.ok(isPaymentForStudent({ studentName: 'Aditi Singh' }, student));
-  assert.ok(isPaymentForStudent({ studentName: '  aditi singh  ' }, student));
-  // Student phone
-  assert.ok(isPaymentForStudent({ phone: '+919123456789' }, student));
-  // Parent phone
-  assert.ok(isPaymentForStudent({ phone: '9876501234' }, student));
-  // Unrelated record
-  assert.ok(!isPaymentForStudent({ studentName: 'Other Student', phone: '9999999999' }, student));
-});
-
-test('calculateDueMetrics computes accurate KPIs', () => {
+test('calculateDueMetrics excludes needsAttention and inactive students from active KPIs', () => {
   const ledgers = [
-    { active: true, status: 'DUE TODAY', outstanding: 3000, monthlyFee: 3000 },
-    { active: true, status: 'OVERDUE', outstanding: 5000, monthlyFee: 2500 },
-    { active: true, status: 'OVERDUE', outstanding: 2000, monthlyFee: 2000 },
-    { active: true, status: 'UPCOMING', outstanding: 0, monthlyFee: 4000 },
-    { active: true, status: 'PAID', outstanding: 0, monthlyFee: 5000 },
-    { active: false, status: 'OVERDUE', outstanding: 10000, monthlyFee: 5000 } // Inactive excluded from active KPIs
+    { active: true, needsAttention: false, status: 'DUE TODAY', outstanding: 3000, monthlyFee: 3000 },
+    { active: true, needsAttention: false, status: 'OVERDUE', outstanding: 5000, monthlyFee: 2500 },
+    { active: true, needsAttention: false, status: 'UPCOMING', outstanding: 0, monthlyFee: 4000 },
+    { active: true, needsAttention: false, status: 'PAID', outstanding: 0, monthlyFee: 5000 },
+    { active: false, needsAttention: false, status: 'OVERDUE', outstanding: 10000, monthlyFee: 5000 }, // Inactive excluded
+    { active: true, needsAttention: true, status: 'PAID', outstanding: 0, monthlyFee: 2500 } // Needs attention excluded
   ];
 
   const feeRecords = [
@@ -325,12 +471,13 @@ test('calculateDueMetrics computes accurate KPIs', () => {
 
   assert.equal(metrics.dueTodayCount, 1);
   assert.equal(metrics.dueTodayAmount, 3000);
-  assert.equal(metrics.overdueCount, 2);
-  assert.equal(metrics.overdueAmount, 7000);
+  assert.equal(metrics.overdueCount, 1);
+  assert.equal(metrics.overdueAmount, 5000);
   assert.equal(metrics.upcomingCount, 1);
   assert.equal(metrics.upcomingAmount, 4000);
   assert.equal(metrics.collectedTodayAmount, 8500);
-  assert.equal(metrics.attentionRequiredCount, 3);
-  assert.equal(metrics.totalActiveStudents, 5);
+  assert.equal(metrics.attentionRequiredCount, 2);
+  assert.equal(metrics.needsAttentionCount, 1);
+  assert.equal(metrics.totalActiveStudents, 4);
   assert.equal(metrics.totalStudents, 6);
 });

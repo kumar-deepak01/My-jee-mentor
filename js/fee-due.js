@@ -2,13 +2,17 @@
  * My JEE Mentor - Fee Due Tracker UI & Manager
  * 
  * Manages the dedicated Due Fees page/view:
+ * - Live diagnostic bar (Source, Students count, Receipts count, Tracking start date, Sync timestamp)
  * - 4 KPI cards (Due Today, Overdue, Upcoming 7 Days, Collected Today)
- * - 4 Tabs (Today, Overdue, Upcoming 7d, All Students)
+ * - Collapsible Data Quality ("Needs Attention") panel
+ * - Collapsible Receipt Matching Audit panel
+ * - 4 Tabs (All, Due Today, Overdue, Upcoming 7d)
  * - Search, filter (Class, Batch, Course), sort, and inactive toggle
+ * - Highlight Due Today rows
  * - Searchable data table with status chips and expandable month-wise cycle breakdowns
  * - One-click Collect workflow prefilling existing fee collection form
- * - WhatsApp reminder integration with prefilled polite message
- * - Call link integration
+ * - WhatsApp reminder to Parent Mobile in +91 format with polite text
+ * - Zero mock data in production: displays "Students data load nahi hua, Sync dabao" on failure
  */
 
 import {
@@ -16,7 +20,10 @@ import {
   calculateStudentLedger,
   calculateDueMetrics,
   formatDateDisplay,
-  getKolkataYmd
+  getKolkataYmd,
+  matchReceiptsToStudents,
+  validateStudentData,
+  TRACKING_START_DATE
 } from './fee-due-calc.js';
 import { formatInr, formatCount, formatKolkataDate } from './fee-analytics.js';
 
@@ -28,7 +35,10 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
   "'": '&#39;'
 }[char]));
 
-// Formats phone to WhatsApp wa.me format (e.g. 917294048814)
+/**
+ * Formats phone to WhatsApp wa.me format (e.g. 917294048814).
+ * Prioritizes Parent Mobile, falls back to Student Mobile.
+ */
 export function formatWaUrl(phone, student, amountDue, dueDateStr) {
   if (!phone) return '';
   const digits = String(phone).replace(/\D/g, '');
@@ -40,7 +50,7 @@ export function formatWaUrl(phone, student, amountDue, dueDateStr) {
   const dueAmount = formatInr(amountDue);
   const dateText = dueDateStr || 'this month';
 
-  const message = `Dear ${name} / Parent,\n\nGreetings from My JEE Mentor!\n\nThis is a gentle reminder regarding the monthly fee for ${batchOrCourse}. The pending amount of ${dueAmount} was scheduled on ${dateText}.\n\nKindly clear the dues at your convenience. If you have already completed the payment, please share the transaction receipt with us.\n\nThank you,\nMy JEE Mentor\n+91 73042 56203`;
+  const message = `Dear Parent / ${name},\n\nGreetings from My JEE Mentor!\n\nThis is a gentle reminder regarding the monthly fee for ${name} (${batchOrCourse}). The scheduled fee for ${dateText} of ${dueAmount} is pending.\n\nKindly clear the dues at your earliest convenience. If you have already completed the payment, please share the transaction receipt with us.\n\nThank you,\nMy JEE Mentor\n+91 73042 56203`;
 
   return `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`;
 }
@@ -81,6 +91,11 @@ export function renderDueTrackerMarkup() {
           </button>
           <span class="fees-due-synced-at" data-due-synced-at>Synced</span>
         </div>
+      </div>
+
+      <!-- Live Diagnostic Bar -->
+      <div class="fees-due-diagnostic-bar" data-due-diagnostic-bar>
+        Source: Connecting to Google Sheets…
       </div>
 
       <!-- 4 High-Impact KPI Summary Cards -->
@@ -133,6 +148,24 @@ export function renderDueTrackerMarkup() {
           <p class="fees-kpi-meta">Real-time receipts today</p>
         </article>
       </div>
+
+      <!-- Collapsible Data Quality Panel: Needs Attention -->
+      <details class="fees-due-attention-panel" data-due-attention-panel hidden>
+        <summary class="fees-due-attention-summary">
+          <span>⚠️ Data Quality: <strong data-due-attention-count>0</strong> student(s) need attention</span>
+          <small>(Excluded from totals due to invalid date, missing fee, or duplicate ID)</small>
+        </summary>
+        <div class="fees-due-attention-body" data-due-attention-body></div>
+      </details>
+
+      <!-- Collapsible Receipt Matching Audit Panel -->
+      <details class="fees-due-audit-panel" data-due-audit-panel hidden>
+        <summary class="fees-due-audit-summary">
+          <span>🔍 Receipt Matching Audit: <strong data-due-matched-count>0</strong> / <span data-due-total-receipts>0</span> matched</span>
+          <span class="due-audit-badge" data-due-unmatched-badge>0 unmatched</span>
+        </summary>
+        <div class="fees-due-audit-body" data-due-audit-body></div>
+      </details>
 
       <!-- Navigation Tabs & Compact Filter Bar -->
       <div class="fees-due-controls-wrap">
@@ -243,92 +276,35 @@ export function renderDueTrackerMarkup() {
 }
 
 /**
- * Default sample students for instant preview if Google Sheet has not seeded rows yet.
+ * Sample students for testing/reference purposes only.
+ * NEVER used as fallback in production.
  */
 export const DEFAULT_STUDENTS = [
   {
     studentId: 'MJM001',
-    studentName: 'Deepak Kumar',
-    parentName: 'Dinanath Singh',
-    studentMobile: '7294048814',
-    parentMobile: '7304256203',
-    batch: 'Zenith',
+    studentName: 'M. Vignesh',
+    parentName: 'Madhan',
+    studentMobile: '6363814536',
+    parentMobile: '9663394531',
+    batch: 'Ranker',
     studentClass: 'Class 12',
-    subject: 'Maths Physics',
-    monthlyFee: 5000,
-    admissionDate: '21/05/2026',
-    status: 'Active',
-    notes: 'Primary test student'
+    subject: 'Maths',
+    monthlyFee: 2500,
+    admissionDate: '18/05/2026',
+    status: 'Active'
   },
   {
     studentId: 'MJM002',
-    studentName: 'Dirasantham Adithya',
-    parentName: 'D. Srinivas',
-    studentMobile: '9848012345',
-    parentMobile: '9848054321',
+    studentName: 'D.Adithya',
+    parentName: 'D. Chennaiah',
+    studentMobile: '7013438004',
+    parentMobile: '7013438004',
     batch: 'Ranker',
     studentClass: 'Class 11',
-    subject: 'PCM',
-    monthlyFee: 5000,
-    admissionDate: '15/06/2026',
-    status: 'Active',
-    notes: 'JEE 2026-27 aspirant'
-  },
-  {
-    studentId: 'MJM003',
-    studentName: 'Rohan Sharma',
-    parentName: 'Sanjay Sharma',
-    studentMobile: '9876543210',
-    parentMobile: '9876543211',
-    batch: 'Ranker',
-    studentClass: 'Class 11',
-    subject: 'Maths',
+    subject: 'Maths Physics',
     monthlyFee: 2500,
-    admissionDate: '05/06/2026',
-    status: 'Active',
-    notes: '2 cycles overdue test student'
-  },
-  {
-    studentId: 'MJM004',
-    studentName: 'Shriya S Nair',
-    parentName: 'Suresh Nair',
-    studentMobile: '9447012345',
-    parentMobile: '9447054321',
-    batch: 'Alpha',
-    studentClass: 'Class 12',
-    subject: 'PCB',
-    monthlyFee: 5500,
-    admissionDate: '18/05/2026',
-    status: 'Active',
-    notes: 'NEET 2026-27'
-  },
-  {
-    studentId: 'MJM005',
-    studentName: 'Aarav Patel',
-    parentName: 'Mukesh Patel',
-    studentMobile: '9825012345',
-    parentMobile: '9825054321',
-    batch: 'Elite',
-    studentClass: 'Class 11',
-    subject: 'Maths',
-    monthlyFee: 3000,
-    admissionDate: '23/05/2026',
-    status: 'Active',
-    notes: 'Due today reference'
-  },
-  {
-    studentId: 'MJM006',
-    studentName: 'M. Sundaresan',
-    parentName: 'Murugan S',
-    studentMobile: '9840012345',
-    parentMobile: '9840054321',
-    batch: 'Foundation',
-    studentClass: 'Class 9',
-    subject: 'Science & Maths',
-    monthlyFee: 3000,
-    admissionDate: '31/07/2026',
-    status: 'Active',
-    notes: 'Month-end clamping test'
+    admissionDate: '19/05/2026',
+    status: 'Active'
   }
 ];
 
@@ -342,6 +318,7 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
   const rowsTbody = tracker.querySelector('[data-due-rows]');
   const statusEl = tracker.querySelector('[data-due-status]');
   const syncedAtEl = tracker.querySelector('[data-due-synced-at]');
+  const diagnosticBar = tracker.querySelector('[data-due-diagnostic-bar]');
   const searchInput = tracker.querySelector('[data-due-search]');
   const classSelect = tracker.querySelector('[data-due-class]');
   const batchSelect = tracker.querySelector('[data-due-batch]');
@@ -349,6 +326,16 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
   const sortSelect = tracker.querySelector('[data-due-sort]');
   const inactiveCheckbox = tracker.querySelector('[data-due-show-inactive]');
   const tabs = tracker.querySelectorAll('[data-due-tab]');
+
+  // Attention & Audit elements
+  const attentionPanel = tracker.querySelector('[data-due-attention-panel]');
+  const attentionCountEl = tracker.querySelector('[data-due-attention-count]');
+  const attentionBody = tracker.querySelector('[data-due-attention-body]');
+  const auditPanel = tracker.querySelector('[data-due-audit-panel]');
+  const auditMatchedEl = tracker.querySelector('[data-due-matched-count]');
+  const auditTotalReceiptsEl = tracker.querySelector('[data-due-total-receipts]');
+  const auditUnmatchedBadge = tracker.querySelector('[data-due-unmatched-badge]');
+  const auditBody = tracker.querySelector('[data-due-audit-body]');
 
   // KPI elements
   const kpiTodayAmount = tracker.querySelector('[data-due-kpi-today-amount]');
@@ -370,6 +357,8 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
   let studentLedgers = [];
   let activeTab = 'all';
   let expandedRows = new Set();
+  let matchingAudit = null;
+  let attentionList = [];
 
   const setStatus = (msg, isError = false) => {
     if (!statusEl) return;
@@ -387,22 +376,127 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
       if (s.batch) batches.add(s.batch);
     }
 
-    const currentClass = classSelect.value;
-    const currentBatch = batchSelect.value;
+    const currentClass = classSelect?.value || 'all';
+    const currentBatch = batchSelect?.value || 'all';
 
-    classSelect.innerHTML = '<option value="all">All Classes</option>' +
-      Array.from(classes).sort().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    if (classes.has(currentClass)) classSelect.value = currentClass;
+    if (classSelect) {
+      classSelect.innerHTML = '<option value="all">All Classes</option>' +
+        Array.from(classes).sort().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      if (classes.has(currentClass)) classSelect.value = currentClass;
+    }
 
-    batchSelect.innerHTML = '<option value="all">All Batches</option>' +
-      Array.from(batches).sort().map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
-    if (batches.has(currentBatch)) batchSelect.value = currentBatch;
+    if (batchSelect) {
+      batchSelect.innerHTML = '<option value="all">All Batches</option>' +
+        Array.from(batches).sort().map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+      if (batches.has(currentBatch)) batchSelect.value = currentBatch;
+    }
   };
 
   const computeLedgers = () => {
     const today = new Date();
-    studentLedgers = rawStudents.map(student => calculateStudentLedger(student, rawFeeRecords, today));
+    const { valid, needsAttention } = validateStudentData(rawStudents);
+    attentionList = needsAttention;
+
+    // Match receipts to valid students
+    const { studentReceiptsMap, audit } = matchReceiptsToStudents(valid, rawFeeRecords);
+    matchingAudit = audit;
+
+    // Calculate ledgers for valid students
+    const validLedgers = valid.map(s => {
+      const sId = String(s.studentId).trim().toUpperCase();
+      const receipts = studentReceiptsMap.get(sId) || [];
+      return calculateStudentLedger(s, receipts, today);
+    });
+
+    // Generate error ledgers for needsAttention students (excluded from totals)
+    const attentionLedgers = needsAttention.map(item => {
+      const ledger = calculateStudentLedger(item.student, [], today);
+      ledger.needsAttention = true;
+      ledger.attentionReason = item.reason;
+      return ledger;
+    });
+
+    studentLedgers = [...validLedgers, ...attentionLedgers];
     updateKpis();
+    renderAttentionAndAuditPanels(audit, needsAttention);
+  };
+
+  const renderAttentionAndAuditPanels = (audit, needsAttention) => {
+    // Attention Panel
+    if (attentionPanel && attentionCountEl && attentionBody) {
+      if (needsAttention && needsAttention.length > 0) {
+        attentionPanel.hidden = false;
+        attentionCountEl.textContent = String(needsAttention.length);
+        attentionBody.innerHTML = `
+          <ul class="fees-due-attention-list">
+            ${needsAttention.map(item => `
+              <li>
+                <strong>${escapeHtml(item.student?.studentId || 'No ID')}</strong> — 
+                <span>${escapeHtml(item.student?.studentName || 'Unnamed')}</span>: 
+                <em class="text-red">${escapeHtml(item.reason)}</em>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+      } else {
+        attentionPanel.hidden = true;
+        attentionBody.innerHTML = '';
+      }
+    }
+
+    // Audit Panel
+    if (auditPanel && auditMatchedEl && auditTotalReceiptsEl && auditUnmatchedBadge && auditBody) {
+      const totalReceipts = rawFeeRecords.length;
+      if (totalReceipts > 0) {
+        auditPanel.hidden = false;
+        auditMatchedEl.textContent = String(audit.matchedCount);
+        auditTotalReceiptsEl.textContent = String(totalReceipts);
+        const unmatchedTotal = audit.unmatchedCount + audit.ambiguousCount;
+        auditUnmatchedBadge.textContent = `${unmatchedTotal} unmatched`;
+        auditUnmatchedBadge.classList.toggle('badge-red', unmatchedTotal > 0);
+        auditUnmatchedBadge.classList.toggle('badge-green', unmatchedTotal === 0);
+
+        const unmatchedList = [
+          ...audit.unmatchedReceipts.map(u => ({ ...u, type: 'Unmatched' })),
+          ...audit.ambiguousReceipts.map(a => ({ ...a, type: 'Ambiguous' }))
+        ];
+
+        if (unmatchedList.length > 0) {
+          auditBody.innerHTML = `
+            <div class="due-audit-table-wrap">
+              <table class="due-audit-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Receipt No</th>
+                    <th>Student Name</th>
+                    <th>Phone</th>
+                    <th>Amount</th>
+                    <th>Reason / Candidates</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${unmatchedList.map(item => `
+                    <tr>
+                      <td><span class="due-audit-chip ${item.type === 'Ambiguous' ? 'chip-ambiguous' : 'chip-unmatched'}">${escapeHtml(item.type)}</span></td>
+                      <td><strong>${escapeHtml(item.receipt?.receiptNo || '—')}</strong></td>
+                      <td>${escapeHtml(item.receipt?.studentName || '—')}</td>
+                      <td>${escapeHtml(item.receipt?.phone || '—')}</td>
+                      <td>₹${escapeHtml(item.receipt?.amount || 0)}</td>
+                      <td><small>${escapeHtml(item.reason || '')}</small></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          auditBody.innerHTML = `<p class="due-audit-clean-notice">✓ All ${totalReceipts} fee receipts matched cleanly to enrolled students.</p>`;
+        }
+      } else {
+        auditPanel.hidden = true;
+      }
+    }
   };
 
   const updateKpis = () => {
@@ -420,7 +514,7 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
     if (kpiCollectedAmount) kpiCollectedAmount.textContent = formatInr(metrics.collectedTodayAmount);
 
     // Update tab counts
-    const activeLedgers = studentLedgers.filter(s => s.active || inactiveCheckbox.checked);
+    const activeLedgers = studentLedgers.filter(s => (s.active || inactiveCheckbox?.checked) && !s.needsAttention);
     if (tabCountAll) tabCountAll.textContent = formatCount(activeLedgers.length);
     if (tabCountToday) tabCountToday.textContent = formatCount(activeLedgers.filter(s => s.status === 'DUE TODAY').length);
     if (tabCountOverdue) tabCountOverdue.textContent = formatCount(activeLedgers.filter(s => s.status === 'OVERDUE').length);
@@ -428,12 +522,12 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
   };
 
   const getFilteredLedgers = () => {
-    const query = (searchInput.value || '').trim().toLowerCase();
-    const classVal = classSelect.value;
-    const batchVal = batchSelect.value;
-    const courseVal = courseSelect.value;
-    const sortVal = sortSelect.value;
-    const showInactive = inactiveCheckbox.checked;
+    const query = (searchInput?.value || '').trim().toLowerCase();
+    const classVal = classSelect?.value || 'all';
+    const batchVal = batchSelect?.value || 'all';
+    const courseVal = courseSelect?.value || 'all';
+    const sortVal = sortSelect?.value || 'oldest';
+    const showInactive = Boolean(inactiveCheckbox?.checked);
 
     let filtered = studentLedgers.filter(ledger => {
       // 1. Inactive filter
@@ -454,7 +548,7 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
       if (courseVal !== 'all') {
         const text = [ledger.studentClass, ledger.batch, ledger.subject].join(' ').toUpperCase();
         if (courseVal === 'JEE' && !text.includes('JEE') && !text.includes('MATH')) return false;
-        if (courseVal === 'NEET' && !text.includes('NEET') && !text.includes('BIO')) return false;
+        if (courseVal === 'NEET' && !text.includes('NEET') && !text.includes('BIO') && !text.includes('PCB')) return false;
         if (courseVal === 'Foundation' && !text.includes('FOUNDATION') && !text.includes('CLASS 9') && !text.includes('CLASS 10') && !text.includes('CLASS 8') && !text.includes('CLASS 7')) return false;
       }
 
@@ -479,7 +573,6 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
     // Sort
     filtered.sort((a, b) => {
       if (sortVal === 'oldest') {
-        // Overdue first (largest days overdue), then Due Today, then Upcoming, then Paid
         const weight = s => s.status === 'OVERDUE' ? 1 : s.status === 'DUE TODAY' ? 2 : s.status === 'UPCOMING' ? 3 : 4;
         const wA = weight(a), wB = weight(b);
         if (wA !== wB) return wA - wB;
@@ -504,6 +597,10 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
   };
 
   const renderTable = () => {
+    if (!rawStudents.length) {
+      return; // Error or empty state handled in updateData
+    }
+
     const list = getFilteredLedgers();
 
     if (!list.length) {
@@ -520,15 +617,19 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
 
     setStatus(`${list.length} student${list.length === 1 ? '' : 's'} displayed.`);
 
-    rowsTbody.innerHTML = list.map((student, idx) => {
+    rowsTbody.innerHTML = list.map(student => {
       const isExpanded = expandedRows.has(student.studentId);
-      const phone = student.studentMobile || student.parentMobile || '';
+      const isDueToday = student.status === 'DUE TODAY';
+      const phone = student.parentMobile || student.studentMobile || '';
       const waUrl = formatWaUrl(phone, student, student.outstanding > 0 ? student.outstanding : student.monthlyFee, student.oldestUnpaidDateDisplay);
 
       // Status chip classes
       let statusChipClass = 'chip-paid';
       let statusChipText = 'Paid';
-      if (student.status === 'DUE TODAY') {
+      if (student.needsAttention) {
+        statusChipClass = 'chip-attention';
+        statusChipText = 'Attention';
+      } else if (student.status === 'DUE TODAY') {
         statusChipClass = 'chip-today';
         statusChipText = 'Due Today';
       } else if (student.status === 'OVERDUE') {
@@ -540,15 +641,17 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
       }
 
       // Schedule text
-      const scheduleText = `Every month on ${student.dueDayOrdinal}`;
+      const scheduleText = student.admissionDate ? `Every month on ${student.dueDayOrdinal}` : 'Invalid admission date';
       const detailSchedule = student.outstanding > 0
         ? `<div class="due-schedule-sub text-red">Oldest due: ${escapeHtml(student.oldestUnpaidDateDisplay)} (${student.monthsPending} mo${student.monthsPending > 1 ? 's' : ''})</div>`
         : `<div class="due-schedule-sub text-muted">Next due: ${escapeHtml(student.nextDueDateDisplay)}</div>`;
 
       // Days overdue or left
       let daysText = '—';
-      if (student.status === 'DUE TODAY') {
-        daysText = '<span class="badge-due-today">Due Today</span>';
+      if (student.needsAttention) {
+        daysText = `<span class="badge-attention text-red font-medium">${escapeHtml(student.attentionReason || 'Needs Attention')}</span>`;
+      } else if (student.status === 'DUE TODAY') {
+        daysText = '<span class="badge-due-today font-bold">Due Today</span>';
       } else if (student.status === 'OVERDUE') {
         daysText = `<span class="badge-days-overdue">${student.daysOverdue} days overdue</span>`;
       } else if (student.status === 'UPCOMING') {
@@ -571,10 +674,10 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
             </td>
           </tr>
         `).join('')
-        : '<tr><td colspan="6" class="text-muted text-center py-2">No due cycles recorded yet.</td></tr>';
+        : '<tr><td colspan="6" class="text-muted text-center py-2">No due cycles recorded since tracking start date (1 Oct 2026).</td></tr>';
 
       return `
-        <tr class="fees-due-row ${isExpanded ? 'is-expanded' : ''} ${!student.active ? 'is-inactive-student' : ''}" data-student-id="${escapeHtml(student.studentId)}">
+        <tr class="fees-due-row ${isExpanded ? 'is-expanded' : ''} ${isDueToday ? 'is-due-today-row' : ''} ${!student.active ? 'is-inactive-student' : ''}" data-student-id="${escapeHtml(student.studentId)}">
           <td>
             <div class="due-id-cell">
               <button type="button" class="due-expand-toggle" data-action="toggle-expand" data-id="${escapeHtml(student.studentId)}" title="Click to view cycle history" aria-expanded="${isExpanded}">
@@ -633,7 +736,7 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
                 <span>Collect</span>
               </button>
               ${waUrl ? `
-                <a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-outline fees-btn-wa" title="Send WhatsApp reminder">
+                <a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-outline fees-btn-wa" title="Send WhatsApp reminder to Parent">
                   <span>💬</span>
                 </a>
               ` : ''}
@@ -653,6 +756,7 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
                 <h4>Month-Wise Payment Breakdown — <strong>${escapeHtml(student.studentName)}</strong> (${escapeHtml(student.studentId)})</h4>
                 <div class="due-breakdown-stats">
                   <span>Admission Date: <strong>${escapeHtml(student.admissionDateDisplay)}</strong></span>
+                  <span>Tracking From: <strong>1 Oct 2026</strong></span>
                   <span>Total Due: <strong>${formatInr(student.totalDue)}</strong></span>
                   <span>Total Paid: <strong class="text-green">${formatInr(student.totalPaid)}</strong></span>
                   <span>Outstanding: <strong class="${student.outstanding > 0 ? 'text-red' : 'text-green'}">${formatInr(student.outstanding)}</strong></span>
@@ -751,16 +855,68 @@ export function initDueTracker({ onCollect, onBackToAnalytics, onSyncRequested }
     hide: () => {
       tracker.hidden = true;
     },
-    updateData: (students = [], feeRecords = []) => {
-      rawStudents = Array.isArray(students) && students.length ? students : DEFAULT_STUDENTS;
+    updateData: (students = [], feeRecords = [], meta = {}) => {
+      // STRICT ZERO-MOCK RULE: If students feed failed or is empty, NEVER fallback to mock data!
+      if (meta.error || !Array.isArray(students) || students.length === 0) {
+        rawStudents = [];
+        rawFeeRecords = Array.isArray(feeRecords) ? feeRecords : [];
+        studentLedgers = [];
+        expandedRows.clear();
+
+        if (diagnosticBar) {
+          diagnosticBar.innerHTML = `<span class="text-red font-bold">⚠️ Source: Students sheet offline (${escapeHtml(meta.error || 'No records returned')})</span> — Click Sync to retry.`;
+        }
+
+        // Reset KPIs
+        if (kpiTodayAmount) kpiTodayAmount.textContent = '₹0';
+        if (kpiTodayCount) kpiTodayCount.textContent = '0';
+        if (kpiOverdueAmount) kpiOverdueAmount.textContent = '₹0';
+        if (kpiOverdueCount) kpiOverdueCount.textContent = '0';
+        if (kpiUpcomingAmount) kpiUpcomingAmount.textContent = '₹0';
+        if (kpiUpcomingCount) kpiUpcomingCount.textContent = '0';
+        if (kpiCollectedAmount) kpiCollectedAmount.textContent = '₹0';
+
+        if (tabCountAll) tabCountAll.textContent = '0';
+        if (tabCountToday) tabCountToday.textContent = '0';
+        if (tabCountOverdue) tabCountOverdue.textContent = '0';
+        if (tabCountUpcoming) tabCountUpcoming.textContent = '0';
+
+        if (attentionPanel) attentionPanel.hidden = true;
+        if (auditPanel) auditPanel.hidden = true;
+
+        rowsTbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="fees-empty-row fees-error-notice">
+              <div class="fees-due-error-wrap">
+                <span class="fees-due-error-icon">⚠️</span>
+                <strong>Students data load nahi hua, Sync dabao</strong>
+                <p>${escapeHtml(meta.error || 'Google Sheet "Fee Entry MJM" (tab Students) returned 0 records. Configure STUDENTS_SCRIPT_URL and STUDENTS_SECRET, then click Sync.')}</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        setStatus(meta.error || 'Students data could not be loaded. Click Sync.', true);
+        return;
+      }
+
+      rawStudents = students;
       rawFeeRecords = Array.isArray(feeRecords) ? feeRecords : [];
+
       populateDropdowns();
       computeLedgers();
       renderTable();
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
       if (syncedAtEl) {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         syncedAtEl.textContent = `Synced at ${timeStr.toLowerCase()}`;
+      }
+
+      if (diagnosticBar) {
+        const validCount = rawStudents.length - attentionList.length;
+        const matched = matchingAudit ? matchingAudit.matchedCount : 0;
+        diagnosticBar.textContent = `Source: Students sheet live, ${validCount} students | Receipts: ${rawFeeRecords.length} (${matched} matched) | tracking from 1 Oct 2026 | last sync ${timeStr.toLowerCase()}`;
       }
     },
     getStudentLedgers: () => studentLedgers,

@@ -1,7 +1,5 @@
 const SHEET_NAME = 'Fees';
-const STUDENTS_SHEET_NAME = 'Students';
 const HEADERS = ['Receipt No', 'Date', 'Student Name', 'Parent Name', 'Phone', 'Course', 'Batch', 'Fee Period', 'Amount', 'Payment Mode', 'Balance Due', 'Collected By', 'Remarks'];
-const STUDENT_HEADERS = ['Student ID', 'Student Name', 'Parent Name', 'Student Mobile', 'Parent Mobile', 'Batch', 'Class', 'Subject', 'Monthly Fee', 'Admission Date', 'Status', 'Notes'];
 
 function jsonOutput(value) {
   return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
@@ -14,38 +12,10 @@ function expectedSecret() {
 function ensureSheet() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   if (!spreadsheet) throw new Error('Bind this Apps Script project to the fee spreadsheet.');
-  let sheet = spreadsheet.getSheetByName('Fee entry') || spreadsheet.getSheetByName(SHEET_NAME);
+  let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = spreadsheet.insertSheet(SHEET_NAME);
   if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
   return sheet;
-}
-
-function readStudents(spreadsheet) {
-  if (!spreadsheet) spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  if (!spreadsheet) return [];
-  const sheet = spreadsheet.getSheetByName(STUDENTS_SHEET_NAME);
-  if (!sheet) return [];
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return [];
-  const values = sheet.getRange(2, 1, lastRow - 1, STUDENT_HEADERS.length).getDisplayValues();
-  return values.map(function(row) {
-    return {
-      studentId: cleanCell(row[0], 50),
-      studentName: cleanCell(row[1], 100),
-      parentName: cleanCell(row[2], 100),
-      studentMobile: cleanCell(row[3], 30),
-      parentMobile: cleanCell(row[4], 30),
-      batch: cleanCell(row[5], 80),
-      studentClass: cleanCell(row[6], 50),
-      subject: cleanCell(row[7], 100),
-      monthlyFee: Number(String(row[8]).replace(/[^0-9.]/g, '')) || 0,
-      admissionDate: cleanCell(row[9], 30),
-      status: cleanCell(row[10], 30),
-      notes: cleanCell(row[11], 500)
-    };
-  }).filter(function(s) {
-    return Boolean(s.studentId || s.studentName);
-  });
 }
 
 function validSecret(provided) {
@@ -90,13 +60,6 @@ function doPost(e) {
       if (match) sequence = Math.max(sequence, Number(match[1]));
     });
     const receiptNo = prefix + String(sequence + 1).padStart(4, '0');
-
-    let remarks = cleanCell(data.remarks, 500);
-    const studentId = cleanCell(data.studentId, 50);
-    if (studentId && remarks.indexOf(studentId) === -1) {
-      remarks = ('[' + studentId + '] ' + remarks).trim().slice(0, 500);
-    }
-
     const record = {
       receiptNo: receiptNo,
       date: cleanCell(data.date, 10),
@@ -110,8 +73,7 @@ function doPost(e) {
       paymentMode: cleanCell(data.paymentMode, 30),
       balanceDue: Number(data.balanceDue || 0),
       collectedBy: cleanCell(data.collectedBy, 100),
-      remarks: remarks,
-      studentId: studentId
+      remarks: cleanCell(data.remarks, 500)
     };
     const sheetPhone = /^[=+\-@]/.test(record.phone) ? "'" + record.phone : record.phone;
     sheet.appendRow([record.receiptNo, "'" + record.date, record.studentName, record.parentName, sheetPhone, record.course, record.batch, record.feePeriod, record.amount, record.paymentMode, record.balanceDue, record.collectedBy, record.remarks]);
@@ -127,18 +89,9 @@ function doGet(e) {
   try {
     const params = e && e.parameter || {};
     if (!validSecret(params.secret)) return jsonOutput({ok: false, message: 'Unauthorized request.'});
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-
-    if (params.action === 'students') {
-      const students = readStudents(spreadsheet);
-      return jsonOutput({ok: true, students: students});
-    }
-
     const sheet = ensureSheet();
     const lastRow = sheet.getLastRow();
-    const students = readStudents(spreadsheet);
-
-    if (lastRow < 2) return jsonOutput({ok: true, records: [], students: students});
+    if (lastRow < 2) return jsonOutput({ok: true, records: []});
     const values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
     const search = String(params.search || '').trim().toLowerCase();
     const date = String(params.date || '').trim();
@@ -153,7 +106,7 @@ function doGet(e) {
       const matchesDate = !date || record.date === date;
       return matchesSearch && matchesDate;
     }).reverse();
-    return jsonOutput({ok: true, records: records, students: students});
+    return jsonOutput({ok: true, records: records});
   } catch (error) {
     return jsonOutput({ok: false, message: 'Could not read fee history.'});
   }

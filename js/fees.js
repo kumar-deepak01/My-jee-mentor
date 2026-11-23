@@ -182,9 +182,11 @@ export function initFeesPage(){
       feeForm.elements.phone.value=phone;
     }
 
-    const academicText=[student.studentClass,student.batch,student.subject].join(' ').toUpperCase();
-    let detectedCourse='JEE';
-    if(academicText.includes('NEET')||academicText.includes('BIO')||academicText.includes('PCB')){
+    const academicText=[student.studentClass,student.batch,student.subject].filter(Boolean).join(' ').toUpperCase();
+    let detectedCourse='';
+    if(academicText.includes('JEE')||academicText.includes('IIT')||academicText.includes('MAIN')||academicText.includes('ADVANCED')||academicText.includes('MATH')){
+      detectedCourse='JEE';
+    }else if(academicText.includes('NEET')||academicText.includes('BIO')||academicText.includes('PCB')||academicText.includes('MED')){
       detectedCourse='NEET';
     }else if(academicText.includes('FOUNDATION')||academicText.includes('CLASS 9')||academicText.includes('CLASS 10')||academicText.includes('CLASS 8')||academicText.includes('CLASS 7')){
       detectedCourse='Foundation';
@@ -196,7 +198,7 @@ export function initFeesPage(){
     if(feeForm.elements.amount)feeForm.elements.amount.value=student.outstanding>0?student.outstanding:student.monthlyFee;
     if(feeForm.elements.balanceDue)feeForm.elements.balanceDue.value='0';
     if(feeForm.elements.date)feeForm.elements.date.value=localDate();
-    if(feeForm.elements.remarks)feeForm.elements.remarks.value=`[${student.studentId}] Monthly fee collection`;
+    if(feeForm.elements.remarks)feeForm.elements.remarks.value=`[${student.studentId}] Monthly fee`;
     if(studentIdInput)studentIdInput.value=student.studentId||'';
 
     setStatus(feeStatus,`Prefilled collection for ${student.studentName} (${student.studentId}). Amount: ₹${student.outstanding>0?student.outstanding:student.monthlyFee}.`);
@@ -285,12 +287,31 @@ export function initFeesPage(){
     rows.innerHTML='<tr><td colspan="7">Loading from Google Sheets…</td></tr>';
     if(forceFull)filters.reset();
     const data=new FormData(filters),query=forceFull?{}:Object.fromEntries([...data].map(([key,value])=>[key,String(value).trim()]).filter(([,value])=>value));
+    let studentsFetchError=null;
+    let studentsList=[];
+
     try{
-      const result=await api('',{method:'GET',query});
-      records=Array.isArray(result.records)?result.records:[];
-      if(Array.isArray(result.students)&&result.students.length){
-        students=result.students;
+      const [receiptsRes, studentsRes] = await Promise.allSettled([
+        api('',{method:'GET',query}),
+        api('students',{method:'GET',query:forceFull?{force:'1'}:{}})
+      ]);
+
+      if(receiptsRes.status==='fulfilled'){
+        records=Array.isArray(receiptsRes.value?.records)?receiptsRes.value.records:[];
+      }else{
+        const err=receiptsRes.reason;
+        if(err?.status===401){showLogin('Session expired. Please sign in again.');return}
+        throw err;
       }
+
+      if(studentsRes.status==='fulfilled'&&Array.isArray(studentsRes.value?.students)){
+        studentsList=studentsRes.value.students;
+        students=studentsList;
+      }else if(studentsRes.status==='rejected'){
+        studentsFetchError=studentsRes.reason?.message||'Students feed unavailable';
+        studentsList=[];
+      }
+
       drawRows();
       setStatus(historyStatus,`${records.length} record${records.length===1?'':'s'} loaded.`);
       if(Object.keys(query).length===0){
@@ -298,7 +319,7 @@ export function initFeesPage(){
         updateFeeAnalyticsData(allRecords);
       }
       if(dueTracker){
-        dueTracker.updateData(students,allRecords.length?allRecords:records);
+        dueTracker.updateData(studentsList,allRecords.length?allRecords:records,{error:studentsFetchError});
         const attentionCount=dueTracker.getAttentionCount();
         updateDueBadge(attentionCount);
       }
@@ -306,6 +327,9 @@ export function initFeesPage(){
       if(error.status===401){showLogin('Session expired. Please sign in again.');return}
       rows.innerHTML='<tr><td colspan="7">Fee history could not be loaded.</td></tr>';
       setStatus(historyStatus,error.message||'Google Sheets is unavailable. Try again.',true);
+      if(dueTracker){
+        dueTracker.updateData([],allRecords.length?allRecords:records,{error:error.message});
+      }
     }
   };
 
@@ -345,6 +369,7 @@ export function initFeesPage(){
   filters.addEventListener('reset',()=>setTimeout(loadHistory,0));
 
   let isSubmitting = false;
+  let lastSubmission = { key: '', time: 0 };
 
   feeForm.addEventListener('submit',async event=>{
     event.preventDefault();
@@ -415,6 +440,14 @@ export function initFeesPage(){
       return;
     }
 
+    // Duplicate submission protection (block identical student + amount + date within 60s)
+    const dateVal=feeForm.elements.date?.value||'';
+    const subKey=`${studentName.toLowerCase()}|${amountVal}|${dateVal}`;
+    if(lastSubmission.key===subKey&&(Date.now()-lastSubmission.time)<60000){
+      setStatus(feeStatus,'This payment was just submitted. Please wait 60 seconds before submitting an identical payment.',true);
+      return;
+    }
+
     if(!feeForm.reportValidity())return;
 
     isSubmitting=true;
@@ -444,6 +477,7 @@ export function initFeesPage(){
         setStatus(feeStatus,`Payment saved as ${saved.receiptNo}, but the PDF could not be generated: ${error.message}`,true);
       }
       feeForm.reset();
+      lastSubmission={key:subKey,time:Date.now()};
       if(studentIdInput)studentIdInput.value='';
       feeForm.elements.date.value=localDate();
       loadHistory(true);

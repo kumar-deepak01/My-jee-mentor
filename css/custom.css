@@ -5561,6 +5561,174 @@ html.dark-theme .fees-wa-link:hover {
   color: #b91c1c;
 }
 
+/* Live Diagnostic Bar */
+.fees-due-diagnostic-bar {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Due Today Row Highlight */
+.fees-due-row.is-due-today-row {
+  background-color: rgba(249, 115, 22, 0.05);
+  border-left: 3px solid #f97316;
+}
+
+/* Attention & Audit Collapsible Panels */
+.fees-due-attention-panel,
+.fees-due-audit-panel {
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  font-size: 0.82rem;
+}
+
+.fees-due-attention-panel {
+  border: 1px solid #fed7aa;
+  background: #fffaf5;
+}
+
+.fees-due-audit-panel {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.fees-due-attention-summary,
+.fees-due-audit-summary {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  user-select: none;
+}
+
+.fees-due-attention-summary {
+  color: #c2410c;
+}
+
+.fees-due-audit-summary {
+  color: #334155;
+}
+
+.fees-due-attention-body,
+.fees-due-audit-body {
+  padding: 10px 16px 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.fees-due-attention-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #475569;
+}
+
+.fees-due-attention-list li {
+  margin-bottom: 4px;
+}
+
+.due-audit-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.due-audit-badge.badge-green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.due-audit-badge.badge-red {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.due-audit-table-wrap {
+  overflow-x: auto;
+  margin-top: 6px;
+}
+
+.due-audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.due-audit-table th,
+.due-audit-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.due-audit-table th {
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 700;
+}
+
+.due-audit-chip {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.due-audit-chip.chip-unmatched {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.due-audit-chip.chip-ambiguous {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.due-audit-clean-notice {
+  margin: 0;
+  color: #047857;
+  font-weight: 600;
+}
+
+/* Error Notice When Feed Fails */
+.fees-due-error-wrap {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.fees-due-error-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.fees-due-error-wrap strong {
+  display: block;
+  font-size: 1.1rem;
+  color: #b91c1c;
+  margin-bottom: 6px;
+}
+
+.fees-due-error-wrap p {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0;
+}
+
 .text-red {
   color: #b91c1c !important;
 }
@@ -5753,4 +5921,75 @@ html.dark-theme .fees-btn-wa {
   background: #064e3b;
   border-color: #065f46;
   color: #86efac;
+}
+
+html.dark-theme .fees-due-diagnostic-bar {
+  background: #151b24;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html.dark-theme .fees-due-row.is-due-today-row {
+  background-color: rgba(249, 115, 22, 0.12);
+  border-left-color: #f97316;
+}
+
+html.dark-theme .fees-due-attention-panel {
+  background: #2a1b12;
+  border-color: #7c2d12;
+}
+
+html.dark-theme .fees-due-attention-summary {
+  color: #fdba74;
+}
+
+html.dark-theme .fees-due-attention-body {
+  border-top-color: #431407;
+}
+
+html.dark-theme .fees-due-attention-list {
+  color: #cbd5e1;
+}
+
+html.dark-theme .fees-due-audit-panel {
+  background: #151b24;
+  border-color: #334155;
+}
+
+html.dark-theme .fees-due-audit-summary {
+  color: #cbd5e1;
+}
+
+html.dark-theme .fees-due-audit-body {
+  border-top-color: #334155;
+}
+
+html.dark-theme .due-audit-table th {
+  background: #1b222d;
+  color: #94a3b8;
+  border-bottom-color: #334155;
+}
+
+html.dark-theme .due-audit-table td {
+  border-bottom-color: #1e2633;
+  color: #cbd5e1;
+}
+
+html.dark-theme .due-audit-badge {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+html.dark-theme .due-audit-badge.badge-green {
+  background: #064e3b;
+  color: #86efac;
+}
+
+html.dark-theme .due-audit-badge.badge-red {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+html.dark-theme .fees-due-error-wrap p {
+  color: #94a3b8;
 }

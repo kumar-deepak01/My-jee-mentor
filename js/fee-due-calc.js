@@ -2,11 +2,16 @@
  * My JEE Mentor - Fee Due Calculation Engine
  * 
  * Bulletproof, timezone-safe (Asia/Kolkata IST) ledger calculation:
+ * - Tracking start date enforcement (2026-10-01: prior cycles considered settled)
  * - Admission date parsing (DD/MM/YYYY, DD/MM/YY, ISO, serial numbers)
  * - Month-end clamping (e.g., 31st clamping to 30th/28th/29th)
+ * - Robust read-only matching engine (ID in remarks, Phone + Name, sibling disambiguation)
+ * - Data quality validation (missing dates/fees, duplicate IDs -> Needs Attention)
  * - FIFO cycle allocation
  * - Real-time status evaluation (DUE TODAY, OVERDUE, UPCOMING, PAID)
  */
+
+export const TRACKING_START_DATE = '2026-10-01';
 
 const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_NAMES_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -16,7 +21,7 @@ const MONTH_MAP = {
   feb: 1, february: 1,
   mar: 2, march: 2,
   apr: 3, april: 3,
-  may: 4,  // may is 4
+  may: 4,
   jun: 5, june: 5,
   jul: 6, july: 6,
   aug: 7, august: 7,
@@ -204,74 +209,323 @@ export function cleanPhoneDigits(phone) {
 }
 
 /**
+ * Normalizes human names for comparison:
+ * Lowercases, strips dots and special characters, collapses spaces.
+ */
+export function normalizeName(name) {
+  if (!name) return '';
+  return String(name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Compares two names with robust tolerance for:
+ * - Exact match after whitespace & dot stripping ("D.Adithya" == "D. Adithya")
+ * - Substring containment ("Adithya" in "Dirasantham Adithya")
+ * - Initial + surname ("D Adithya" vs "Dirasantham Adithya")
+ * - Word token overlap
+ */
+export function nameMatches(nameA, nameB) {
+  const normA = normalizeName(nameA);
+  const normB = normalizeName(nameB);
+  if (!normA || !normB) return false;
+  if (normA === normB) return true;
+
+  // Dot-less / space-less equality (e.g. "dadithya" === "dadithya")
+  const compactA = normA.replace(/\s+/g, '');
+  const compactB = normB.replace(/\s+/g, '');
+  if (compactA === compactB) return true;
+
+  // Substring containment if length >= 3
+  if (compactA.length >= 3 && compactB.length >= 3) {
+    if (compactA.includes(compactB) || compactB.includes(compactA)) return true;
+  }
+
+  // Token-level comparison
+  const tokensA = normA.split(' ').filter(Boolean);
+  const tokensB = normB.split(' ').filter(Boolean);
+
+  // Check if significant tokens (>=3 chars) overlap
+  const sigA = tokensA.filter(t => t.length >= 3);
+  const sigB = tokensB.filter(t => t.length >= 3);
+  const overlap = sigA.some(t => sigB.includes(t));
+  if (overlap) return true;
+
+  return false;
+}
+
+/**
+ * Extracts a candidate student ID like 'MJM002' from text.
+ */
+export function extractStudentIdFromText(text) {
+  if (!text) return null;
+  const match = String(text).match(/\[\s*(MJM\s*\d+)\s*\]/i) || String(text).match(/\b(MJM\d+)\b/i);
+  if (match) {
+    return match[1].replace(/\s+/g, '').toUpperCase();
+  }
+  return null;
+}
+
+/**
  * Checks whether a fee record matches a student.
- * Matches by:
- * 1. Student ID mentioned in remarks or receipt or name
- * 2. Exact student name (case-insensitive trim)
- * 3. Mobile phone number match (student mobile or parent mobile)
+ * Priority:
+ * 1. [MJMxxx] in remarks or receiptNo or studentName
+ * 2. Phone match on Student or Parent mobile AND (Student Name or Parent Name matches)
+ * 3. Exact name match if phone is omitted
  */
 export function isPaymentForStudent(record, student) {
   if (!record || !student) return false;
 
-  const studentId = String(student.studentId || '').trim().toLowerCase();
-  const remarks = String(record.remarks || '').trim().toLowerCase();
-  const receiptNo = String(record.receiptNo || '').trim().toLowerCase();
-  const recordStudent = String(record.studentName || '').trim().toLowerCase();
-  const studentName = String(student.studentName || '').trim().toLowerCase();
+  const studentId = String(student.studentId || '').trim().toUpperCase();
+  const remarks = String(record.remarks || '');
+  const receiptNo = String(record.receiptNo || '');
+  const recordStudent = String(record.studentName || '');
+  const recordParent = String(record.parentName || '');
 
   // 1. Direct ID match
   if (studentId) {
-    if (remarks.includes(studentId) || receiptNo.includes(studentId) || recordStudent.includes(studentId)) {
+    const textId = extractStudentIdFromText(`${remarks} ${receiptNo} ${recordStudent}`);
+    if (textId && textId === studentId) {
       return true;
     }
   }
 
-  // 2. Exact student name match
-  if (studentName && recordStudent && studentName === recordStudent) {
-    return true;
-  }
-
-  // 3. Phone number match
+  // 2. Phone match + Name match
   const recordPhone = cleanPhoneDigits(record.phone);
   if (recordPhone && recordPhone.length >= 10) {
     const sPhone = cleanPhoneDigits(student.studentMobile);
     const pPhone = cleanPhoneDigits(student.parentMobile);
     if ((sPhone && recordPhone === sPhone) || (pPhone && recordPhone === pPhone)) {
-      return true;
+      if (nameMatches(recordStudent, student.studentName) ||
+          nameMatches(recordStudent, student.parentName) ||
+          (recordParent && (nameMatches(recordParent, student.parentName) || nameMatches(recordParent, student.studentName)))) {
+        return true;
+      }
     }
+    // If phone matched but name didn't, do not match (could be sibling or unrelated)
+    return false;
+  }
+
+  // 3. Exact student name match (only when record has no phone)
+  if (recordStudent && student.studentName && nameMatches(recordStudent, student.studentName)) {
+    return true;
   }
 
   return false;
 }
 
 /**
+ * Matches fee receipts to student records across the entire dataset.
+ * Adheres strictly to:
+ * - Rule (a): [MJMxxx] in Remarks if ID exists in Students
+ * - Rule (b): Phone match on Student or Parent mobile AND Name match
+ * - Rule (c): Sibling phone sharing disambiguated by student name; if ambiguous -> AMBIGUOUS
+ * - Rule (d): Phone-only match without name match -> UNMATCHED (reason: name mismatch)
+ * 
+ * @param {Array} students - All student objects
+ * @param {Array} feeRecords - All fee receipt records
+ * @returns {Object} { studentReceiptsMap: Map, audit: Object }
+ */
+export function matchReceiptsToStudents(students = [], feeRecords = []) {
+  const studentMap = new Map();
+  for (const s of students) {
+    if (s.studentId) {
+      studentMap.set(String(s.studentId).trim().toUpperCase(), s);
+    }
+  }
+
+  const studentReceiptsMap = new Map();
+  for (const s of students) {
+    if (s.studentId) {
+      studentReceiptsMap.set(String(s.studentId).trim().toUpperCase(), []);
+    }
+  }
+
+  const audit = {
+    matchedCount: 0,
+    ambiguousCount: 0,
+    unmatchedCount: 0,
+    matchedReceipts: [],
+    ambiguousReceipts: [],
+    unmatchedReceipts: []
+  };
+
+  for (const receipt of feeRecords) {
+    let matchedStudent = null;
+    let matchMethod = '';
+
+    // Rule (a): [MJMxxx] in remarks or receiptNo
+    const remarks = String(receipt.remarks || '');
+    const receiptNo = String(receipt.receiptNo || '');
+    const textId = extractStudentIdFromText(`${remarks} ${receiptNo}`);
+    if (textId && studentMap.has(textId)) {
+      matchedStudent = studentMap.get(textId);
+      matchMethod = `ID in remarks [${textId}]`;
+    }
+
+    // Rule (b) & (c): Phone match + Name match
+    if (!matchedStudent) {
+      const phone = cleanPhoneDigits(receipt.phone);
+      if (phone && phone.length >= 10) {
+        const phoneCandidates = students.filter(s => {
+          const sPhone = cleanPhoneDigits(s.studentMobile);
+          const pPhone = cleanPhoneDigits(s.parentMobile);
+          return (sPhone && sPhone === phone) || (pPhone && pPhone === phone);
+        });
+
+        if (phoneCandidates.length === 1) {
+          const cand = phoneCandidates[0];
+          const rName = receipt.studentName || '';
+          const rParent = receipt.parentName || '';
+          const nameOk = nameMatches(rName, cand.studentName) ||
+                         nameMatches(rName, cand.parentName) ||
+                         (rParent && (nameMatches(rParent, cand.parentName) || nameMatches(rParent, cand.studentName)));
+
+          if (nameOk) {
+            matchedStudent = cand;
+            matchMethod = `Phone + Name match (${cand.studentId})`;
+          } else {
+            audit.unmatchedCount++;
+            audit.unmatchedReceipts.push({
+              receipt,
+              reason: `Phone (${phone}) matches student ${cand.studentName} (${cand.studentId}) but receipt name is "${rName}"`
+            });
+            continue;
+          }
+        } else if (phoneCandidates.length > 1) {
+          // Multiple students share phone (e.g. siblings)
+          const rName = receipt.studentName || '';
+          const matchedByName = phoneCandidates.filter(c =>
+            nameMatches(rName, c.studentName) || nameMatches(rName, c.parentName)
+          );
+
+          if (matchedByName.length === 1) {
+            matchedStudent = matchedByName[0];
+            matchMethod = `Sibling phone disambiguated by name (${matchedStudent.studentId})`;
+          } else {
+            audit.ambiguousCount++;
+            audit.ambiguousReceipts.push({
+              receipt,
+              candidates: phoneCandidates.map(c => `${c.studentName} (${c.studentId})`),
+              reason: `Multiple students share phone ${phone}; receipt name "${rName}" is ambiguous`
+            });
+            continue;
+          }
+        }
+      }
+    }
+
+    // Fallback: Exact name match if phone was missing
+    if (!matchedStudent && !cleanPhoneDigits(receipt.phone) && receipt.studentName) {
+      const nameCandidates = students.filter(s => nameMatches(receipt.studentName, s.studentName));
+      if (nameCandidates.length === 1) {
+        matchedStudent = nameCandidates[0];
+        matchMethod = `Name-only match (${matchedStudent.studentId})`;
+      }
+    }
+
+    if (matchedStudent) {
+      const sId = String(matchedStudent.studentId).trim().toUpperCase();
+      if (!studentReceiptsMap.has(sId)) {
+        studentReceiptsMap.set(sId, []);
+      }
+      studentReceiptsMap.get(sId).push({ ...receipt, _matchedStudentId: sId, _matchMethod: matchMethod });
+      audit.matchedCount++;
+      audit.matchedReceipts.push({
+        receiptNo: receipt.receiptNo,
+        studentId: sId,
+        studentName: matchedStudent.studentName,
+        method: matchMethod
+      });
+    } else {
+      audit.unmatchedCount++;
+      audit.unmatchedReceipts.push({
+        receipt,
+        reason: 'No matching student ID or phone found'
+      });
+    }
+  }
+
+  return { studentReceiptsMap, audit };
+}
+
+/**
+ * Validates students dataset for data quality.
+ * Partitions students into valid and needsAttention.
+ */
+export function validateStudentData(students = []) {
+  const valid = [];
+  const needsAttention = [];
+  const seenIds = new Set();
+
+  for (const s of students) {
+    const studentId = String(s?.studentId || '').trim();
+    const adm = parseAdmissionDate(s?.admissionDate);
+    const fee = Number(s?.monthlyFee);
+
+    let reason = '';
+    if (!studentId) {
+      reason = 'Missing Student ID';
+    } else if (seenIds.has(studentId.toUpperCase())) {
+      reason = `Duplicate Student ID (${studentId})`;
+    } else if (!adm) {
+      reason = `Invalid or missing admission date: "${s?.admissionDate ?? ''}"`;
+    } else if (!Number.isFinite(fee) || fee <= 0) {
+      reason = `Invalid or missing monthly fee: "${s?.monthlyFee ?? ''}"`;
+    }
+
+    if (reason) {
+      needsAttention.push({ student: s, reason });
+    } else {
+      seenIds.add(studentId.toUpperCase());
+      valid.push(s);
+    }
+  }
+
+  return { valid, needsAttention };
+}
+
+/**
  * Core FIFO Ledger Calculator for a single student.
  * 
  * @param {Object} student - Student record from 'Students' tab
- * @param {Array} feeRecords - Array of fee payment records from 'Fee entry' tab
+ * @param {Array} feeRecords - Array of fee payment records or pre-filtered student receipts
  * @param {Date|string} referenceDate - Evaluation date (defaults to today in IST)
+ * @param {Object} options - Options including trackingStartDate override
  * @returns {Object} Comprehensive ledger summary
  */
-export function calculateStudentLedger(student, feeRecords = [], referenceDate = new Date()) {
+export function calculateStudentLedger(student, feeRecords = [], referenceDate = new Date(), options = {}) {
   const refDate = parseAdmissionDate(referenceDate) || new Date();
   const refYmd = getKolkataYmd(refDate);
   const refMidnight = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-  const admissionDate = parseAdmissionDate(student.admissionDate);
-  const monthlyFee = Number(student.monthlyFee) || 0;
-  const studentId = String(student.studentId || '').trim();
-  const studentName = String(student.studentName || '').trim();
-  const parentName = String(student.parentName || '').trim();
-  const statusStr = String(student.status || 'Active').trim();
+  const admissionDate = parseAdmissionDate(student?.admissionDate);
+  const monthlyFee = Number(student?.monthlyFee) || 0;
+  const studentId = String(student?.studentId || '').trim();
+  const studentName = String(student?.studentName || '').trim();
+  const parentName = String(student?.parentName || '').trim();
+  const statusStr = String(student?.status || 'Active').trim();
   const active = isStudentActive(statusStr);
 
-  if (!admissionDate) {
+  const trackingStartDateStr = options.trackingStartDate !== undefined ? options.trackingStartDate : TRACKING_START_DATE;
+  const trackingStartDate = trackingStartDateStr ? parseAdmissionDate(trackingStartDateStr) : null;
+  const trackingMidnight = trackingStartDate ? new Date(trackingStartDate.getFullYear(), trackingStartDate.getMonth(), trackingStartDate.getDate(), 0, 0, 0, 0) : null;
+
+  if (!admissionDate || !Number.isFinite(monthlyFee) || monthlyFee <= 0 || !studentId) {
+    const reasons = [];
+    if (!studentId) reasons.push('Missing Student ID');
+    if (!admissionDate) reasons.push('Invalid Admission Date');
+    if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) reasons.push('Invalid Monthly Fee');
+
     return {
       studentId,
       studentName,
       parentName,
       admissionDate: null,
-      admissionDateDisplay: student.admissionDate || 'N/A',
+      admissionDateDisplay: student?.admissionDate || 'N/A',
       monthlyFee,
       dueDay: 1,
       dueDayOrdinal: '1st',
@@ -280,7 +534,7 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
       outstanding: 0,
       advanceCredit: 0,
       status: 'PAID',
-      statusLabel: 'No Admission Date',
+      statusLabel: `Needs Attention: ${reasons.join(', ')}`,
       cycles: [],
       nextDueDate: null,
       nextDueDateDisplay: 'N/A',
@@ -289,7 +543,9 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
       daysOverdue: 0,
       daysLeft: 0,
       monthsPending: 0,
-      active
+      active,
+      needsAttention: true,
+      attentionReason: reasons.join(', ')
     };
   }
 
@@ -297,12 +553,28 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
   const dueDayOrdinal = getOrdinalSuffix(dueDay);
 
   // 1. Find all payments for this student
-  const matchingPayments = feeRecords.filter(r => isPaymentForStudent(r, student));
+  // If feeRecords is already pre-matched to this student, use them directly; otherwise filter with isPaymentForStudent.
+  const matchingPayments = feeRecords.filter(r => {
+    if (r._matchedStudentId && r._matchedStudentId === studentId.toUpperCase()) {
+      return true;
+    }
+    return isPaymentForStudent(r, student);
+  }).filter(r => {
+    // If tracking start date is active, ignore payments before tracking start date (they paid for settled prior cycles)
+    if (trackingMidnight) {
+      const pDate = parseAdmissionDate(r.date);
+      if (pDate && pDate < trackingMidnight) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   const totalPaid = matchingPayments.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 
-  // 2. Generate all due cycles up to refMidnight
-  // Cycle 0 starts on admissionDate.
-  // Cycles exist only if cycleDate <= refMidnight.
+  // 2. Generate due cycles up to refMidnight
+  // Enforces TRACKING_START_DATE: only cycles with dueDate >= max(admissionDate, trackingMidnight) are counted.
+  // Prior cycles (< TRACKING_START_DATE) are considered historical and settled.
   const cycles = [];
   let cycleIdx = 0;
   let nextCycleDate = null;
@@ -310,16 +582,18 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
   while (true) {
     const cycleDate = computeCycleDate(admissionDate, cycleIdx);
     if (cycleDate <= refMidnight) {
-      cycles.push({
-        cycleIndex: cycleIdx,
-        cycleDate,
-        cycleDateDisplay: formatDateDisplay(cycleDate),
-        monthYear: formatMonthYear(cycleDate),
-        fee: monthlyFee,
-        paid: 0,
-        balance: monthlyFee,
-        status: 'UNPAID'
-      });
+      if (!trackingMidnight || cycleDate >= trackingMidnight) {
+        cycles.push({
+          cycleIndex: cycleIdx,
+          cycleDate,
+          cycleDateDisplay: formatDateDisplay(cycleDate),
+          monthYear: formatMonthYear(cycleDate),
+          fee: monthlyFee,
+          paid: 0,
+          balance: monthlyFee,
+          status: 'UNPAID'
+        });
+      }
       cycleIdx++;
     } else {
       nextCycleDate = cycleDate;
@@ -374,7 +648,6 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
       status = 'OVERDUE';
       daysOverdue = diffDays;
     } else {
-      // Future cycle (shouldn't happen as cycles <= refMidnight)
       status = 'UPCOMING';
     }
   } else {
@@ -398,11 +671,11 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
     studentId,
     studentName,
     parentName,
-    studentMobile: student.studentMobile || '',
-    parentMobile: student.parentMobile || '',
-    batch: student.batch || '',
-    studentClass: student.studentClass || student.class || '',
-    subject: student.subject || '',
+    studentMobile: student?.studentMobile || '',
+    parentMobile: student?.parentMobile || '',
+    batch: student?.batch || '',
+    studentClass: student?.studentClass || student?.class || '',
+    subject: student?.subject || '',
     monthlyFee,
     admissionDate,
     admissionDateDisplay: formatDateDisplay(admissionDate),
@@ -423,18 +696,22 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
     daysLeft,
     monthsPending,
     active,
-    notes: student.notes || ''
+    needsAttention: false,
+    attentionReason: '',
+    notes: student?.notes || ''
   };
 }
 
 /**
  * Calculates aggregates and KPI metrics across all students.
+ * Excludes students marked with needsAttention or inactive from active totals.
  */
 export function calculateDueMetrics(studentLedgers = [], feeRecords = [], referenceDate = new Date()) {
   const refYmd = getKolkataYmd(referenceDate);
 
-  // Filter out inactive students by default for the primary KPIs
-  const activeStudents = studentLedgers.filter(s => s.active);
+  // Filter out inactive and needsAttention students for primary KPIs
+  const activeStudents = studentLedgers.filter(s => s.active && !s.needsAttention);
+  const attentionStudents = studentLedgers.filter(s => s.needsAttention);
 
   let dueTodayCount = 0;
   let dueTodayAmount = 0;
@@ -476,6 +753,7 @@ export function calculateDueMetrics(studentLedgers = [], feeRecords = [], refere
     upcomingAmount,
     collectedTodayAmount,
     attentionRequiredCount,
+    needsAttentionCount: attentionStudents.length,
     totalActiveStudents: activeStudents.length,
     totalStudents: studentLedgers.length
   };

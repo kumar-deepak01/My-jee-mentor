@@ -4,7 +4,7 @@ import {parsePhoneNumberFromString} from 'libphonenumber-js';
 const COOKIE='mjm_fees_admin',SESSION_SECONDS=4*60*60,loginAttempts=new Map();
 const json=(body,status=200,headers={})=>Response.json(body,{status,headers:{'cache-control':'no-store',...headers}});
 class FeesError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code}}
-function sanitizedMessage(error){let message=String(error?.message||error||'Unknown error');for(const name of ['ADMIN_PASSWORD','SHEET_SECRET','SHEET_WEBAPP_URL'])if(process.env[name])message=message.split(process.env[name]).join('[redacted]');return message.slice(0,500)}
+function sanitizedMessage(error){let message=String(error?.message||error||'Unknown error');for(const name of ['ADMIN_PASSWORD','SHEET_SECRET','SHEET_WEBAPP_URL','STUDENTS_SCRIPT_URL','STUDENTS_SECRET'])if(process.env[name])message=message.split(process.env[name]).join('[redacted]');return message.slice(0,500)}
 
 function getFeesAdminPassword(){
   const raw = process.env.ADMIN_PASSWORD;
@@ -83,7 +83,7 @@ const text=(value,max)=>typeof value==='string'?value.trim().replace(/[\u0000-\u
 const COURSES=new Set(['JEE','NEET','Foundation']),PAYMENT_MODES=new Set(['Cash','UPI','Card','Bank Transfer']);
 
 export function validateRecord(body){
-  const studentName=text(body?.studentName,100),parentName=text(body?.parentName,100),rawPhone=text(body?.phone,30),course=text(body?.course,30),batch=text(body?.batch,80),feePeriod=text(body?.feePeriod,50),collectedBy=text(body?.collectedBy,100),remarks=text(body?.remarks,500),date=text(body?.date,10),paymentMode=text(body?.paymentMode,30),amount=Number(body?.amount),balanceDue=body?.balanceDue===''||body?.balanceDue==null?0:Number(body.balanceDue),studentId=text(body?.studentId,50);
+  const studentName=text(body?.studentName,100),parentName=text(body?.parentName,100),rawPhone=text(body?.phone,30),course=text(body?.course,30),batch=text(body?.batch,80),feePeriod=text(body?.feePeriod,50),collectedBy=text(body?.collectedBy,100),remarks=text(body?.remarks,500),date=text(body?.date,10),paymentMode=text(body?.paymentMode,30),amount=Number(body?.amount),balanceDue=body?.balanceDue===''||body?.balanceDue==null?0:Number(body.balanceDue);
   if(!studentName)throw new FeesError(400,'STUDENT_REQUIRED','Student name is required.');
 
   const countryIso = text(body?.phoneCountry || body?.countryIso || 'IN', 10).toUpperCase() || 'IN';
@@ -113,7 +113,7 @@ export function validateRecord(body){
   const parsedDate=new Date(`${date}T00:00:00.000Z`);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(parsedDate.getTime())||parsedDate.toISOString().slice(0,10)!==date)throw new FeesError(400,'DATE_INVALID','Select a valid collection date.');
   if(!Number.isFinite(balanceDue)||balanceDue<0||balanceDue>99999999.99)throw new FeesError(400,'BALANCE_INVALID','Enter a valid balance due.');
-  return{date,studentName,parentName,phone,course,batch,feePeriod,amount:Number(amount.toFixed(2)),paymentMode,balanceDue:Number(balanceDue.toFixed(2)),collectedBy,remarks,studentId};
+  return{date,studentName,parentName,phone,course,batch,feePeriod,amount:Number(amount.toFixed(2)),paymentMode,balanceDue:Number(balanceDue.toFixed(2)),collectedBy,remarks};
 }
 
 function getSheetUrl(){
@@ -157,6 +157,73 @@ export async function fetchRawFeeRecords(){
   }
 }
 
+let studentsCache = null;
+let studentsCacheTime = 0;
+const CACHE_TTL_MS = 60 * 1000;
+
+export async function fetchStudentsFeed(force = false) {
+  if (!force && studentsCache && (Date.now() - studentsCacheTime < CACHE_TTL_MS)) {
+    return studentsCache;
+  }
+
+  const scriptUrl = process.env.STUDENTS_SCRIPT_URL;
+  const scriptSecret = process.env.STUDENTS_SECRET;
+
+  if (!scriptUrl || !scriptSecret) {
+    if (process.env.DEV_MOCK_STUDENTS === 'true') {
+      return { ok: true, count: 0, generatedAt: new Date().toISOString(), students: [], isMock: true };
+    }
+    return {
+      ok: false,
+      error: 'STUDENTS_CONFIG_MISSING',
+      message: 'Students feed setup is incomplete. Configure STUDENTS_SCRIPT_URL and STUDENTS_SECRET on the server.'
+    };
+  }
+
+  let url;
+  try {
+    url = new URL(scriptUrl);
+  } catch {
+    return { ok: false, error: 'STUDENTS_URL_INVALID', message: 'Configure a valid HTTPS Google Apps Script URL for students feed.' };
+  }
+
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 25000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'students', secret: scriptSecret }),
+      signal: controller.signal,
+      redirect: 'follow'
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload || payload.ok !== true) {
+      return {
+        ok: false,
+        error: payload?.error || 'STUDENTS_FEED_FAILED',
+        message: payload?.message || 'Google Sheets students feed did not confirm the request.'
+      };
+    }
+    studentsCache = {
+      ok: true,
+      count: payload.count || (Array.isArray(payload.students) ? payload.students.length : 0),
+      generatedAt: payload.generatedAt || new Date().toISOString(),
+      students: Array.isArray(payload.students) ? payload.students : []
+    };
+    studentsCacheTime = Date.now();
+    return studentsCache;
+  } catch (error) {
+    console.error('Students Sheet feed request failed:', { name: String(error?.name || 'Error'), message: sanitizedMessage(error) });
+    return {
+      ok: false,
+      error: 'STUDENTS_FEED_UNAVAILABLE',
+      message: 'Students Google Sheet is temporarily unavailable. Try again shortly.'
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function logFeesError(label,error){
   console.error(label,{name:String(error?.name||'Error'),message:sanitizedMessage(error),...(error?.code?{code:String(error.code)}:{}),...(error?.status?{status:Number(error.status)}:{})});
 }
@@ -196,23 +263,21 @@ export async function handleFeesRequest(request){
         }
       }
       if(!saved||!saved.receiptNo||!saved.record)throw new FeesError(502,'SHEET_SAVE_UNCONFIRMED','Google Sheets did not return a saved receipt. No receipt was generated.');
-      return json({ok:true,receiptNo:saved.receiptNo,record:{...saved.record,phone:record.phone,studentId:record.studentId||saved.record?.studentId||''}},201);
+      return json({ok:true,receiptNo:saved.receiptNo,record:{...saved.record,phone:record.phone}},201);
     }
     if(method==='GET'){
       if(!hasSession(request))throw new FeesError(401,'LOGIN_REQUIRED','Enter the admin password to view fee records.');
       if(action==='session')return json({ok:true});
       if(action==='students'){
-        const result=await callSheet('GET',{query:{action:'students'}});
-        return json({ok:true,students:Array.isArray(result?.students)?result.students:[]});
+        const force = url.searchParams.get('force') === '1' || url.searchParams.get('force') === 'true';
+        const feed = await fetchStudentsFeed(force);
+        if(!feed.ok) return json(feed, feed.error === 'STUDENTS_CONFIG_MISSING' ? 503 : 502);
+        return json(feed, 200);
       }
       const search=text(url.searchParams.get('search'),100),date=text(url.searchParams.get('date'),10);
       if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new FeesError(400,'DATE_INVALID','Select a valid date filter.');
       const result=await callSheet('GET',{query:{search,date}});
-      return json({
-        ok:true,
-        records:Array.isArray(result?.records)?result.records:[],
-        students:Array.isArray(result?.students)?result.students:[]
-      });
+      return json({ok:true,records:Array.isArray(result?.records)?result.records:[]});
     }
     throw new FeesError(405,'METHOD_NOT_ALLOWED','Method not allowed.');
   }catch(error){
