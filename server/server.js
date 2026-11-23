@@ -25,6 +25,8 @@ app.all('/api/finance',financeRoute);
 app.get('/api/config',(req,res)=>res.json({turnstileSiteKey:process.env.TURNSTILE_SITE_KEY||''}));
 app.use('/api',leads);
 app.all('/api/chat',async(req,res)=>{try{const result=await handleChatRequest({method:req.method,body:req.body,ip:req.ip});res.set('Cache-Control','no-store').status(result.status).json(result.body);}catch{res.set('Cache-Control','no-store').status(200).json({reply:CHAT_FALLBACK});}});
+app.get(['/fees', '/fees/due'], (req, res) => res.sendFile(path.join(root, 'fees.html')));
+app.get('/finance', (req, res) => res.sendFile(path.join(root, 'finance.html')));
 app.use(express.static(root,{
   extensions:['html'],
   index:'index.html',

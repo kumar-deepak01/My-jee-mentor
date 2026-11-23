@@ -19,6 +19,7 @@
   },
   "rewrites": [
     { "source": "/fees", "destination": "/fees.html" },
+    { "source": "/fees/due", "destination": "/fees.html" },
     { "source": "/finance", "destination": "/finance.html" }
   ]
 }

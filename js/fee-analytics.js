@@ -200,6 +200,21 @@ export function renderFeeAnalyticsMarkup() {
 
         <!-- Filter Bar -->
         <div class="fees-analytics-filters">
+          <!-- Due Fees Navigation Button (placed immediately left of Date Range) -->
+          <div class="fees-due-btn-wrap">
+            <button type="button" class="btn fees-btn-due" data-fees-nav-due title="Open Fee Due Tracker">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fees-due-icon" aria-hidden="true">
+                <rect x="3" y="4" width="14" height="13" rx="2"></rect>
+                <path d="M3 8h14"></path>
+                <path d="M7 2v3M13 2v3"></path>
+                <circle cx="12" cy="13" r="2.5"></circle>
+                <path d="M12 12v1.5l1 0.5"></path>
+              </svg>
+              <span>Due Fees</span>
+              <span class="fees-due-badge" data-due-badge hidden>0</span>
+            </button>
+          </div>
+
           <!-- Date Range Selector -->
           <div class="fees-filter-field">
             <label for="feesAnalyticsRange">Date Range</label>
@@ -380,9 +395,10 @@ export function renderFeeAnalyticsMarkup() {
  * and SVG chart rendering for the fee analytics dashboard.
  */
 export class FeeAnalyticsController {
-  constructor(containerEl, { onRefreshRequested } = {}) {
+  constructor(containerEl, { onRefreshRequested, onOpenDueTracker } = {}) {
     this.container = containerEl;
     this.onRefreshRequested = onRefreshRequested;
+    this.onOpenDueTracker = onOpenDueTracker;
     this.masterRecords = [];
     this.filteredRecords = [];
     this.currentRange = '12m';
@@ -398,6 +414,7 @@ export class FeeAnalyticsController {
   }
 
   cacheDom() {
+    this.dueBtn = this.container.querySelector('[data-fees-nav-due]');
     this.rangeSelect = this.container.querySelector('[data-analytics-range]');
     this.customWrap = this.container.querySelector('[data-analytics-custom-wrap]');
     this.startInput = this.container.querySelector('[data-analytics-start]');
@@ -442,6 +459,14 @@ export class FeeAnalyticsController {
   }
 
   bindEvents() {
+    this.dueBtn?.addEventListener('click', () => {
+      if (typeof this.onOpenDueTracker === 'function') {
+        this.onOpenDueTracker();
+      } else {
+        window.dispatchEvent(new CustomEvent('mjm:open-due-tracker'));
+      }
+    });
+
     this.rangeSelect?.addEventListener('change', () => {
       this.currentRange = this.rangeSelect.value;
       const isCustom = this.currentRange === 'custom';
@@ -1296,15 +1321,27 @@ export class FeeAnalyticsController {
  */
 let analyticsInstance = null;
 
-export function initFeeAnalytics({ onRefreshRequested } = {}) {
+export function initFeeAnalytics({ onRefreshRequested, onOpenDueTracker } = {}) {
   const container = document.querySelector('[data-fees-analytics]');
   if (!container) return null;
-  analyticsInstance = new FeeAnalyticsController(container, { onRefreshRequested });
+  analyticsInstance = new FeeAnalyticsController(container, { onRefreshRequested, onOpenDueTracker });
   return analyticsInstance;
 }
 
 export function updateFeeAnalyticsData(records = []) {
   if (analyticsInstance) {
     analyticsInstance.updateRecords(records);
+  }
+}
+
+export function updateDueBadge(count) {
+  const badge = document.querySelector('[data-due-badge]');
+  if (!badge) return;
+  const num = Number(count) || 0;
+  if (num > 0) {
+    badge.textContent = String(num);
+    badge.hidden = false;
+  } else {
+    badge.hidden = true;
   }
 }
