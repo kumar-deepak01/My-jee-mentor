@@ -11,7 +11,7 @@ import {
   validatePhoneNumber,
   formatAsYouType,
   setLibphonenumber
-} from '../js/intl-phone.js';
+} from '../client/js/intl-phone.js';
 import { validateRecord } from '../server/_fees-handler.js';
 
 // Ensure libphonenumber is provided in Node test environment

@@ -7,7 +7,7 @@ import {
   toYmd,
   getKolkataYmd,
   formatKolkataDate
-} from '../js/fee-analytics.js';
+} from '../client/js/fee-analytics.js';
 
 test('formatInr formats Indian currency correctly', () => {
   assert.equal(formatInr(1850000), '₹18,50,000');

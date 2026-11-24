@@ -11,7 +11,7 @@ import studentReviewRoute from './student-review-route.js';
 import feesRoute from './fees-route.js';
 import financeRoute from './finance-route.js';
 import {CHAT_FALLBACK,handleChatRequest} from './_chat-handler.js';
-const app=express(),here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'..');
+const app=express(),here=path.dirname(fileURLToPath(import.meta.url)),clientRoot=path.resolve(here,'../client');
 app.disable('x-powered-by');app.set('trust proxy',1);
 app.use((req,res,next)=>{if(process.env.NODE_ENV==='production'&&!req.secure)return res.redirect(301,`https://${req.headers.host}${req.originalUrl}`);next()});
 app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://www.googletagmanager.com","https://challenges.cloudflare.com","https://cdn.jsdelivr.net"],styleSrc:["'self'","'unsafe-inline'","https://fonts.googleapis.com","https://challenges.cloudflare.com"],fontSrc:["'self'","https://fonts.gstatic.com"],imgSrc:["'self'","data:","https://i.ytimg.com","https:"],connectSrc:["'self'","https://challenges.cloudflare.com","https://cdn.jsdelivr.net"],frameSrc:["https://www.youtube-nocookie.com","https://maps.google.com","https://drive.google.com","https://challenges.cloudflare.com"],objectSrc:["'none'"],upgradeInsecureRequests:[]} },crossOriginEmbedderPolicy:false}));
@@ -25,9 +25,9 @@ app.all('/api/finance',financeRoute);
 app.get('/api/config',(req,res)=>res.json({turnstileSiteKey:process.env.TURNSTILE_SITE_KEY||''}));
 app.use('/api',leads);
 app.all('/api/chat',async(req,res)=>{try{const result=await handleChatRequest({method:req.method,body:req.body,ip:req.ip});res.set('Cache-Control','no-store').status(result.status).json(result.body);}catch{res.set('Cache-Control','no-store').status(200).json({reply:CHAT_FALLBACK});}});
-app.get(['/fees', '/fees/due'], (req, res) => res.sendFile(path.join(root, 'fees.html')));
-app.get('/finance', (req, res) => res.sendFile(path.join(root, 'finance.html')));
-app.use(express.static(root,{
+app.get(['/fees', '/fees/due'], (req, res) => res.sendFile(path.join(clientRoot, 'fees.html')));
+app.get('/finance', (req, res) => res.sendFile(path.join(clientRoot, 'finance.html')));
+app.use(express.static(clientRoot,{
   extensions:['html'],
   index:'index.html',
   maxAge:process.env.NODE_ENV==='production'?'1d':0,
@@ -37,6 +37,6 @@ app.use(express.static(root,{
     if(filePath.endsWith('.css'))res.setHeader('Content-Type','text/css; charset=utf-8');
   }
 }));
-app.use((req,res)=>res.status(404).sendFile(path.join(root,'404.html')));
+app.use((req,res)=>res.status(404).sendFile(path.join(clientRoot,'404.html')));
 app.use((err,req,res,next)=>{if(res.headersSent)return next(err);res.status(400).json({message:'Request could not be processed.'})});
 const port=Number(process.env.PORT)||3000;app.listen(port,'0.0.0.0',()=>console.log(`My JEE Mentor server listening on ${port}`));

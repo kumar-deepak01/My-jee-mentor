@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "client",
   "functions": {
     "api/chat.js": {
       "includeFiles": "knowledge/mentor-data.md",

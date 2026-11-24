@@ -16,7 +16,7 @@ import {
   calculateStudentLedger,
   calculateDueMetrics,
   TRACKING_START_DATE
-} from '../js/fee-due-calc.js';
+} from '../client/js/fee-due-calc.js';
 
 test('parseAdmissionDate handles varied formats and 2-digit years', () => {
   // DD/MM/YYYY

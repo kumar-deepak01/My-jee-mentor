@@ -11,7 +11,7 @@ import {
   filterRecordsByPeriod,
   computeMonthBreakdown,
   normalizeDateToYmd
-} from '../js/finance-pdf.js';
+} from '../client/js/finance-pdf.js';
 
 test('getMonthDateRange: calculates exact month boundaries including leap years', () => {
   // November 2026 (30 days)
