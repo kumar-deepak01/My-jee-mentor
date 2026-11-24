@@ -1,4 +1,4 @@
-import {CHAT_FALLBACK, getChatDebugInfo, handleChatRequest} from './_chat-handler.js';
+import {CHAT_FALLBACK, getChatDebugInfo, handleChatRequest} from '../server/_chat-handler.js';
 
 export default {
   async fetch(request) {

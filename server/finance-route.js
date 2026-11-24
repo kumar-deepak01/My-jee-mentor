@@ -1,4 +1,4 @@
-import { handleFinanceRequest } from '../api/_finance-handler.js';
+import { handleFinanceRequest } from './_finance-handler.js';
 
 export default async function financeRoute(req, res) {
   try {

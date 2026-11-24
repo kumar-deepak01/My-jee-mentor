@@ -1,5 +1,5 @@
 import { getSetting, setSetting, deleteSetting } from './finance-db.js';
-import { fetchRawFeeRecords } from '../api/_fees-handler.js';
+import { fetchRawFeeRecords } from './_fees-handler.js';
 
 export const FINANCE_SPREADSHEET_TITLE = 'My JEE Mentor – Finance Management';
 export const DEFAULT_FINANCE_SPREADSHEET_ID = '13CQeAhMZpQvZ2BSjX_AcnuA3g_ml1hCw6zRKxrzK0x8';

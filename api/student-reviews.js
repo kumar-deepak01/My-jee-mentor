@@ -1,5 +1,5 @@
-import {handleStudentReviewRequest} from './_student-review-handler.js';
-import {logFacultyError} from './_faculty-handler.js';
+import {handleStudentReviewRequest} from '../server/_student-review-handler.js';
+import {logFacultyError} from '../server/_faculty-handler.js';
 
 export default async function studentReviewsHandler(req,res){
   try{

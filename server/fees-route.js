@@ -1,4 +1,4 @@
-import {handleFeesRequest,logFeesError} from '../api/_fees-handler.js';
+import {handleFeesRequest,logFeesError} from './_fees-handler.js';
 
 export default async function feesRoute(req,res){
   try{

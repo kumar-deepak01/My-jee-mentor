@@ -12,7 +12,7 @@ import {
   formatAsYouType,
   setLibphonenumber
 } from '../js/intl-phone.js';
-import { validateRecord } from '../api/_fees-handler.js';
+import { validateRecord } from '../server/_fees-handler.js';
 
 // Ensure libphonenumber is provided in Node test environment
 setLibphonenumber(libphonenumber);

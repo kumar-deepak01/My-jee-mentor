@@ -1,4 +1,4 @@
-import {handleFeesRequest,logFeesError} from './_fees-handler.js';
+import {handleFeesRequest,logFeesError} from '../server/_fees-handler.js';
 
 export default async function feesHandler(req,res){
   try{

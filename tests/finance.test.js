@@ -29,8 +29,8 @@ import {
   makeFinanceSessionCookie,
   clearFinanceSessionCookie
 } from '../server/admin-auth.js';
-import { handleFinanceRequest } from '../api/_finance-handler.js';
-import { handleFeesRequest } from '../api/_fees-handler.js';
+import { handleFinanceRequest } from '../server/_finance-handler.js';
+import { handleFeesRequest } from '../server/_fees-handler.js';
 
 test('FINANCE_SPREADSHEET_TITLE is accurate', () => {
   assert.equal(FINANCE_SPREADSHEET_TITLE, 'My JEE Mentor – Finance Management');

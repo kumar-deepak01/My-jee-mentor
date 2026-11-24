@@ -10,7 +10,7 @@ import facultyRoute from './faculty-route.js';
 import studentReviewRoute from './student-review-route.js';
 import feesRoute from './fees-route.js';
 import financeRoute from './finance-route.js';
-import {CHAT_FALLBACK,handleChatRequest} from '../api/_chat-handler.js';
+import {CHAT_FALLBACK,handleChatRequest} from './_chat-handler.js';
 const app=express(),here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'..');
 app.disable('x-powered-by');app.set('trust proxy',1);
 app.use((req,res,next)=>{if(process.env.NODE_ENV==='production'&&!req.secure)return res.redirect(301,`https://${req.headers.host}${req.originalUrl}`);next()});

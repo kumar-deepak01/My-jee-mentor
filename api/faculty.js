@@ -1,4 +1,4 @@
-import {handleFacultyRequest,logFacultyError} from './_faculty-handler.js';
+import {handleFacultyRequest,logFacultyError} from '../server/_faculty-handler.js';
 
 export default async function facultyHandler(req,res){
   try{

@@ -19,7 +19,7 @@ import {
   getCategories,
   getAuditLog
 } from '../server/finance-service.js';
-import { setSetting, getSetting } from '../server/finance-db.js';
+import { setSetting, getSetting } from './finance-db.js';
 import {
   isFinancePasswordConfigured,
   setFinancePassword,
