@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch server/server.js",
     "start": "node server/server.js",
-    "build:css": "tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify",
+    "build:css": "tailwindcss -i ./client/css/tailwind-input.css -o ./client/css/tailwind.css --minify",
     "build": "npm run build:css",
     "lint": "node --check js/main.js && node --check js/fees.js && node --check js/fee-due.js && node --check js/fee-due-calc.js && node --check js/intl-phone.js && node --check js/fee-analytics.js && node --check js/fee-receipt.js && node --check js/finance.js && node --check js/finance-pdf.js && node --check server/_fees-handler.js && node --check api/fees.js && node --check server/_finance-handler.js && node --check api/finance.js && node --check server/fees-route.js && node --check server/finance-route.js && node --check server/finance-db.js && node --check server/admin-auth.js && node --check server/finance-service.js && node --check server/server.js && node --check < server/apps-script/Code.gs && node --check < server/apps-script/Finance.gs",
     "test": "node --test tests/*.test.js"

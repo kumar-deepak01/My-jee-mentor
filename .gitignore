@@ -4,5 +4,6 @@ node_modules/
 .env.*.local
 data/*.sqlite*
 data/*.json
+client/css/tailwind.css
 css/tailwind.css
 npm-debug.log*
