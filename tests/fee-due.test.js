@@ -450,6 +450,72 @@ test('Advance Credit: handles overpayment gracefully', () => {
   assert.equal(ledger.status, 'PAID');
 });
 
+test('Strict Monthly Fee × Pending Months: older rate/discount receipt settles 1 full cycle with no partial carryover', () => {
+  const student = {
+    studentId: 'MJM029',
+    studentName: 'Aiza khanam',
+    monthlyFee: 3000,
+    admissionDate: '21/07/2026',
+    status: 'Active'
+  };
+
+  // Evaluated on 27 Nov 2026: 2 cycles since 1 Oct (21 Oct, 21 Nov).
+  // Student paid ₹2,500 in October (older rate or ₹500 discount).
+  // Should settle Oct completely and leave only Nov (1 mo = ₹3,000), NOT ₹3,500.
+  const feeRecords = [
+    { receiptNo: 'MJM-2026-0029', studentName: 'Aiza khanam', amount: 2500, date: '2026-10-21' }
+  ];
+
+  const refDate = new Date(2026, 10, 27); // 27 Nov 2026
+  const ledger = calculateStudentLedger(student, feeRecords, refDate);
+
+  assert.equal(ledger.cycles.length, 2);
+  assert.equal(ledger.cycles[0].status, 'PAID');
+  assert.equal(ledger.cycles[0].paid, 2500);
+  assert.equal(ledger.cycles[0].balance, 0);
+  assert.equal(ledger.cycles[1].status, 'UNPAID');
+  assert.equal(ledger.cycles[1].balance, 3000);
+
+  assert.equal(ledger.monthsPending, 1);
+  assert.equal(ledger.outstanding, 3000);
+  assert.equal(ledger.oldestUnpaidDate.getMonth(), 10); // November
+  assert.equal(ledger.oldestUnpaidDate.getDate(), 21);
+  assert.equal(ledger.status, 'OVERDUE');
+});
+
+test('Strict Monthly Fee × Pending Months: 2 months pending equals 2 × Monthly Fee and 2 discounted receipts clear both cycles', () => {
+  const student = {
+    studentId: 'MJM033',
+    studentName: 'Suvangi Guha Niyogi',
+    monthlyFee: 3000,
+    admissionDate: '07/08/2026',
+    status: 'Active'
+  };
+
+  const refDate = new Date(2026, 10, 27); // 27 Nov 2026 (7 Oct & 7 Nov due)
+
+  // Case 1: 0 receipts -> 2 months pending = 2 × ₹3,000 = ₹6,000
+  const unpaidLedger = calculateStudentLedger(student, [], refDate);
+  assert.equal(unpaidLedger.monthsPending, 2);
+  assert.equal(unpaidLedger.outstanding, 6000);
+
+  // Case 2: 1 receipt of ₹2,000 -> settles Oct, leaves 1 month pending = ₹3,000 (not ₹4,000)
+  const onePaidLedger = calculateStudentLedger(student, [
+    { receiptNo: 'MJM-2026-0033', studentName: 'Suvangi Guha Niyogi', amount: 2000, date: '2026-10-08' }
+  ], refDate);
+  assert.equal(onePaidLedger.monthsPending, 1);
+  assert.equal(onePaidLedger.outstanding, 3000);
+
+  // Case 3: 2 receipts of ₹2,500 each -> settles both Oct and Nov -> ₹0 due (PAID)
+  const bothPaidLedger = calculateStudentLedger(student, [
+    { receiptNo: 'MJM-2026-0033', studentName: 'Suvangi Guha Niyogi', amount: 2500, date: '2026-10-08' },
+    { receiptNo: 'MJM-2026-0034', studentName: 'Suvangi Guha Niyogi', amount: 2500, date: '2026-11-08' }
+  ], refDate);
+  assert.equal(bothPaidLedger.monthsPending, 0);
+  assert.equal(bothPaidLedger.outstanding, 0);
+  assert.equal(bothPaidLedger.status, 'PAID');
+});
+
 test('calculateDueMetrics excludes needsAttention and inactive students from active KPIs', () => {
   const ledgers = [
     { active: true, needsAttention: false, status: 'DUE TODAY', outstanding: 3000, monthlyFee: 3000 },

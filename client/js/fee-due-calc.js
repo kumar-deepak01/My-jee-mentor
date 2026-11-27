@@ -603,39 +603,52 @@ export function calculateStudentLedger(student, feeRecords = [], referenceDate =
 
   const totalDue = cycles.length * monthlyFee;
 
-  // 3. FIFO Payment Allocation
-  let remainingPayment = totalPaid;
-  for (const cycle of cycles) {
-    if (remainingPayment >= cycle.fee) {
-      cycle.paid = cycle.fee;
-      cycle.balance = 0;
-      cycle.status = 'PAID';
-      remainingPayment -= cycle.fee;
-    } else if (remainingPayment > 0) {
-      cycle.paid = remainingPayment;
-      cycle.balance = cycle.fee - remainingPayment;
-      cycle.status = 'PARTIAL';
-      remainingPayment = 0;
-    } else {
-      cycle.paid = 0;
-      cycle.balance = cycle.fee;
-      cycle.status = 'UNPAID';
+  // 3. Cycle-based Receipt Settlement (no partial carry-over balances)
+  // Each valid receipt settles at least 1 billing cycle so prior fee rates or
+  // discounts never leave a partial shortfall; multi-month lump-sum receipts
+  // (>= 2x monthlyFee) settle the corresponding whole number of cycles.
+  const validPayments = matchingPayments
+    .map((r, idx) => ({
+      amount: Number(r.amount) || 0,
+      dateMs: parseAdmissionDate(r.date)?.getTime() ?? Number.MAX_SAFE_INTEGER,
+      idx
+    }))
+    .filter(p => p.amount > 0)
+    .sort((a, b) => (a.dateMs - b.dateMs) || (a.idx - b.idx));
+
+  let cycleCursor = 0;
+  for (const payment of validPayments) {
+    const cyclesForReceipt = Math.max(1, Math.floor(payment.amount / monthlyFee));
+    let remainingReceiptAmount = payment.amount;
+
+    for (let k = 0; k < cyclesForReceipt; k++) {
+      if (cycleCursor < cycles.length) {
+        const cycle = cycles[cycleCursor];
+        const allocated = cyclesForReceipt === 1
+          ? remainingReceiptAmount
+          : Math.min(remainingReceiptAmount, monthlyFee);
+        cycle.paid = allocated;
+        cycle.balance = 0;
+        cycle.status = 'PAID';
+        remainingReceiptAmount = Math.max(0, remainingReceiptAmount - allocated);
+        cycleCursor++;
+      }
     }
   }
 
-  const outstanding = Math.max(0, totalDue - totalPaid);
-  const advanceCredit = Math.max(0, totalPaid - totalDue);
-
-  // 4. Find oldest unpaid cycle
-  const oldestUnpaid = cycles.find(c => c.balance > 0) || null;
+  // 4. Find oldest unpaid cycle and enforce Amount Due = Monthly Fee × Pending Months
+  const unpaidCycles = cycles.filter(c => c.balance > 0);
+  const monthsPending = unpaidCycles.length;
+  const oldestUnpaid = unpaidCycles[0] || null;
   const oldestUnpaidDate = oldestUnpaid ? oldestUnpaid.cycleDate : null;
+
+  const outstanding = monthsPending * monthlyFee;
+  const advanceCredit = monthsPending === 0 ? Math.max(0, totalPaid - totalDue) : 0;
 
   // 5. Determine Status
   let status = 'PAID';
   let daysOverdue = 0;
   let daysLeft = 0;
-  const unpaidCycles = cycles.filter(c => c.balance > 0);
-  const monthsPending = unpaidCycles.length;
 
   if (outstanding > 0 && oldestUnpaidDate) {
     const diffMs = refMidnight.getTime() - oldestUnpaidDate.getTime();
